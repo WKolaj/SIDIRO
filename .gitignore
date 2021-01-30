@@ -105,3 +105,6 @@ dist
 
 # dist directory
 .dist/
+
+# development env variables
+developEnvVariables.sh

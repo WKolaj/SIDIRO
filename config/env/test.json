@@ -1,0 +1,10 @@
+{
+  "appCredentials": {
+    "xSpaceAuthKey": "testSpaceAuthKey",
+    "appName": "testAppName",
+    "appVersion": "testAppVersion",
+    "hostTenant": "testHostTenant",
+    "userTenant": "testUserTenant"
+  },
+  "tokenExpireAdditionalTime": 1234
+}

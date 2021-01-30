@@ -1,3 +1,10 @@
 {
-  "mindSphereAppToken": "abcd1234"
+  "appCredentials": {
+    "xSpaceAuthKey": "@@APP_X_SPACE_AUTH_KEY",
+    "appName": "@@APP_CREDENTIALS_APP_NAME",
+    "appVersion": "@@APP_CREDENTIALS_APP_VERSION",
+    "hostTenant": "@@APP_CREDENTIALS_HOST_TENANT",
+    "userTenant": "@@APP_CREDENTIALS_USER_TENANT"
+  },
+  "tokenExpireAdditionalTime": 100000
 }

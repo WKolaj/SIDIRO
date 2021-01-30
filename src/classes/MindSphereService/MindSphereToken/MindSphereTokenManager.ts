@@ -1,4 +1,5 @@
-import request from "superagent";
+import { config } from "node-config-ts";
+import axios from "axios";
 
 const mindSphereTokenApi = `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`;
 
@@ -15,6 +16,31 @@ type MindSphereAppCredentials = {
  */
 class MindSphereTokenManager {
   /**
+   * @description Single instance of MindSphereTokenManagerObject
+   */
+  private static _instance: MindSphereTokenManager | null = null;
+
+  /**
+   * @description Method for getting instance of MindSphereTokenManager - creates new instance and return it if instance does not exist
+   */
+  public static getInstance(): MindSphereTokenManager {
+    if (MindSphereTokenManager._instance == null) {
+      MindSphereTokenManager._instance = new MindSphereTokenManager(
+        {
+          xSpaceAuthKey: config.appCredentials.xSpaceAuthKey,
+          appName: config.appCredentials.appName,
+          appVersion: config.appCredentials.appVersion,
+          hostTenant: config.appCredentials.hostTenant,
+          userTenant: config.appCredentials.userTenant,
+        },
+        config.tokenExpireAdditionalTime
+      );
+    }
+
+    return MindSphereTokenManager._instance!;
+  }
+
+  /**
    * @description application credentials
    */
   private _appCredentials: MindSphereAppCredentials;
@@ -27,24 +53,24 @@ class MindSphereTokenManager {
   /**
    * @description elapse date of actual token (in Unix format) - date already takes spare time into account
    */
-  private _tokenValidationUnixDate: null | number = null;
+  private _tokenExpireUnixDate: null | number = null;
 
   /**
    * @description additional spare time used for calulcating elapse date (in ms)
    */
-  private _tokenValidationSpareTime: number;
+  private _tokenExpireSpareTime: number;
 
   /**
-   * @description Class for managing MindSphere tokens
+   * @description Class for managing MindSphere tokens, Constructor is private - SINGLETON class
    * @param appCredentials Application credentials
    * @param tokenValidationSpareTime Additional spare time used for calulcating elapse date (in ms)
    */
-  constructor(
+  private constructor(
     appCredentials: MindSphereAppCredentials,
     tokenValidationSpareTime: number = 10000
   ) {
     this._appCredentials = appCredentials;
-    this._tokenValidationSpareTime = tokenValidationSpareTime;
+    this._tokenExpireSpareTime = tokenValidationSpareTime;
   }
 
   /**
@@ -58,19 +84,31 @@ class MindSphereTokenManager {
    * @description Method for fetching new token from MindSphere token service
    */
   public async fetchNewToken(): Promise<void> {
-    let data = await request
-      .post(mindSphereTokenApi)
-      .set("Content-Type", "application/json")
-      .set("X-SPACE-AUTH-KEY", this._generateBearerToken())
-      .set("Accept", "application/json")
-      .send({
+    let response = await axios.post(
+      mindSphereTokenApi,
+      {
         appName: this._appCredentials.appName,
         appVersion: this._appCredentials.appVersion,
         hostTenant: this._appCredentials.hostTenant,
         userTenant: this._appCredentials.userTenant,
-      });
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": this._generateBearerToken(),
+        },
+      }
+    );
 
-    let newToken = JSON.parse(data.text) as {
+    if (
+      response.data == null ||
+      response.data.access_token == null ||
+      response.data.timestamp == null ||
+      response.data.expires_in == null
+    )
+      throw new Error("Invalid response content while fetching new token");
+
+    let newToken = response.data as {
       access_token: string;
       timestamp: number;
       expires_in: number;
@@ -79,10 +117,10 @@ class MindSphereTokenManager {
     this._token = newToken.access_token;
 
     //expires in is given in seconds - has to be multiplied by 1000
-    this._tokenValidationUnixDate =
+    this._tokenExpireUnixDate =
       newToken.timestamp +
       newToken.expires_in * 1000 -
-      this._tokenValidationSpareTime;
+      this._tokenExpireSpareTime;
   }
 
   /**
@@ -90,11 +128,11 @@ class MindSphereTokenManager {
    */
   public async getToken(): Promise<string> {
     //Taking additional spare time to ensure api call timestamp not to elapse
-    if (this._token == null || Date.now() >= this._tokenValidationUnixDate!) {
+    if (this._token == null || Date.now() >= this._tokenExpireUnixDate!) {
       await this.fetchNewToken();
     }
 
-    if (this._token == null || this._tokenValidationUnixDate == null)
+    if (this._token == null || this._tokenExpireUnixDate == null)
       throw new Error(
         "Token still doesn't exist after fetching from MindSphere API!"
       );
