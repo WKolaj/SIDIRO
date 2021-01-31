@@ -1,4 +1,3 @@
-import { type } from "os";
 import { MindSphereService } from "./MindSphereService";
 
 const mindSphereTimeSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries`;

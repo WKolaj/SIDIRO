@@ -1,96 +1,59 @@
-import {
-  MindSphereTimeSeriesService,
-  TimeSeriesData,
-} from "./classes/MindSphereService/MindSphereTimeSeriesService";
+import { MindSphereFileService } from "./classes/MindSphereService/MindSphereFileService";
+import { snooze } from "./utilities/utilities";
 
 let exec = async () => {
-  let timeSeriesService = MindSphereTimeSeriesService.getInstance();
+  let fileService = MindSphereFileService.getInstance();
 
-  let result = await timeSeriesService.getValues(
+  // let result = await fileService.checkIfFileExists(
+  //   "da3d417b1d41459c821403a630b5407d",
+  //   "testFile.json"
+  // );
+  // console.log(result);
+
+  // await fileService.deleteFile(
+  //   "da3d417b1d41459c821403a630b5407d",
+  //   "testFile2.json"
+  // );
+
+  await fileService.setFileContent(
     "da3d417b1d41459c821403a630b5407d",
-    "devInfo",
-    1611168783033,
-    1612032783033
+    "testFile2.json",
+    {
+      abcd: 1234,
+    }
+  );
+
+  await snooze(10000);
+  console.log(1);
+
+  await fileService.setFileContent(
+    "da3d417b1d41459c821403a630b5407d",
+    "testFile2.json",
+    {
+      abcd: 1235,
+    }
+  );
+
+  await snooze(10000);
+  console.log(2);
+
+  await fileService.setFileContent(
+    "da3d417b1d41459c821403a630b5407d",
+    "testFile2.json",
+    {
+      abcd: 1236,
+    }
+  );
+
+  await snooze(10000);
+  console.log(3);
+
+  let result = await fileService.getFileContent(
+    "da3d417b1d41459c821403a630b5407d",
+    "testFile2.json"
   );
 
   console.log(result);
-
-  let result2 = await timeSeriesService.getLastValues(
-    "da3d417b1d41459c821403a630b5407d",
-    "devInfo"
-  );
-
-  console.log(result2);
-
-  // await timeSeriesService.deleteValues(
-  //   "da3d417b1d41459c821403a630b5407d",
-  //   "devInfo",
-  //   1611100800000 - 24 * 60 * 60 * 1000,
-  //   1611187200000 - 24 * 60 * 60 * 1000
-  // );
-
-  let date = Date.now();
-
-  let dataToSet: TimeSeriesData = {
-    memoryUsage: {
-      [date - 2000]: {
-        value: 31,
-        qc: 0,
-      },
-      [date - 1000]: {
-        value: 32,
-        qc: 0,
-      },
-      [date]: {
-        value: 33,
-        qc: 0,
-      },
-    },
-    processMemory: {
-      [date - 2000]: {
-        value: 10,
-        qc: 0,
-      },
-      [date - 1000]: {
-        value: 11,
-        qc: 0,
-      },
-    },
-    temperature: {
-      [date - 2000]: {
-        value: 41,
-        qc: 0,
-      },
-      [date - 1000]: {
-        value: 42,
-        qc: 0,
-      },
-      [date]: {
-        value: 43,
-        qc: 0,
-      },
-    },
-    cpuUsage: {
-      [date - 2000]: {
-        value: 51,
-        qc: 0,
-      },
-      [date - 1000]: {
-        value: 52,
-        qc: 0,
-      },
-      [date]: {
-        value: 53,
-        qc: 0,
-      },
-    },
-  };
-
-  await timeSeriesService.setValues(
-    "da3d417b1d41459c821403a630b5407d",
-    "devInfo",
-    dataToSet
-  );
 };
 
 exec();

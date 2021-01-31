@@ -34,7 +34,7 @@ export abstract class MindSphereService {
     url: string,
     params: { [key: string]: string | number | boolean } | null = null,
     data: any = null,
-    headers: { [key: string]: string } = {}
+    headers: { [key: string]: string | number | boolean | null } = {}
   ) {
     let authToken = await this._getAuthToken();
     let headerToAppend = {
