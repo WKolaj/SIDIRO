@@ -1,7 +1,5 @@
 import { MindSphereTokenManager } from "../../../../classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
 import { testPrivateProperty } from "../../../testUtilities";
-import { snooze } from "../../../../utilities/utilities";
-import { rejects } from "assert";
 import axios from "axios";
 import MockDate from "mockdate";
 
@@ -16,9 +14,7 @@ describe("MindSphereService", () => {
     (MindSphereTokenManager as any)._instance = null;
 
     //Reseting axios
-    mockedAxios.__setMockError(null);
-    mockedAxios.__setMockResponseData({});
-    mockedAxios.__setMockResponseStatus(200);
+    mockedAxios.__reset();
   });
 
   afterEach(() => {
@@ -28,9 +24,7 @@ describe("MindSphereService", () => {
     (MindSphereTokenManager as any)._instance = null;
 
     //Reseting axios
-    mockedAxios.__setMockError(null);
-    mockedAxios.__setMockResponseData({});
-    mockedAxios.__setMockResponseStatus(200);
+    mockedAxios.__reset();
   });
 
   describe("getInstance", () => {
@@ -102,17 +96,16 @@ describe("MindSphereService", () => {
       testPrivateProperty(instance, "_tokenExpireUnixDate", expectedExpireDate);
 
       //Fetching should be performed by calling mindsphere token api with proper headers and credentials
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.post.mock.calls[0][0]).toEqual(
-        `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`
-      );
-      expect(mockedAxios.post.mock.calls[0][1]).toEqual({
-        appName: "testAppName",
-        appVersion: "testAppVersion",
-        hostTenant: "testHostTenant",
-        userTenant: "testUserTenant",
-      });
-      expect(mockedAxios.post.mock.calls[0][2]).toEqual({
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
         headers: {
           "Content-Type": "application/json",
           "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
@@ -161,32 +154,30 @@ describe("MindSphereService", () => {
       );
 
       //Fetching should be performed by calling mindsphere token api with proper headers and credentials x2
-      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
-      expect(mockedAxios.post.mock.calls[0][0]).toEqual(
-        `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`
-      );
-      expect(mockedAxios.post.mock.calls[0][1]).toEqual({
-        appName: "testAppName",
-        appVersion: "testAppVersion",
-        hostTenant: "testHostTenant",
-        userTenant: "testUserTenant",
-      });
-      expect(mockedAxios.post.mock.calls[0][2]).toEqual({
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
         headers: {
           "Content-Type": "application/json",
           "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
         },
       });
-      expect(mockedAxios.post.mock.calls[1][0]).toEqual(
-        `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`
-      );
-      expect(mockedAxios.post.mock.calls[1][1]).toEqual({
-        appName: "testAppName",
-        appVersion: "testAppVersion",
-        hostTenant: "testHostTenant",
-        userTenant: "testUserTenant",
-      });
-      expect(mockedAxios.post.mock.calls[1][2]).toEqual({
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
         headers: {
           "Content-Type": "application/json",
           "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
@@ -307,17 +298,16 @@ describe("MindSphereService", () => {
       testPrivateProperty(instance, "_tokenExpireUnixDate", expectedExpireDate);
 
       //Fetching should be performed by calling mindsphere token api with proper headers and credentials
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.post.mock.calls[0][0]).toEqual(
-        `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`
-      );
-      expect(mockedAxios.post.mock.calls[0][1]).toEqual({
-        appName: "testAppName",
-        appVersion: "testAppVersion",
-        hostTenant: "testHostTenant",
-        userTenant: "testUserTenant",
-      });
-      expect(mockedAxios.post.mock.calls[0][2]).toEqual({
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
         headers: {
           "Content-Type": "application/json",
           "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
@@ -363,7 +353,7 @@ describe("MindSphereService", () => {
       );
 
       //Fetching should be preformed only once - at the begining
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
     });
 
     it("should fetch new token if token has already been fetched and has expired", async () => {
@@ -404,7 +394,7 @@ describe("MindSphereService", () => {
       );
 
       //Fetching should be preformed twice - at the begining and when fetching new token
-      expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
     });
 
     it("should throw and do not set new token - if there is an error while calling API", async () => {

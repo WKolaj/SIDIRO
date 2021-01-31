@@ -13,10 +13,14 @@ export abstract class MindSphereService {
   }
 
   public static convertMindSphereDateToUnix(mindSphereDate: string) {
-    return new Date(mindSphereDate).getTime();
+    let date = Date.parse(mindSphereDate);
+    if (isNaN(date)) throw new Error("Invalid date format");
+    return date;
   }
 
   public static convertUnixToMindSphereDate(unixDate: number) {
+    if (unixDate == null) throw new Error("Invalid unix date");
+
     return new Date(unixDate).toISOString();
   }
 
@@ -40,7 +44,7 @@ export abstract class MindSphereService {
       ...headers,
     };
 
-    return axios({
+    return axios.request({
       method: method,
       url: url,
       headers: headerToAppend,

@@ -1,15 +1,21 @@
+import { type } from "os";
 import { MindSphereService } from "./MindSphereService";
 
 const mindSphereTimeSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries`;
 
-export interface TimeSeriesData {
+export type MindSphereTimeSeriesData = {
+  _time: string;
+  [key: string]: boolean | number | string | null;
+};
+
+export type TimeSeriesData = {
   [key: string]: {
     [key: number]: {
-      value: number | boolean | string;
+      value: number | boolean | string | null;
       qc?: number;
     };
   };
-}
+};
 
 export class MindSphereTimeSeriesService extends MindSphereService {
   private static _instance: MindSphereTimeSeriesService | null = null;
@@ -32,7 +38,7 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     return property.includes("_qc");
   }
 
-  public static getPropertyNameWithoutQC(property: string) {
+  public static getPropertyNameFromQCProperty(property: string) {
     return property.replace("_qc", "");
   }
 
@@ -44,7 +50,9 @@ export class MindSphereTimeSeriesService extends MindSphereService {
    * @description Method for getting TimeSeriesValue based on MindSphere time series response. Works on both - last values without qc or normal values with qc
    * @param data Array of values - EACH ELEMENT HAS TO HAVE DIFFERNET VARIABLE NAMES OR _time
    */
-  public static convertMindSphereTimeSeriesToTimeSeriesData(data: any) {
+  public static convertMindSphereTimeSeriesToTimeSeriesData(
+    data: MindSphereTimeSeriesData[] | MindSphereTimeSeriesData
+  ) {
     //{ variableName1: { time1: { value: value1, qc: qc1 },time2: { value: value2, qc: qc2 }} }
     let objectToReturn: TimeSeriesData = {};
     //For normal API - data is not an array, so it is neccessary to create array with one element from it
@@ -72,8 +80,7 @@ export class MindSphereTimeSeriesService extends MindSphereService {
           if (property !== "_time") {
             if (MindSphereTimeSeriesService.checkIfPropertyIsQC(property)) {
               //qc property - assigning it to qc to add
-              if (qualityCodesToAdd[property] == null)
-                qualityCodesToAdd[property] = raw[property];
+              qualityCodesToAdd[property] = raw[property] as number;
             } else {
               //Normal property - assign it
               if (objectToReturn[property] == null) {
@@ -92,7 +99,7 @@ export class MindSphereTimeSeriesService extends MindSphereService {
         //Adding qc to objectToReturn - if they exists
         for (let qcProperty of Object.keys(qualityCodesToAdd)) {
           //Getting real property name based on qc property name
-          let realProperty = MindSphereTimeSeriesService.getPropertyNameWithoutQC(
+          let realProperty = MindSphereTimeSeriesService.getPropertyNameFromQCProperty(
             qcProperty
           );
 
@@ -117,12 +124,7 @@ export class MindSphereTimeSeriesService extends MindSphereService {
   public static convertTimeSeriesDataToMindSphereTimeSeries(
     timeSeriesData: TimeSeriesData
   ) {
-    let dataGroupedByTime: {
-      [key: string]: {
-        _time: string;
-        [key: string]: number | boolean | string;
-      };
-    } = {};
+    let dataGroupedByTime: { [key: string]: MindSphereTimeSeriesData } = {};
 
     for (let variableName of Object.keys(timeSeriesData)) {
       for (let time of Object.keys(timeSeriesData[variableName])) {
@@ -150,7 +152,6 @@ export class MindSphereTimeSeriesService extends MindSphereService {
         }
       }
     }
-    //dataGroupedByTime["avdse"] = { _time: "asdasdasd", test: 1234 };
     return Object.values(dataGroupedByTime);
   }
 
@@ -167,8 +168,6 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
     if (!Array.isArray(result.data))
       throw new Error("Invalid reponse data - should be na array");
-
-    if (result.data.length < 1) return null;
 
     return MindSphereTimeSeriesService.convertMindSphereTimeSeriesToTimeSeriesData(
       result.data
@@ -194,8 +193,6 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
     if (!Array.isArray(result.data))
       throw new Error("Invalid reponse data - should be na array");
-
-    if (result.data.length < 1) return null;
 
     return MindSphereTimeSeriesService.convertMindSphereTimeSeriesToTimeSeriesData(
       result.data

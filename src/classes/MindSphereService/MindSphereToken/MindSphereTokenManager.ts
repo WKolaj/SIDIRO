@@ -3,13 +3,13 @@ import axios from "axios";
 
 const mindSphereTokenApiUrl = `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`;
 
-export interface MindSphereAppCredentials {
+export type MindSphereAppCredentials = {
   xSpaceAuthKey: string;
   appName: string;
   appVersion: string;
   hostTenant: string;
   userTenant: string;
-}
+};
 
 /**
  * @description Class for managing MindSphere tokens
@@ -84,21 +84,20 @@ export class MindSphereTokenManager {
    * @description Method for fetching new token from MindSphere token service
    */
   public async fetchNewToken(): Promise<void> {
-    let response = await axios.post(
-      mindSphereTokenApiUrl,
-      {
+    let response = await axios.request({
+      method: "POST",
+      url: mindSphereTokenApiUrl,
+      data: {
         appName: this._appCredentials.appName,
         appVersion: this._appCredentials.appVersion,
         hostTenant: this._appCredentials.hostTenant,
         userTenant: this._appCredentials.userTenant,
       },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": this._generateBearerToken(),
-        },
-      }
-    );
+      headers: {
+        "Content-Type": "application/json",
+        "X-SPACE-AUTH-KEY": this._generateBearerToken(),
+      },
+    });
 
     if (
       response.data == null ||
