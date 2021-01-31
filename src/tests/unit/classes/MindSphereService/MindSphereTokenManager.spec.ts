@@ -1,4 +1,4 @@
-import MindSphereTokenManager from "../../../../classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
+import { MindSphereTokenManager } from "../../../../classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
 import { testPrivateProperty } from "../../../testUtilities";
 import { snooze } from "../../../../utilities/utilities";
 import { rejects } from "assert";

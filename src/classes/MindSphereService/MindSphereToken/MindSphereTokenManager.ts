@@ -1,20 +1,20 @@
 import { config } from "node-config-ts";
 import axios from "axios";
 
-const mindSphereTokenApi = `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`;
+const mindSphereTokenApiUrl = `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`;
 
-type MindSphereAppCredentials = {
+export interface MindSphereAppCredentials {
   xSpaceAuthKey: string;
   appName: string;
   appVersion: string;
   hostTenant: string;
   userTenant: string;
-};
+}
 
 /**
  * @description Class for managing MindSphere tokens
  */
-class MindSphereTokenManager {
+export class MindSphereTokenManager {
   /**
    * @description Single instance of MindSphereTokenManagerObject
    */
@@ -37,7 +37,7 @@ class MindSphereTokenManager {
       );
     }
 
-    return MindSphereTokenManager._instance!;
+    return MindSphereTokenManager._instance;
   }
 
   /**
@@ -85,7 +85,7 @@ class MindSphereTokenManager {
    */
   public async fetchNewToken(): Promise<void> {
     let response = await axios.post(
-      mindSphereTokenApi,
+      mindSphereTokenApiUrl,
       {
         appName: this._appCredentials.appName,
         appVersion: this._appCredentials.appVersion,
@@ -140,5 +140,3 @@ class MindSphereTokenManager {
     return this._token;
   }
 }
-
-export default MindSphereTokenManager;
