@@ -11,32 +11,32 @@ export interface TimeSeriesData {
   };
 }
 
-export class MindSphereTimeSeries extends MindSphereService {
-  private static _instance: MindSphereTimeSeries | null = null;
+export class MindSphereTimeSeriesService extends MindSphereService {
+  private static _instance: MindSphereTimeSeriesService | null = null;
 
-  public static getInstance(): MindSphereTimeSeries {
-    if (MindSphereTimeSeries._instance == null) {
-      MindSphereTimeSeries._instance = new MindSphereTimeSeries(
+  public static getInstance(): MindSphereTimeSeriesService {
+    if (MindSphereTimeSeriesService._instance == null) {
+      MindSphereTimeSeriesService._instance = new MindSphereTimeSeriesService(
         mindSphereTimeSeriesApiUrl
       );
     }
 
-    return MindSphereTimeSeries._instance;
+    return MindSphereTimeSeriesService._instance;
   }
 
   private constructor(url: string) {
     super(url);
   }
 
-  private _checkIfPropertyIsQC(property: string) {
+  public static checkIfPropertyIsQC(property: string) {
     return property.includes("_qc");
   }
 
-  private _getPropertyNameWithoutQC(property: string) {
+  public static getPropertyNameWithoutQC(property: string) {
     return property.replace("_qc", "");
   }
 
-  private _getQCPropertyFromPropertyName(property: string) {
+  public static getQCPropertyFromPropertyName(property: string) {
     return `${property}_qc`;
   }
 
@@ -44,7 +44,7 @@ export class MindSphereTimeSeries extends MindSphereService {
    * @description Method for getting TimeSeriesValue based on MindSphere time series response. Works on both - last values without qc or normal values with qc
    * @param data Array of values - EACH ELEMENT HAS TO HAVE DIFFERNET VARIABLE NAMES OR _time
    */
-  private _convertMindSphereTimeSeriesToTimeSeriesData(data: any) {
+  public static convertMindSphereTimeSeriesToTimeSeriesData(data: any) {
     //{ variableName1: { time1: { value: value1, qc: qc1 },time2: { value: value2, qc: qc2 }} }
     let objectToReturn: TimeSeriesData = {};
     //For normal API - data is not an array, so it is neccessary to create array with one element from it
@@ -70,7 +70,7 @@ export class MindSphereTimeSeries extends MindSphereService {
         //For every property - if it is not qc property or _time create seperate object with value and time in objectToReturn
         for (let property of Object.keys(raw)) {
           if (property !== "_time") {
-            if (this._checkIfPropertyIsQC(property)) {
+            if (MindSphereTimeSeriesService.checkIfPropertyIsQC(property)) {
               //qc property - assigning it to qc to add
               if (qualityCodesToAdd[property] == null)
                 qualityCodesToAdd[property] = raw[property];
@@ -92,7 +92,9 @@ export class MindSphereTimeSeries extends MindSphereService {
         //Adding qc to objectToReturn - if they exists
         for (let qcProperty of Object.keys(qualityCodesToAdd)) {
           //Getting real property name based on qc property name
-          let realProperty = this._getPropertyNameWithoutQC(qcProperty);
+          let realProperty = MindSphereTimeSeriesService.getPropertyNameWithoutQC(
+            qcProperty
+          );
 
           //Assigning qc to property element - if it exists
           if (
@@ -112,7 +114,7 @@ export class MindSphereTimeSeries extends MindSphereService {
    * @description Method for converting TimeSeriesData to MindSphere standard
    * @param timeSeriesData Time series data to convert
    */
-  private _convertTimeSeriesDataToMindSphereTimeSeries(
+  public static convertTimeSeriesDataToMindSphereTimeSeries(
     timeSeriesData: TimeSeriesData
   ) {
     let dataGroupedByTime: {
@@ -141,7 +143,9 @@ export class MindSphereTimeSeries extends MindSphereService {
         //appending qc if exists
         if (timeSeriesData[variableName][numberTime].qc != null) {
           dataGroupedByTime[mindSphereTime][
-            this._getQCPropertyFromPropertyName(variableName)
+            MindSphereTimeSeriesService.getQCPropertyFromPropertyName(
+              variableName
+            )
           ] = timeSeriesData[variableName][numberTime].qc!;
         }
       }
@@ -166,7 +170,9 @@ export class MindSphereTimeSeries extends MindSphereService {
 
     if (result.data.length < 1) return null;
 
-    return this._convertMindSphereTimeSeriesToTimeSeriesData(result.data);
+    return MindSphereTimeSeriesService.convertMindSphereTimeSeriesToTimeSeriesData(
+      result.data
+    );
   }
 
   public async getValues(
@@ -191,7 +197,9 @@ export class MindSphereTimeSeries extends MindSphereService {
 
     if (result.data.length < 1) return null;
 
-    return this._convertMindSphereTimeSeriesToTimeSeriesData(result.data);
+    return MindSphereTimeSeriesService.convertMindSphereTimeSeriesToTimeSeriesData(
+      result.data
+    );
   }
 
   public async setValues(
@@ -199,7 +207,7 @@ export class MindSphereTimeSeries extends MindSphereService {
     aspectName: string,
     dataToSet: TimeSeriesData
   ) {
-    let dataToPut = this._convertTimeSeriesDataToMindSphereTimeSeries(
+    let dataToPut = MindSphereTimeSeriesService.convertTimeSeriesDataToMindSphereTimeSeries(
       dataToSet
     );
     if (dataToPut.length < 1) return;
@@ -225,4 +233,4 @@ export class MindSphereTimeSeries extends MindSphereService {
   }
 }
 
-export default MindSphereTimeSeries;
+export default MindSphereTimeSeriesService;
