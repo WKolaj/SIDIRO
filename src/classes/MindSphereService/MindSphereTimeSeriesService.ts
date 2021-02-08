@@ -229,4 +229,4 @@ export class MindSphereTimeSeriesService extends MindSphereService {
   }
 }
 
-export default MindSphereTimeSeriesService;
+//TODO - add comments for this class

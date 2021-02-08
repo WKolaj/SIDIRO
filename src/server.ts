@@ -1,59 +1,54 @@
-import { MindSphereFileService } from "./classes/MindSphereService/MindSphereFileService";
+import {
+  MindSphereEventService,
+  MindSphereStandardEvent,
+} from "./classes/MindSphereService/MindSphereEventService";
 import { snooze } from "./utilities/utilities";
 
 let exec = async () => {
-  let fileService = MindSphereFileService.getInstance();
+  let eventService = MindSphereEventService.getInstance();
+  try {
+    // let fromDate = new Date("2020-10-05T14:48:00.000Z").getTime();
+    // let toDate = new Date("2021-10-05T14:48:00.000Z").getTime();
+    // let result = await eventService.getEvents(
+    //   "901af6c8a39f45d78c21e014136b11c9",
+    //   fromDate,
+    //   toDate
+    // );
 
-  // let result = await fileService.checkIfFileExists(
-  //   "da3d417b1d41459c821403a630b5407d",
-  //   "testFile.json"
-  // );
-  // console.log(result);
+    // console.log("Before:");
+    // console.log(result);
 
-  // await fileService.deleteFile(
-  //   "da3d417b1d41459c821403a630b5407d",
-  //   "testFile2.json"
-  // );
+    // for (let i = 0; i < 10; i++) {
+    //   let eventToSend: MindSphereStandardEvent = {
+    //     timestamp: new Date().toISOString(),
+    //     entityId: "901af6c8a39f45d78c21e014136b11c9",
+    //     severity: 30,
+    //     description: "Test description " + i,
+    //     code: "1234",
+    //     source: "Test source",
+    //   };
+    //   await eventService.postEvent(eventToSend);
 
-  await fileService.setFileContent(
-    "da3d417b1d41459c821403a630b5407d",
-    "testFile2.json",
-    {
-      abcd: 1234,
-    }
-  );
+    //   await snooze(100);
+    //   console.log("send " + i);
+    // }
 
-  await snooze(10000);
-  console.log(1);
+    // let result2 = await eventService.getEvents(
+    //   "901af6c8a39f45d78c21e014136b11c9",
+    //   fromDate,
+    //   toDate
+    // );
 
-  await fileService.setFileContent(
-    "da3d417b1d41459c821403a630b5407d",
-    "testFile2.json",
-    {
-      abcd: 1235,
-    }
-  );
+    // console.log("After:");
+    // console.log(result2);
 
-  await snooze(10000);
-  console.log(2);
-
-  await fileService.setFileContent(
-    "da3d417b1d41459c821403a630b5407d",
-    "testFile2.json",
-    {
-      abcd: 1236,
-    }
-  );
-
-  await snooze(10000);
-  console.log(3);
-
-  let result = await fileService.getFileContent(
-    "da3d417b1d41459c821403a630b5407d",
-    "testFile2.json"
-  );
-
-  console.log(result);
+    let result = await eventService.getEvent(
+      "2e4f6c9b-9144-44fc-8bfc-6733dd893bbf"
+    );
+    console.log(result);
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 exec();

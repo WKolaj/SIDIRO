@@ -1,6 +1,7 @@
 import { MindSphereTokenManager } from "../../../../classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
 import axios from "axios";
-import MindSphereTimeSeriesService, {
+import {
+  MindSphereTimeSeriesService,
   MindSphereTimeSeriesData,
   TimeSeriesData,
 } from "../../../../classes/MindSphereService/MindSphereTimeSeriesService";

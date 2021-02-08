@@ -70,6 +70,21 @@ export class MindSphereFileService extends MindSphereService {
     return result.data[0].etag;
   }
 
+  public async getFileContent(assetId: string, fileName: string): Promise<any> {
+    let result = await this._callAPI(
+      "GET",
+      this._getFileServiceUrl(assetId, fileName),
+      null,
+      null,
+      {
+        "Content-Type": "application/octet-stream",
+        Accept: "application/octet-stream",
+      }
+    );
+
+    return result.data;
+  }
+
   public async setFileContent(
     assetId: string,
     fileName: string,
@@ -95,24 +110,10 @@ export class MindSphereFileService extends MindSphereService {
     );
   }
 
-  public async getFileContent(assetId: string, fileName: string): Promise<any> {
-    let result = await this._callAPI(
-      "GET",
-      this._getFileServiceUrl(assetId, fileName),
-      null,
-      null,
-      {
-        "Content-Type": "application/octet-stream",
-        Accept: "application/octet-stream",
-      }
-    );
-
-    return result.data;
-  }
-
   public async deleteFile(assetId: string, fileName: string) {
     await this._callAPI("DELETE", this._getFileServiceUrl(assetId, fileName));
   }
 }
 
-export default MindSphereFileService;
+//TODO - add comments to this class
+//TODO - add tests for this class

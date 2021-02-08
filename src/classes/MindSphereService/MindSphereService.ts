@@ -32,7 +32,7 @@ export abstract class MindSphereService {
   protected async _callAPI(
     method: httpMethod,
     url: string,
-    params: { [key: string]: string | number | boolean } | null = null,
+    params: any = null,
     data: any = null,
     headers: { [key: string]: string | number | boolean | null } = {}
   ) {
@@ -53,3 +53,5 @@ export abstract class MindSphereService {
     });
   }
 }
+
+//TODO - add comments to this class
