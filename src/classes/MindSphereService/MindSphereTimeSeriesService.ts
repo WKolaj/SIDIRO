@@ -16,9 +16,18 @@ export type TimeSeriesData = {
   };
 };
 
+/**
+ * @description Class for representing MindSphere service for storing time-series data
+ */
 export class MindSphereTimeSeriesService extends MindSphereService {
+  /**
+   * @description Main instance of Singleton
+   */
   private static _instance: MindSphereTimeSeriesService | null = null;
 
+  /**
+   * @description Method for getting (or creating if not exists) main instance of Singleton
+   */
   public static getInstance(): MindSphereTimeSeriesService {
     if (MindSphereTimeSeriesService._instance == null) {
       MindSphereTimeSeriesService._instance = new MindSphereTimeSeriesService(
@@ -29,18 +38,34 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     return MindSphereTimeSeriesService._instance;
   }
 
+  /**
+   * @description Class for representing MindSphere service for storing time-series data
+   * @param url URL for getting time-series data from
+   */
   private constructor(url: string) {
     super(url);
   }
 
+  /**
+   * @description Method for checking if field is a field for QC code
+   * @param property field name to check
+   */
   public static checkIfPropertyIsQC(property: string) {
     return property.includes("_qc");
   }
 
+  /**
+   * @description Method for getting real name of property based on name with QC code
+   * @param property field name with QC code
+   */
   public static getPropertyNameFromQCProperty(property: string) {
     return property.replace("_qc", "");
   }
 
+  /**
+   * @description Method for getting the name of QC Property field based on normal property name
+   * @param property
+   */
   public static getQCPropertyFromPropertyName(property: string) {
     return `${property}_qc`;
   }
@@ -154,10 +179,20 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     return Object.values(dataGroupedByTime);
   }
 
+  /**
+   * Method for getting time series url to get data of given aspect
+   * @param assetId id of asset that stores the aspect
+   * @param aspectName name of aspect to get
+   */
   private _getTimeSeriesUrl(assetId: string, aspectName: string) {
     return encodeURI(`${this._url}/${assetId}/${aspectName}`);
   }
 
+  /**
+   * @description Method for getting last values of given aspect (event if theirs timestamp is different)
+   * @param assetId asset id to get data from
+   * @param aspectName aspect name to get data from
+   */
   public async getLastValues(assetId: string, aspectName: string) {
     let result = await this._callAPI(
       "GET",
@@ -173,31 +208,47 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     );
   }
 
+  /**
+   * @description Method for getting time-series data. NOTICE! Works event for huge intervals - calls API several times in order to retrieves all data without any limit. Beware of time for long intervals
+   * @param assetId Id of asset to get
+   * @param aspectName Name of aspect to get
+   * @param fromUnixDate Date (in Unix) of start of the interval
+   * @param toUnixDate Date (in Unix) of end of the interval
+   */
   public async getValues(
     assetId: string,
     aspectName: string,
     fromUnixDate: number,
-    toUnixDate: number,
-    limit: number = 2000
+    toUnixDate: number
   ) {
-    let result = await this._callAPI(
+    let results = await this._callLinkedAPI(
       "GET",
       this._getTimeSeriesUrl(assetId, aspectName),
       {
         from: MindSphereService.convertUnixToMindSphereDate(fromUnixDate),
         to: MindSphereService.convertUnixToMindSphereDate(toUnixDate),
-        limit: limit,
+        limit: 2000,
       }
     );
+    let allData: MindSphereTimeSeriesData[] = [];
 
-    if (!Array.isArray(result.data))
-      throw new Error("Invalid reponse data - should be na array");
+    for (let result of results) {
+      if (result != null && Array.isArray(result)) {
+        allData.push(...result);
+      }
+    }
 
     return MindSphereTimeSeriesService.convertMindSphereTimeSeriesToTimeSeriesData(
-      result.data
+      allData
     );
   }
 
+  /**
+   * @description Method for setting timeseries data to MindSphere
+   * @param assetId id of asset to set data
+   * @param aspectName name of aspect to set data into
+   * @param dataToSet data to set into the aspect
+   */
   public async setValues(
     assetId: string,
     aspectName: string,
@@ -216,6 +267,13 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     );
   }
 
+  /**
+   * @description Method for deleting the values. NOTICE beware that there is a limit in MindSphere for one call of such method a day
+   * @param assetId asset to delete data from
+   * @param aspectName aspect name
+   * @param fromUnixDate unix date to delete data from
+   * @param toUnixDate unix date of the end of deleting interval
+   */
   public async deleteValues(
     assetId: string,
     aspectName: string,
@@ -228,5 +286,3 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     });
   }
 }
-
-//TODO - add comments for this class

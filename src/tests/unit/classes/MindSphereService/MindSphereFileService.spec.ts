@@ -81,6 +81,7 @@ describe("MindSphereFileService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereFileService: MindSphereFileService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -109,6 +110,7 @@ describe("MindSphereFileService", () => {
         ],
       ];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -129,7 +131,8 @@ describe("MindSphereFileService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -530,6 +533,7 @@ describe("MindSphereFileService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereFileService: MindSphereFileService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -551,6 +555,7 @@ describe("MindSphereFileService", () => {
         },
       ];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -571,7 +576,8 @@ describe("MindSphereFileService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -773,6 +779,7 @@ describe("MindSphereFileService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereFileService: MindSphereFileService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -788,6 +795,7 @@ describe("MindSphereFileService", () => {
       //"2021-02-01T13:00:00.000Z" - 1612184400000
       mockedReturnDataCollection = [];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -808,7 +816,8 @@ describe("MindSphereFileService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -981,6 +990,7 @@ describe("MindSphereFileService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereFileService: MindSphereFileService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -1015,6 +1025,7 @@ describe("MindSphereFileService", () => {
         },
       ];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -1040,7 +1051,8 @@ describe("MindSphereFileService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -1124,7 +1136,7 @@ describe("MindSphereFileService", () => {
       });
     });
 
-    it("should throw if API call throw", async () => {
+    it("should throw if API call throw - checking file API call", async () => {
       mockedAxios.__setMockError("testError");
       await expect(exec()).rejects.toEqual("testError");
 
@@ -1139,6 +1151,38 @@ describe("MindSphereFileService", () => {
         },
         params: {
           filter: `name eq '${fileName}'`,
+        },
+      });
+    });
+
+    it("should throw if API call throw - setting file API call", async () => {
+      mockedAxios.__setMockError("testError", 1);
+      await expect(exec()).rejects.toEqual("testError");
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          filter: `name eq '${fileName}'`,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "PUT",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}/${fileName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/octet-stream",
+          Accept: "application/octet-stream",
+          "If-Match": 123,
+        },
+        data: {
+          ...fileContent,
         },
       });
     });

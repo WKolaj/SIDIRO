@@ -1,24 +1,25 @@
-import {
-  MindSphereEventService,
-  MindSphereStandardEvent,
-} from "./classes/MindSphereService/MindSphereEventService";
+import { MindSphereTimeSeriesService } from "./classes/MindSphereService/MindSphereTimeSeriesService";
 import { snooze } from "./utilities/utilities";
 
 let exec = async () => {
-  let eventService = MindSphereEventService.getInstance();
+  let timeSeriesService = MindSphereTimeSeriesService.getInstance();
   try {
-    // let fromDate = new Date("2020-10-05T14:48:00.000Z").getTime();
-    // let toDate = new Date("2021-10-05T14:48:00.000Z").getTime();
-    // let result = await eventService.getEvents(
-    //   "901af6c8a39f45d78c21e014136b11c9",
-    //   fromDate,
-    //   toDate
-    // );
+    let fromDate = new Date("2021-02-07T00:00:00.000Z").getTime();
+    let toDate = new Date("2021-02-07T00:00:10.000Z").getTime();
+    let result = await timeSeriesService.getValues(
+      "a5eebd59cd1348c5b38f8d74ab432780",
+      "1F1_1_s",
+      fromDate,
+      toDate
+    );
+
+    console.log(Object.keys(Object.values(result)[0]).length);
 
     // console.log("Before:");
     // console.log(result);
+    // console.log(result.length);
 
-    // for (let i = 0; i < 10; i++) {
+    // for (let i = 0; i < 100; i++) {
     //   let eventToSend: MindSphereStandardEvent = {
     //     timestamp: new Date().toISOString(),
     //     entityId: "901af6c8a39f45d78c21e014136b11c9",
@@ -42,10 +43,17 @@ let exec = async () => {
     // console.log("After:");
     // console.log(result2);
 
-    let result = await eventService.getEvent(
-      "2e4f6c9b-9144-44fc-8bfc-6733dd893bbf"
-    );
-    console.log(result);
+    // let fromDate = new Date("2019-10-05T14:48:00.000Z").getTime();
+    // let toDate = new Date("2021-10-05T14:48:00.000Z").getTime();
+
+    // let result = await eventService.getEvents(
+    //   "a5eebd59cd1348c5b38f8d74ab432780",
+    //   fromDate,
+    //   toDate
+    // );
+
+    // console.log(result);
+    // console.log(result.length);
   } catch (err) {
     console.log(err);
   }

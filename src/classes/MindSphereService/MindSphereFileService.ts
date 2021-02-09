@@ -13,9 +13,18 @@ export type MindSphereTimeFileData = {
   etag: number;
 };
 
+/**
+ * @description Class for representing file service of MindSphere
+ */
 export class MindSphereFileService extends MindSphereService {
+  /**
+   * @description Main instance of Singleton
+   */
   private static _instance: MindSphereFileService | null = null;
 
+  /**
+   * @description Method for getting (or creating if not exists) main instance of Singleton
+   */
   public static getInstance(): MindSphereFileService {
     if (MindSphereFileService._instance == null) {
       MindSphereFileService._instance = new MindSphereFileService(
@@ -26,18 +35,35 @@ export class MindSphereFileService extends MindSphereService {
     return MindSphereFileService._instance;
   }
 
+  /**
+   * @description Class for representing file service of MindSphere
+   * @param url URL of MindSphere File Service
+   */
   private constructor(url: string) {
     super(url);
   }
 
+  /**
+   * @description Method for getting url to get content of given file
+   * @param assetId asset id stroing the file
+   * @param fileName name of file to download
+   */
   private _getFileServiceUrl(assetId: string, fileName: string) {
     return encodeURI(`${this._url}/${assetId}/${fileName}`);
   }
 
+  /**
+   * @description Method for getting url to check if file of given name exists. (name given in filter)
+   * @param assetId asset id storing the file
+   */
   private _getFileToCheckUrl(assetId: string) {
     return encodeURI(`${this._url}/${assetId}`);
   }
 
+  /**
+   * @description Method for getting filter to get file by name
+   * @param fileName Name of file to filter
+   */
   private _getFileToCheckFilter(fileName: string) {
     return `name eq '${fileName}'`;
   }
@@ -70,6 +96,11 @@ export class MindSphereFileService extends MindSphereService {
     return result.data[0].etag;
   }
 
+  /**
+   * @description Method for getting content of the file
+   * @param assetId id of asset to store the file
+   * @param fileName name of file to store
+   */
   public async getFileContent(assetId: string, fileName: string): Promise<any> {
     let result = await this._callAPI(
       "GET",
@@ -85,6 +116,12 @@ export class MindSphereFileService extends MindSphereService {
     return result.data;
   }
 
+  /**
+   * @description Method for setting content of the file. Method creates new file if file does not exist or replace the file if it exists
+   * @param assetId Id of asset to set the file into
+   * @param fileName name of file to set
+   * @param fileContent content of the file
+   */
   public async setFileContent(
     assetId: string,
     fileName: string,
@@ -110,10 +147,12 @@ export class MindSphereFileService extends MindSphereService {
     );
   }
 
+  /**
+   * @description Method for deleting the file from the MindSphere - NOTICE! Throws if there is no such file
+   * @param assetId Id of asset to delete the file from
+   * @param fileName Name of the file to delete
+   */
   public async deleteFile(assetId: string, fileName: string) {
     await this._callAPI("DELETE", this._getFileServiceUrl(assetId, fileName));
   }
 }
-
-//TODO - add comments to this class
-//TODO - add tests for this class

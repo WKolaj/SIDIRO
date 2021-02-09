@@ -656,6 +656,7 @@ describe("MindSphereTimeSeriesService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereTimeSeriesService: MindSphereTimeSeriesService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -682,6 +683,7 @@ describe("MindSphereTimeSeriesService", () => {
         ],
       ];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098000000;
@@ -702,7 +704,8 @@ describe("MindSphereTimeSeriesService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -965,6 +968,7 @@ describe("MindSphereTimeSeriesService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereTimeSeriesService: MindSphereTimeSeriesService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -973,7 +977,6 @@ describe("MindSphereTimeSeriesService", () => {
     let aspectName: string;
     let fromUnixDate: number;
     let toUnixDate: number;
-    let limit: number;
 
     beforeEach(() => {
       //"2021-01-31T12:58:00.000Z" - 1612097880000
@@ -1013,6 +1016,7 @@ describe("MindSphereTimeSeriesService", () => {
         ],
       ];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -1021,7 +1025,6 @@ describe("MindSphereTimeSeriesService", () => {
       aspectName = "testAspectName";
       fromUnixDate = 1612097880000;
       toUnixDate = 1612098060000;
-      limit = 123;
     });
 
     let exec = async () => {
@@ -1036,7 +1039,8 @@ describe("MindSphereTimeSeriesService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -1045,12 +1049,11 @@ describe("MindSphereTimeSeriesService", () => {
         assetId,
         aspectName,
         fromUnixDate,
-        toUnixDate,
-        limit
+        toUnixDate
       );
     };
 
-    it("should call MindSphere time series API, get the data, convert it and return", async () => {
+    it("should call MindSphere time series API, get the data, convert it and return - there is no next header", async () => {
       let result = await exec();
 
       //Checking result
@@ -1085,14 +1088,14 @@ describe("MindSphereTimeSeriesService", () => {
           Accept: "application/json",
         },
         params: {
-          limit: limit,
           from: new Date(fromUnixDate).toISOString(),
           to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
         },
       });
     });
 
-    it("should call MindSphere time series API, get the data, convert it and return - even if some data has not qc", async () => {
+    it("should call MindSphere time series API, get the data, convert it and return - even if some data has not qc - there is no next header", async () => {
       mockedReturnDataCollection = [
         [
           {
@@ -1156,14 +1159,14 @@ describe("MindSphereTimeSeriesService", () => {
           Accept: "application/json",
         },
         params: {
-          limit: limit,
           from: new Date(fromUnixDate).toISOString(),
           to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
         },
       });
     });
 
-    it("should call and return empty object - if timeseries data returned from MindSphere is an empty array", async () => {
+    it("should call and return empty object - if timeseries data returned from MindSphere is an empty array - there is no next header", async () => {
       mockedReturnDataCollection = [[]];
 
       let result = await exec();
@@ -1184,9 +1187,1290 @@ describe("MindSphereTimeSeriesService", () => {
           Accept: "application/json",
         },
         params: {
-          limit: limit,
           from: new Date(fromUnixDate).toISOString(),
           to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+    });
+
+    it("should reject - if api call rejects - there is no next header", async () => {
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+    });
+
+    it("should reject - if api call return code different than 2xx - there is no next header", async () => {
+      mockedReturnStatusCollection = [400];
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Server responded with status code: 400`,
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is next header, get the data, convert it and return", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link <myLinkNumber2> other part of link",
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+          1612105080000: { value: 1201, qc: 1 },
+          1612105140000: { value: 1202, qc: 1 },
+          1612105200000: { value: 1203, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+          1612105080000: { value: 2201, qc: 2 },
+          1612105140000: { value: 2202, qc: 2 },
+          1612105200000: { value: 2203, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+          1612105080000: { value: 3201, qc: 3 },
+          1612105140000: { value: 3202, qc: 3 },
+          1612105200000: { value: 3203, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber2`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is valid next header with <link> - lack of closing tag", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link <myLinkNumber2 other part of link",
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is valid next header with <link> - lack of opening tag", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link myLinkNumber2> other part of link",
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is valid next header with <link> - header is null", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: null,
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is valid next header with <link> - header is not a string", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: 1234,
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should call MindSphere time series API several times until there is valid next header with <link> - link in header is empty", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link <> other part of link",
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612101480000: { value: 1101, qc: 1 },
+          1612101540000: { value: 1102, qc: 1 },
+          1612101600000: { value: 1103, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612101480000: { value: 2101, qc: 2 },
+          1612101540000: { value: 2102, qc: 2 },
+          1612101600000: { value: 2103, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612101480000: { value: 3101, qc: 3 },
+          1612101540000: { value: 3102, qc: 3 },
+          1612101600000: { value: 3103, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should reject - if one of api call throws", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T13:58:00Z",
+            variable1: 1101,
+            variable1_qc: 1,
+            variable2: 2101,
+            variable2_qc: 2,
+            variable3: 3101,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:59:00Z",
+            variable1: 1102,
+            variable1_qc: 1,
+            variable2: 2102,
+            variable2_qc: 2,
+            variable3: 3102,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:00:00Z",
+            variable1: 1103,
+            variable1_qc: 1,
+            variable2: 2103,
+            variable2_qc: 2,
+            variable3: 3103,
+            variable3_qc: 3,
+          },
+        ],
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link <myLinkNumber2> other part of link",
+        },
+      ];
+
+      //Throwing during third call
+      mockedAxios.__setMockError(new Error("test api call error"), 2);
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called 3 times, and 3rd threw
+      expect(axios.request).toHaveBeenCalledTimes(3);
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber2`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should not reject but not take this call into account - if one of api calls return invalid data - null", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            _time: "2021-01-31T12:58:00Z",
+            variable1: 1001,
+            variable1_qc: 1,
+            variable2: 2001,
+            variable2_qc: 2,
+            variable3: 3001,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T12:59:00Z",
+            variable1: 1002,
+            variable1_qc: 1,
+            variable2: 2002,
+            variable2_qc: 2,
+            variable3: 3002,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T13:00:00Z",
+            variable1: 1003,
+            variable1_qc: 1,
+            variable2: 2003,
+            variable2_qc: 2,
+            variable3: 3003,
+            variable3_qc: 3,
+          },
+        ],
+        null,
+        [
+          {
+            _time: "2021-01-31T14:58:00Z",
+            variable1: 1201,
+            variable1_qc: 1,
+            variable2: 2201,
+            variable2_qc: 2,
+            variable3: 3201,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T14:59:00Z",
+            variable1: 1202,
+            variable1_qc: 1,
+            variable2: 2202,
+            variable2_qc: 2,
+            variable3: 3202,
+            variable3_qc: 3,
+          },
+          {
+            _time: "2021-01-31T15:00:00Z",
+            variable1: 1203,
+            variable1_qc: 1,
+            variable2: 2203,
+            variable2_qc: 2,
+            variable3: 3203,
+            variable3_qc: 3,
+          },
+        ],
+      ];
+
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [
+        {
+          link: "first part of link <myLinkNumber1> other part of link",
+        },
+        {
+          link: "first part of link <myLinkNumber2> other part of link",
+        },
+      ];
+
+      let result = await exec();
+
+      //Checking result
+      let expectedResult: TimeSeriesData = {
+        variable1: {
+          1612097880000: { value: 1001, qc: 1 },
+          1612097940000: { value: 1002, qc: 1 },
+          1612098000000: { value: 1003, qc: 1 },
+          1612105080000: { value: 1201, qc: 1 },
+          1612105140000: { value: 1202, qc: 1 },
+          1612105200000: { value: 1203, qc: 1 },
+        },
+        variable2: {
+          1612097880000: { value: 2001, qc: 2 },
+          1612097940000: { value: 2002, qc: 2 },
+          1612098000000: { value: 2003, qc: 2 },
+          1612105080000: { value: 2201, qc: 2 },
+          1612105140000: { value: 2202, qc: 2 },
+          1612105200000: { value: 2203, qc: 2 },
+        },
+        variable3: {
+          1612097880000: { value: 3001, qc: 3 },
+          1612097940000: { value: 3002, qc: 3 },
+          1612098000000: { value: 3003, qc: 3 },
+          1612105080000: { value: 3201, qc: 3 },
+          1612105140000: { value: 3202, qc: 3 },
+          1612105200000: { value: 3203, qc: 3 },
+        },
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //Axios request should have been called several times - getting all data until next header disappear
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
+      });
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber1`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "GET",
+        url: `myLinkNumber2`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
       });
     });
@@ -1293,9 +2577,9 @@ describe("MindSphereTimeSeriesService", () => {
           Accept: "application/json",
         },
         params: {
-          limit: limit,
           from: new Date(fromUnixDate).toISOString(),
           to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
         },
       });
     });
@@ -1406,34 +2690,35 @@ describe("MindSphereTimeSeriesService", () => {
           Accept: "application/json",
         },
         params: {
-          limit: limit,
           from: new Date(fromUnixDate).toISOString(),
           to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
         },
       });
     });
 
-    it("should reject - if return data is null", async () => {
+    it("should not reject and return empty object - if returned data is null", async () => {
       mockedReturnDataCollection = [null];
 
-      await expect(exec()).rejects.toMatchObject({
-        message: "Invalid reponse data - should be na array",
-      });
-    });
+      let result = await exec();
 
-    it("should reject - if api call rejects", async () => {
-      mockedAxios.__setMockError(new Error("test api call error"));
+      expect(result).toEqual({});
 
-      await expect(exec()).rejects.toMatchObject({
-        message: "test api call error",
-      });
-    });
-
-    it("should reject - if api call return code different than 2xx", async () => {
-      mockedReturnStatusCollection = [400];
-
-      await expect(exec()).rejects.toMatchObject({
-        message: `Server responded with status code: 400`,
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/${assetId}/${aspectName}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          from: new Date(fromUnixDate).toISOString(),
+          to: new Date(toUnixDate).toISOString(),
+          limit: 2000,
+        },
       });
     });
 
@@ -1456,6 +2741,7 @@ describe("MindSphereTimeSeriesService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereTimeSeriesService: MindSphereTimeSeriesService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -1490,6 +2776,7 @@ describe("MindSphereTimeSeriesService", () => {
         },
       };
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -1510,7 +2797,8 @@ describe("MindSphereTimeSeriesService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -1853,6 +3141,7 @@ describe("MindSphereTimeSeriesService", () => {
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
     let mindSphereTimeSeriesService: MindSphereTimeSeriesService;
     let mockedAuthToken: string | null;
     let mockedAuthTokenElapsedTime: number | null;
@@ -1870,6 +3159,7 @@ describe("MindSphereTimeSeriesService", () => {
       //"2021-02-01T13:00:00.000Z" - 1612184400000
       mockedReturnDataCollection = [{}];
       mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -1892,7 +3182,8 @@ describe("MindSphereTimeSeriesService", () => {
       //Mocking axios
       mockedAxios.__setMockResponseDataCollection(
         mockedReturnDataCollection,
-        mockedReturnStatusCollection
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
       );
 
       MockDate.set(mockedNow);
@@ -1945,6 +3236,7 @@ describe("MindSphereTimeSeriesService", () => {
       ];
 
       mockedReturnStatusCollection = [200, 200];
+      mockedReturnHeadersCollection = [{}, {}];
 
       let result = await exec();
 

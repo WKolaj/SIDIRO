@@ -1,4 +1,7 @@
-import { MindSphereService } from "./MindSphereService";
+import {
+  MindSphereService,
+  MindSpherePaginatedResponse,
+} from "./MindSphereService";
 
 const mindSphereFileSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/eventmanagement/v3/events`;
 
@@ -16,9 +19,18 @@ export type MindSphereStandardEvent = {
   correlationId?: string;
 };
 
+/**
+ * @description Class representing event service of MindSphere
+ */
 export class MindSphereEventService extends MindSphereService {
+  /**
+   * @description Main instance of Singleton
+   */
   private static _instance: MindSphereEventService | null = null;
 
+  /**
+   * @description Method for getting (or creating if not exists) main instance of Singleton
+   */
   public static getInstance(): MindSphereEventService {
     if (MindSphereEventService._instance == null) {
       MindSphereEventService._instance = new MindSphereEventService(
@@ -29,14 +41,29 @@ export class MindSphereEventService extends MindSphereService {
     return MindSphereEventService._instance;
   }
 
+  /**
+   * @description Class representing event service of MindSphere
+   * @param url url of event service
+   */
   private constructor(url: string) {
     super(url);
   }
 
+  /**
+   * @description Methof for getting URL of event (to get single event details)
+   * @param eventId id of the event
+   */
   private _getEventUrl(eventId: string) {
     return encodeURI(`${this._url}/${eventId}`);
   }
 
+  /**
+   * @description Method for getting filter to retrieve events
+   * @param assetId ID of asset that stores the event
+   * @param from Unix Date of the begin of search interval
+   * @param to  Unix Date of the end of search interval
+   * @param source ID of asset associated with event. OPTIONAL - null if events should not be filtered by this field
+   */
   private _getEventFilter(
     assetId: string,
     from: number,
@@ -66,6 +93,10 @@ export class MindSphereEventService extends MindSphereService {
     };
   }
 
+  /**
+   * @description Method for getting event (its details) based on id
+   * @param eventId id of the event to get
+   */
   public async getEvent(eventId: string): Promise<MindSphereStandardEvent> {
     //MindSphere Event API cannot accept Application/JSON, plain text or */*
     let result = await this._callAPI(
@@ -81,14 +112,20 @@ export class MindSphereEventService extends MindSphereService {
     return result.data;
   }
 
+  /**
+   * @description Method for getting all events that suits filter criteria - method automatically gets total number of events even if there is paggination in MindSphere
+   * @param assetId Id of asset that stores the event
+   * @param from Unix Date of the begin of search interval
+   * @param to Unix Date of the end of search interval
+   * @param source ID of asset associated with event. OPTIONAL - null if events should not be filtered by this field
+   */
   public async getEvents(
     assetId: string,
     from: number,
     to: number,
     source: string | null = null
   ): Promise<MindSphereStandardEvent[]> {
-    //MindSphere Event API cannot accept Application/JSON, plain text or */*
-    let result = await this._callAPI(
+    let results = await this._callPaginatedAPI(
       "GET",
       this._url,
       this._getEventFilter(assetId, from, to, source),
@@ -98,13 +135,25 @@ export class MindSphereEventService extends MindSphereService {
       }
     );
 
-    if (result?.data?._embedded?.events) {
-      return result?.data?._embedded?.events;
-    } else {
-      return [];
+    let eventsToReturn: MindSphereStandardEvent[] = [];
+
+    for (let result of results) {
+      if (
+        result != null &&
+        result._embedded != null &&
+        result._embedded.events != null
+      ) {
+        eventsToReturn.push(...result._embedded.events);
+      }
     }
+
+    return eventsToReturn;
   }
 
+  /**
+   * @description Method for posting event to MindSphere
+   * @param event Payload of event to send
+   */
   public async postEvent(event: MindSphereStandardEvent) {
     if (event.typeId == null)
       event = {
@@ -125,5 +174,4 @@ export class MindSphereEventService extends MindSphereService {
   }
 }
 
-//TODO - add comments to this class
 //TODO - add tests for this class

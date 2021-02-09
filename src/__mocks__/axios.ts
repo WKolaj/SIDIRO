@@ -7,14 +7,17 @@ let mockResponseStatus: number = 200;
 let mockResponseCollection: any[] = [];
 let mockResponseCollectionIndex: number = 0;
 let mockResponseCollectionStatus: number[] = [];
+let mockResponseCollectionHeaders: any[] = [];
+let throwErrorIndex: number = -1;
 
 export default {
   __setMockDelay: function(value: number) {
     mockDelay = value;
   },
 
-  __setMockError: function(error: any) {
+  __setMockError: function(error: any, throwIndex: number = -1) {
     mockError = error;
+    throwErrorIndex = throwIndex;
   },
 
   __setMockResponseData: function(responseData: any) {
@@ -23,10 +26,12 @@ export default {
 
   __setMockResponseDataCollection: function(
     responseCollection: any[],
-    responseCollectionStatus: number[]
+    responseCollectionStatus: number[],
+    responseCollectionHeaders: any[]
   ) {
     mockResponseCollection = responseCollection;
     mockResponseCollectionStatus = responseCollectionStatus;
+    mockResponseCollectionHeaders = responseCollectionHeaders;
     mockResponseCollectionIndex = 0;
   },
 
@@ -36,6 +41,7 @@ export default {
     mockResponseCollection = [];
     mockResponseCollectionIndex = 0;
     mockResponseCollectionStatus = [];
+    mockResponseCollectionHeaders = [];
     mockError = null;
   },
 
@@ -47,11 +53,21 @@ export default {
     return new Promise(async (resolve, reject) => {
       if (mockDelay) await snooze(mockDelay);
 
-      if (mockError) return reject(mockError);
+      if (mockError && throwErrorIndex < 0) return reject(mockError);
+
+      if (
+        mockError &&
+        throwErrorIndex >= 0 &&
+        mockResponseCollectionIndex >= throwErrorIndex
+      ) {
+        return reject(mockError);
+      }
 
       if (mockResponseCollection.length > 0) {
         let data = mockResponseCollection[mockResponseCollectionIndex];
         let status = mockResponseCollectionStatus[mockResponseCollectionIndex];
+        let headers =
+          mockResponseCollectionHeaders[mockResponseCollectionIndex];
         mockResponseCollectionIndex++;
 
         if (status < 200 || status >= 300)
@@ -62,6 +78,7 @@ export default {
         return resolve({
           status: status,
           data: data,
+          headers: headers,
         });
       }
 
