@@ -7,7 +7,7 @@ const mindSphereFileSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/eventm
 
 export type MindSphereStandardEvent = {
   id?: string;
-  etag?: 0;
+  etag?: number;
   typeId?: string;
   timestamp: string;
   entityId: string;

@@ -73,6 +73,7 @@ export abstract class MindSphereService {
    */
   private _nextResponseAvailable(currentResponse: MindSpherePaginatedResponse) {
     if (
+      currentResponse == null ||
       currentResponse.page == null ||
       currentResponse.page.totalPages == null ||
       currentResponse.page.number == null
@@ -120,8 +121,7 @@ export abstract class MindSphereService {
 
       currentResponse = result.data;
 
-      if (currentResponse == null) throw new Error("Invalid response data!");
-      responsesToReturn.push(currentResponse);
+      if (currentResponse != null) responsesToReturn.push(currentResponse);
     }
 
     return responsesToReturn;
