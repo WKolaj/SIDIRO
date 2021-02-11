@@ -54,11 +54,9 @@ export const checkIfDirectoryExistsAsync = async function(
 };
 
 export const createDirIfNotExists = async function(directoryPath: string) {
-  const dirExists = await module.exports.checkIfDirectoryExistsAsync(
-    directoryPath
-  );
+  const dirExists = await checkIfDirectoryExistsAsync(directoryPath);
 
-  if (!dirExists) await module.exports.createDirAsync(directoryPath);
+  if (!dirExists) await createDirAsync(directoryPath);
 };
 
 export const checkIfFileExistsAsync = async function(
@@ -84,6 +82,33 @@ export const removeFileIfExistsAsync = async function(filePath: string) {
 };
 
 /**
+ * @description Method for deleting file
+ * @param {string} file file or directory to delete
+ */
+export const removeFileOrDirectoryAsync = async function(
+  filePath: string
+): Promise<void> {
+  return new Promise(function(resolve, reject) {
+    fs.lstat(filePath, async function(err, stats) {
+      if (err) {
+        return reject(err);
+      }
+      if (stats.isDirectory()) {
+        await rmdirAsync(filePath);
+        resolve();
+      } else {
+        fs.unlink(filePath, function(err) {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
+      }
+    });
+  });
+};
+
+/**
  * @description Method for clearing whole directory
  * @param {string} directory directory to clear
  */
@@ -102,7 +127,7 @@ export const clearDirectoryAsync = async function(
         Promise.all(
           files.map(function(file) {
             var filePath = path.join(directory, file);
-            return module.exports.removeFileOrDirectoryAsync(filePath);
+            return removeFileOrDirectoryAsync(filePath);
           })
         )
           .then(function() {

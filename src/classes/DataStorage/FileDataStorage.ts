@@ -1,4 +1,4 @@
-import { CashedDataStorage } from "./CashedDataStorage";
+import { CachedDataStorage } from "./CachedDataStorage";
 import path from "path";
 import {
   checkIfFileExistsAsync,
@@ -6,7 +6,7 @@ import {
   writeFileAsync,
 } from "../../utilities/utilities";
 
-export class FileDataStorage<T> extends CashedDataStorage<T> {
+export class FileDataStorage<T> extends CachedDataStorage<T> {
   private _dirPath: string;
 
   get DirPath(): string {

@@ -1,7 +1,7 @@
 import { MindSphereFileService } from "../MindSphereService/MindSphereFileService";
-import { CashedDataStorage } from "./CashedDataStorage";
+import { CachedDataStorage } from "./CachedDataStorage";
 
-export class MindSphereDataStorage<T> extends CashedDataStorage<T> {
+export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
   private _fileService: MindSphereFileService = MindSphereFileService.getInstance();
 
   private _assetId: string;
