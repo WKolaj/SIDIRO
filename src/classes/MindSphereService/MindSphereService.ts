@@ -35,7 +35,14 @@ export type MindSpherePaginatedResponse = {
  * @description Abstract class representing MindSphere Service - already fetches calls with Bearer Token
  */
 export abstract class MindSphereService {
+  /**
+   * @description Main url of the service
+   */
   protected _url: string;
+
+  /**
+   * @description Token manager object for fetching calls with key
+   */
   protected _tokenManager: MindSphereTokenManager;
 
   /**
@@ -131,7 +138,7 @@ export abstract class MindSphereService {
    * @description Method for checking if link header is a valid link header value (includes url of next linked request inside <>)
    * @param link header value to check
    */
-  protected _isLinkFromHeaderValid(link: string): boolean {
+  private _isLinkFromHeaderValid(link: string): boolean {
     if (!link.includes("<") || !link.includes(">")) return false;
     return true;
   }
@@ -140,7 +147,7 @@ export abstract class MindSphereService {
    * @description Method for getting link to next Linked call from the header. Returns null if link cannot be retrieved - last call of the Linked call
    * @param response Current Axios response
    */
-  protected _getLinkFromHeader(response: AxiosResponse<any>): string | null {
+  private _getLinkFromHeader(response: AxiosResponse<any>): string | null {
     if (
       response == null ||
       response.headers == null ||
