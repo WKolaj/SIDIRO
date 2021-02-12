@@ -155,4 +155,40 @@ export class MindSphereFileService extends MindSphereService {
   public async deleteFile(assetId: string, fileName: string) {
     await this._callAPI("DELETE", this._getFileServiceUrl(assetId, fileName));
   }
+
+  /**
+   * @description Method for getting all files from given asset
+   * @param assetId id of asset where files are stored
+   * @param extension file extension - optional
+   */
+  public async getAllFileNamesFromAsset(
+    assetId: string,
+    extension: string | null = null
+  ): Promise<string[]> {
+    //TODO - test this method
+
+    //Getting result and returning it if it is valid
+    let result: { data: MindSphereTimeFileData[] } = await this._callAPI(
+      "GET",
+      this._getFileToCheckUrl(assetId)
+    );
+
+    if (result.data == null || !Array.isArray(result.data)) return [];
+
+    let fileNames = result.data
+      .filter((fileData) => fileData != null && fileData.name != null)
+      .map((fileData) => fileData.name);
+
+    let fileNamesToReturn = fileNames;
+
+    let extensionWithDot = `.${extension}`;
+
+    //Filtering extensions manually - filtering it via MindSphere takes too much time
+    if (extension != null)
+      fileNamesToReturn = fileNames.filter((fileName) =>
+        fileName.includes(extensionWithDot)
+      );
+
+    return fileNamesToReturn;
+  }
 }

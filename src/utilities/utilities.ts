@@ -27,6 +27,14 @@ export const getStringBetweenCharacters = function(
   );
 };
 
+/**
+ * @description Method for removing duplicates from array
+ * @param array
+ */
+export const removeDuplicatesFromArray = function<T>(array: T[]): T[] {
+  return [...new Set(array)];
+};
+
 //#region ========== IO METHODS =========
 
 //Creating promise from non promise functions

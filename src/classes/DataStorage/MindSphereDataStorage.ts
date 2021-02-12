@@ -19,6 +19,10 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
     return `${id}.json`;
   }
 
+  private _getIdBasedOnFileName(fileName: string): string {
+    return fileName.replace(".json", "");
+  }
+
   protected async _dataExistsInStorage(id: string): Promise<boolean> {
     let filePath = this._getFilePathBasedOnId(id);
     let fileETag = await this._fileService.checkIfFileExists(
@@ -37,5 +41,12 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
   protected async _setDataInStorage(id: string, data: T): Promise<void> {
     let filePath = this._getFilePathBasedOnId(id);
     await this._fileService.setFileContent(this.AssetId, filePath, data);
+  }
+
+  protected async _getAllIdsFromStorage(): Promise<string[]> {
+    //TODO - test this method
+    return (
+      await this._fileService.getAllFileNamesFromAsset(this.AssetId, "json")
+    ).map((fileName) => this._getIdBasedOnFileName(fileName));
   }
 }

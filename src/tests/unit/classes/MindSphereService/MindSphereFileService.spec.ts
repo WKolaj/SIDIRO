@@ -1377,4 +1377,441 @@ describe("MindSphereFileService", () => {
       expect(axios.request).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("getAllFileNamesFromAsset", () => {
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereFileService: MindSphereFileService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let assetId: string;
+    let fileExtension: string | null | undefined;
+
+    beforeEach(() => {
+      //"2021-01-31T12:58:00.000Z" - 1612097880000
+      //"2021-01-31T12:59:00.000Z" - 1612097940000
+      //"2021-01-31T13:00:00.000Z" - 1612098000000
+      //"2021-01-31T13:01:00.000Z" - 1612098060000
+      //"2021-02-01T13:00:00.000Z" - 1612184400000
+      mockedReturnDataCollection = [
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+      ];
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+
+      assetId = "testAssetId";
+      fileExtension = "testExtension";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of time series service
+      mindSphereFileService = MindSphereFileService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereFileService.getAllFileNamesFromAsset(
+        assetId,
+        fileExtension
+      );
+    };
+
+    it("should call search file API and return all files with given extension", async () => {
+      let result = await exec();
+
+      expect(result).toEqual([
+        "testFileName2.testExtension",
+        "testFileName3.testExtension",
+        "testFileName4.testExtension",
+      ]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should not filter files - if extension is set to undefined", async () => {
+      fileExtension = undefined;
+
+      let result = await exec();
+
+      expect(result).toEqual([
+        "testFileName1.json",
+        "testFileName2.testExtension",
+        "testFileName3.testExtension",
+        "testFileName4.testExtension",
+        "testFileName5.json",
+      ]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should not filter files - if extension is set to null", async () => {
+      fileExtension = null;
+
+      let result = await exec();
+
+      expect(result).toEqual([
+        "testFileName1.json",
+        "testFileName2.testExtension",
+        "testFileName3.testExtension",
+        "testFileName4.testExtension",
+        "testFileName5.json",
+      ]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should return empty array - if response is null", async () => {
+      mockedReturnDataCollection = [null];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should return empty array - if response is not an array", async () => {
+      mockedReturnDataCollection = ["fakeResponse"];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should return empty array - if there are no files with given extension", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.json",
+          },
+          {
+            name: "testFileName3.json",
+          },
+          {
+            name: "testFileName4.json",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should return empty array - if api call returns no file", async () => {
+      mockedReturnDataCollection = [[]];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should not include empty responses and responses without name", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            name: "testFileName1.json",
+          },
+          null,
+          {},
+          {
+            name: null,
+          },
+          {
+            name: "testFileName5.testExtension",
+          },
+        ],
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(["testFileName5.testExtension"]);
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should throw if api call throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and than get file and return its eTag", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, 200];
+
+      let result = await exec();
+
+      expect(result).toEqual([
+        "testFileName2.testExtension",
+        "testFileName3.testExtension",
+        "testFileName4.testExtension",
+      ]);
+
+      //CHECKING REQUESTS
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and than get file and return its eTag", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, 200];
+
+      let result = await exec();
+
+      expect(result).toEqual([
+        "testFileName2.testExtension",
+        "testFileName3.testExtension",
+        "testFileName4.testExtension",
+      ]);
+
+      //CHECKING REQUESTS
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      //Axios request should have been called only once - token had been fetched before
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
 });
