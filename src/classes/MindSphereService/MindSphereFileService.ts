@@ -165,8 +165,6 @@ export class MindSphereFileService extends MindSphereService {
     assetId: string,
     extension: string | null = null
   ): Promise<string[]> {
-    //TODO - test this method
-
     //Getting result and returning it if it is valid
     let result: { data: MindSphereTimeFileData[] } = await this._callAPI(
       "GET",

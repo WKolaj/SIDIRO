@@ -1,6 +1,5 @@
 import { DataStorage } from "./DataStorage";
-import { removeDuplicatesFromArray } from "../../utilities/utilities";
-import { Dictionary } from "lodash";
+import { removeDuplicatesFromArray, snooze } from "../../utilities/utilities";
 
 type DataDictionary<T> = {
   [key: string]: T;
@@ -41,7 +40,6 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
    * @description Method for fetching all data from MindSphere File Service. NOTICE! All data in cache that do not exist in File Service are deleted
    */
   public async fetchAllData(): Promise<void> {
-    //TODO - test this method
     //Clearing cache
     this._clearAllDataInCache();
 
@@ -53,7 +51,6 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
   }
 
   public async fetchData(id: string): Promise<void> {
-    //TODO - test this method
     let dataToSet = null;
 
     //Checking if file exists in storage and getting its data if file exists
@@ -89,7 +86,6 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
   }
 
   public async getAllIds(): Promise<string[]> {
-    //TODO - test this method
     let idsFromCache = this._getAllIdsFromCache();
     let idsFromStorage = await this._getAllIdsFromStorage();
     return removeDuplicatesFromArray([...idsFromCache, ...idsFromStorage]);
@@ -109,7 +105,7 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
     await Promise.all(absentIdsFromStorage.map((id) => this.fetchData(id)));
 
     //Returning copy of all data
-    return { ...this._cacheData };
+    return this._getAllDataFromCache();
   }
 
   public async init(): Promise<void> {
