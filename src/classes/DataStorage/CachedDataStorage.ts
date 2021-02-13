@@ -17,22 +17,18 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
   }
 
   protected _clearDataInCache(id: string): void {
-    //TODO draw this method in class diagram
     if (this._cacheData[id] != null) delete this._cacheData[id];
   }
 
   protected _clearAllDataInCache(): void {
-    //TODO draw this method in class diagram
     this._cacheData = {};
   }
 
   protected _getAllIdsFromCache(): string[] {
-    //TODO - test this method
     return Object.keys(this._cacheData);
   }
 
   protected _getAllDataFromCache(): { [key: string]: T } {
-    //TODO - test this method
     return { ...this._cacheData };
   }
 
@@ -92,7 +88,6 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
   }
 
   public async getAllData(): Promise<{ [key: string]: T }> {
-    //TODO - test this method
     let allIdsFromStorage = await this._getAllIdsFromStorage();
     let allIdsFromCache = await this._getAllIdsFromCache();
 

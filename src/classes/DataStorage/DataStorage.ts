@@ -8,5 +8,3 @@ export abstract class DataStorage<T> {
   public abstract getAllIds(): Promise<string[]>;
   public abstract init(): Promise<void>;
 }
-
-//TODO - add getAllIds and getAllData in child classes

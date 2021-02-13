@@ -173,5 +173,3 @@ export class MindSphereEventService extends MindSphereService {
     );
   }
 }
-
-//TODO - add tests for this class

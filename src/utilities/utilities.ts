@@ -35,6 +35,19 @@ export const removeDuplicatesFromArray = function<T>(array: T[]): T[] {
   return [...new Set(array)];
 };
 
+/**
+ * @description Method for checking wether string is a valid JSON
+ * @param str String to check
+ */
+export const isStringAValidJSON = function(str: string) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+};
+
 //#region ========== IO METHODS =========
 
 //Creating promise from non promise functions
