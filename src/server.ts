@@ -4,9 +4,32 @@ import { FileDataStorage } from "./classes/DataStorage/FileDataStorage";
 import { MindSphereDataStorage } from "./classes/DataStorage/MindSphereDataStorage";
 import { MindSphereEventService } from "./classes/MindSphereService/MindSphereEventService";
 import { MindSphereTokenManager } from "./classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
-import { MindSphereAssetSerivce } from "./classes/MindSphereService/MindSphereAssetService";
+import {
+  MindSphereAsset,
+  MindSphereAssetSerivce,
+} from "./classes/MindSphereService/MindSphereAssetService";
 
 let exec = async () => {
+  let assetService = MindSphereAssetSerivce.getInstance();
+
+  let asset: MindSphereAsset = {
+    name: "fakeAssetUpdated",
+    parentId: "a2d64d87a94a41609db73f5fe50c4ae8",
+    typeId: "core.basicarea",
+  };
+
+  // //let result = await assetService.createAsset(asset);
+  // let result = await assetService.getAsset("052aa269f32642aaa4511133cf4a9e14");
+
+  // result.name = "updateAsset";
+
+  let result2 = await assetService.updateAsset(
+    "052aa269f32642aaa4511133cf4a9e14",
+    asset
+  );
+
+  console.log(result2);
+
   // let allNames = await MindSphereFileService.getInstance().getAllFileNamesOfAsset(
   //   "901af6c8a39f45d78c21e014136b11c9",
   //   "json"
@@ -23,11 +46,6 @@ let exec = async () => {
   //   "a5eebd59cd1348c5b38f8d74ab432780",
   //   "json"
   // );
-
-  let data = await MindSphereAssetSerivce.getInstance().getAsset(
-    "a5eebd59cd1348c5b38f8d74ab432780"
-  );
-  console.log(data);
 
   // await storage.setData("myUser", {
   //   field1: "123",
