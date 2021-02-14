@@ -286,3 +286,4 @@ export class MindSphereAssetService extends MindSphereService {
 }
 
 //TODO - add test this service
+//TODO - add this service to class diagram

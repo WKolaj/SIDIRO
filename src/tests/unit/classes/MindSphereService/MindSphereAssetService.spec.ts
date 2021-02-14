@@ -3167,4 +3167,1385 @@ describe("MindSphereAssetService", () => {
       expect(axios.request).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("getAsset", () => {
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereAssetService: MindSphereAssetService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let assetId: string;
+
+    beforeEach(() => {
+      mockedReturnDataCollection = [
+        { name: "fakeAsset1", etag: 1 },
+        { name: "fakeAsset2", etag: 2 },
+        { name: "fakeAsset3", etag: 3 },
+      ];
+      mockedReturnStatusCollection = [200, 200, 200];
+      mockedReturnHeadersCollection = [{}, {}, {}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      assetId = "testAsset";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereAssetService = MindSphereAssetService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereAssetService.getAsset(assetId);
+    };
+
+    it("should properly call MindSphere Get Asset API and return the asset", async () => {
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      //Call only once - despite there are more pages
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+      });
+    });
+
+    it("should throw if api call throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Call only once - despite there are more pages
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and than get and return the event", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      //Axios request should have been called two times - fetching token and calling api
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and than get and return the event", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      //Axios request should have been called two times - fetching token and calling api
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("createAsset", () => {
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereAssetService: MindSphereAssetService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let assetsPayload: any;
+
+    beforeEach(() => {
+      mockedReturnDataCollection = [
+        { name: "fakeAsset1", etag: 1 },
+        { name: "fakeAsset2", etag: 2 },
+        { name: "fakeAsset3", etag: 3 },
+      ];
+      mockedReturnStatusCollection = [200, 200, 200];
+      mockedReturnHeadersCollection = [{}, {}, {}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      assetsPayload = { abcd: 1234, efgh: 5678, ijkl: 9012 };
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereAssetService = MindSphereAssetService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereAssetService.createAsset(assetsPayload);
+    };
+
+    it("should properly call MindSphere Post Asset API and return result of API call", async () => {
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        data: assetsPayload,
+      });
+    });
+
+    it("should throw if api call throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        data: assetsPayload,
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and than get and return the event", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      //Axios request should have been called two times - fetching token and calling api
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        data: assetsPayload,
+      });
+    });
+
+    it("should fetch token first - if token has expired and than get and return the event", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 1 });
+
+      //Axios request should have been called two times - fetching token and calling api
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        data: assetsPayload,
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("updateAsset", () => {
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereAssetService: MindSphereAssetService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let assetId: any;
+    let assetPayload: any;
+
+    beforeEach(() => {
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1", etag: 123 },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+      mockedReturnStatusCollection = [200, 200];
+      mockedReturnHeadersCollection = [{}, {}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      assetId = "testAssetId";
+      assetPayload = {
+        name: "fakeAsset4",
+      };
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereAssetService = MindSphereAssetService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereAssetService.updateAsset(assetId, assetPayload);
+    };
+
+    it("should check if asset exists with MindSphere GET Assets Call and then update asset with MindSphere Put Asset API call - if asset exists", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1", etag: 123 },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 4 });
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "PUT",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+        data: assetPayload,
+      });
+    });
+
+    it("should check if asset exists with MindSphere GET Assets Call and not update asset with MindSphere Put Asset API call and return null - if asset does not exist - empty array returned in GetAssets", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should check if asset exists with MindSphere GET Assets Call and not update asset with MindSphere Put Asset API call and return null - if asset does not exist - lack of etag in first asset returned by GetAssets", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1" },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should throw if api call GetAssets throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should throw if api call Put Asset throws an error", async () => {
+      mockedAxios.__setMockError("testError", 1);
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "PUT",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+        data: assetPayload,
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and than get and return the event", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 4 });
+
+      //Axios request should have been called three times - fetching token and calling api GET Assets, calling API PUT Asset
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "PUT",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+        data: assetPayload,
+      });
+    });
+
+    it("should fetch token first - if token has expired and than get and return the event", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual({ name: "fakeAsset1", etag: 4 });
+
+      //Axios request should have been called three times - fetching token and calling api GET Assets, calling API PUT Asset
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "PUT",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+        data: assetPayload,
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("deleteAsset", () => {
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereAssetService: MindSphereAssetService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let assetId: any;
+    let assetPayload: any;
+
+    beforeEach(() => {
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1", etag: 123 },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+      mockedReturnStatusCollection = [200, 200];
+      mockedReturnHeadersCollection = [{}, {}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      assetId = "testAssetId";
+      assetPayload = {
+        name: "fakeAsset4",
+      };
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereAssetService = MindSphereAssetService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereAssetService.deleteAsset(assetId);
+    };
+
+    it("should check if asset exists with MindSphere GET Assets Call and then delete asset with MindSphere DELETE Asset API call - if asset exists", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1", etag: 123 },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      //eTag should be returned if delete was successfull
+      expect(result).toEqual(123);
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+      });
+    });
+
+    it("should check if asset exists with MindSphere GET Assets Call and not delete asset with MindSphere DELETE Asset API call - if asset does not exist - empty array returned in GetAssets", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should check if asset exists with MindSphere GET Assets Call and not delete asset with MindSphere DELETE Asset API call - if asset does not exist - lack of etag in first asset returned by GetAssets", async () => {
+      //First call - check if asset exists,
+      //Returns valid etag in first asset
+      mockedReturnDataCollection = [
+        {
+          _embedded: {
+            assets: [
+              { name: "fakeAsset1" },
+              { name: "fakeAsset2", etag: 2 },
+              { name: "fakeAsset3", etag: 3 },
+            ],
+          },
+          _links: {
+            first: {
+              href: "firstLink1",
+            },
+            self: {
+              href: "selfLink1",
+            },
+            next: {
+              href: "nextLink1",
+            },
+            last: {
+              href: "lastLink1",
+            },
+          },
+          page: {
+            size: 3,
+            totalElements: 9,
+            totalPages: 3,
+            number: 0,
+          },
+        },
+        { name: "fakeAsset1", etag: 4 },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should throw if api call Get Assets call throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+    });
+
+    it("should throw if api call Delete Asset call throws an error", async () => {
+      mockedAxios.__setMockError("testError", 1);
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Call two times - first check if asset exists, than update it
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and than get and return the event", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      //etag number should be returned in case valid deletion
+      expect(result).toEqual(123);
+
+      //Axios request should have been called three times - fetching token and calling api GET Assets, calling API PUT Asset
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and than get and return the event", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+
+      let result = await exec();
+
+      //etag number should be returned in case valid deletion
+      expect(result).toEqual(123);
+
+      //Axios request should have been called three times - fetching token and calling api GET Assets, calling API PUT Asset
+      expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+
+      //First call - fetch token
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testUserTenant",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        params: {
+          filter: {
+            assetId: assetId,
+          },
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[2][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/assetmanagement/v3/assets/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+          "If-Match": 123,
+        },
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
 });
