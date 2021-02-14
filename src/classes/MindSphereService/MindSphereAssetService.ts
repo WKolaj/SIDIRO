@@ -284,6 +284,3 @@ export class MindSphereAssetService extends MindSphereService {
     return eTagNumber;
   }
 }
-
-//TODO - add test this service
-//TODO - add this service to class diagram
