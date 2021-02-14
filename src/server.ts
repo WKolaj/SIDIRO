@@ -6,11 +6,11 @@ import { MindSphereEventService } from "./classes/MindSphereService/MindSphereEv
 import { MindSphereTokenManager } from "./classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
 import {
   MindSphereAsset,
-  MindSphereAssetSerivce,
+  MindSphereAssetService,
 } from "./classes/MindSphereService/MindSphereAssetService";
 
 let exec = async () => {
-  let assetService = MindSphereAssetSerivce.getInstance();
+  let assetService = MindSphereAssetService.getInstance();
 
   let asset: MindSphereAsset = {
     name: "fakeAssetUpdated",

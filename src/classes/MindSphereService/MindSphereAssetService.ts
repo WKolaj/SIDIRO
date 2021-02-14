@@ -64,23 +64,23 @@ export type MindSphereAsset = {
 /**
  * @description Class for representing MindSphere service for storing time-series data
  */
-export class MindSphereAssetSerivce extends MindSphereService {
+export class MindSphereAssetService extends MindSphereService {
   /**
    * @description Main instance of Singleton
    */
-  private static _instance: MindSphereAssetSerivce | null = null;
+  private static _instance: MindSphereAssetService | null = null;
 
   /**
    * @description Method for getting (or creating if not exists) main instance of Singleton
    */
-  public static getInstance(): MindSphereAssetSerivce {
-    if (MindSphereAssetSerivce._instance == null) {
-      MindSphereAssetSerivce._instance = new MindSphereAssetSerivce(
+  public static getInstance(): MindSphereAssetService {
+    if (MindSphereAssetService._instance == null) {
+      MindSphereAssetService._instance = new MindSphereAssetService(
         mindSphereAssetsApiUrl
       );
     }
 
-    return MindSphereAssetSerivce._instance;
+    return MindSphereAssetService._instance;
   }
 
   /**
