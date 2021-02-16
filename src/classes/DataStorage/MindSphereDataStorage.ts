@@ -5,22 +5,28 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
   private _fileService: MindSphereFileService = MindSphereFileService.getInstance();
 
   private _assetId: string;
+  private _extension: string;
 
   get AssetId(): string {
     return this._assetId;
   }
 
-  constructor(assetId: string) {
+  get Extension(): string {
+    return this._extension;
+  }
+
+  constructor(assetId: string, extension: string) {
     super();
     this._assetId = assetId;
+    this._extension = extension;
   }
 
   private _getFilePathBasedOnId(id: string): string {
-    return `${id}.json`;
+    return `${id}.${this.Extension}`;
   }
 
   private _getIdBasedOnFileName(fileName: string): string {
-    return fileName.replace(".json", "");
+    return fileName.replace(`.${this.Extension}`, "");
   }
 
   protected async _dataExistsInStorage(id: string): Promise<boolean> {
@@ -45,7 +51,10 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
 
   protected async _getAllIdsFromStorage(): Promise<string[]> {
     return (
-      await this._fileService.getAllFileNamesFromAsset(this.AssetId, "json")
+      await this._fileService.getAllFileNamesFromAsset(
+        this.AssetId,
+        this.Extension
+      )
     )
       .filter((fileName) => fileName != null)
       .map((fileName) => this._getIdBasedOnFileName(fileName));

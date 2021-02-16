@@ -24,11 +24,11 @@ describe("MindSphereDataStorage", () => {
     //Etag value
     mockedCheckFileResult = 123;
     mockedGetAllFilesResult = [
-      "testFile1.json",
-      "testFile2.json",
-      "testFile3.json",
-      "testFile4.json",
-      "testFile5.json",
+      "testFile1.testExtension",
+      "testFile2.testExtension",
+      "testFile3.testExtension",
+      "testFile4.testExtension",
+      "testFile5.testExtension",
     ];
 
     mindSphereFileServiceGetFileMockFunc = jest.fn(async () => {
@@ -56,20 +56,23 @@ describe("MindSphereDataStorage", () => {
 
   describe("constructor", () => {
     let AssetId: string;
+    let Extension: string;
 
     beforeEach(() => {
       AssetId = "testAssetId";
+      Extension = "testExtension";
     });
 
     let exec = () => {
-      return new MindSphereDataStorage(AssetId);
+      return new MindSphereDataStorage(AssetId, Extension);
     };
 
-    it("should create and return valid MindSphereDataStorage with valid AssetId", () => {
+    it("should create and return valid MindSphereDataStorage with valid AssetId and extension", () => {
       let result = exec();
 
       expect(result).toBeDefined();
       expect(result.AssetId).toEqual("testAssetId");
+      expect(result.Extension).toEqual("testExtension");
     });
 
     it("should get new instance of MindSphereFileService", () => {
@@ -85,17 +88,22 @@ describe("MindSphereDataStorage", () => {
   describe("dataExists", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let dataId: string;
     let cacheContent: any;
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       dataId = "testFile2";
       cacheContent = {};
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check behaviour based on cache content
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -111,7 +119,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile2.json"
+        "testFile2.testExtension"
       );
     });
 
@@ -164,17 +172,22 @@ describe("MindSphereDataStorage", () => {
   describe("getData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let dataId: string;
     let cacheContent: any;
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       dataId = "testFile2";
       cacheContent = {};
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -193,7 +206,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile2.json"
+        "testFile2.testExtension"
       );
 
       //Checking getFile call
@@ -202,7 +215,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile2.json"
+        "testFile2.testExtension"
       );
 
       //Checking result
@@ -228,7 +241,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile2.json"
+        "testFile2.testExtension"
       );
 
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -302,19 +315,24 @@ describe("MindSphereDataStorage", () => {
   describe("setData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let dataId: string;
     let dataToSet: any;
     let cacheContent: any;
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       dataId = "testFile4";
       dataToSet = { mno: "prs123" };
       cacheContent = {};
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check the behaviour with filled cache
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -332,7 +350,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile4.json"
+        "testFile4.testExtension"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual({
         mno: "prs123",
@@ -358,7 +376,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][1]).toEqual(
-        "testFile4.json"
+        "testFile4.testExtension"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual({
         mno: "prs123",
@@ -387,15 +405,20 @@ describe("MindSphereDataStorage", () => {
   describe("getAllIds", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let cacheContent: any;
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       cacheContent = {};
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -407,11 +430,11 @@ describe("MindSphereDataStorage", () => {
       cacheContent = {};
 
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       let result = await exec();
@@ -424,7 +447,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Checking result
       expect(result).toEqual([
@@ -454,7 +477,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Checking result
       expect(result).toEqual([]);
@@ -482,7 +505,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Checking result
       expect(result).toEqual(["testFile6", "testFile7", "testFile8"]);
@@ -503,11 +526,11 @@ describe("MindSphereDataStorage", () => {
       };
 
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       let result = await exec();
@@ -520,7 +543,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Checking result
       expect(result).toEqual([
@@ -552,11 +575,11 @@ describe("MindSphereDataStorage", () => {
       };
 
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       let result = await exec();
@@ -569,7 +592,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Checking result
       expect(result).toEqual([
@@ -610,17 +633,22 @@ describe("MindSphereDataStorage", () => {
   describe("fetchData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let cacheContent: any;
     let dataId: string;
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       cacheContent = {};
       dataId = "testDataId";
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -653,7 +681,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Get file should have been called
@@ -662,7 +690,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Checking cache content
@@ -705,7 +733,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Get file should have been called
@@ -714,7 +742,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Checking cache content
@@ -753,7 +781,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Getting file should not be called if there is no such file
@@ -786,7 +814,7 @@ describe("MindSphereDataStorage", () => {
         "testAssetId"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
-        "testDataId.json"
+        "testDataId.testExtension"
       );
 
       //Getting file should not be called if there is no such file
@@ -846,26 +874,28 @@ describe("MindSphereDataStorage", () => {
   describe("fetchAllData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let cacheContent: any;
     let mockGetFileDataToReturnCollection: { [key: string]: any };
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       cacheContent = {};
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
@@ -879,7 +909,10 @@ describe("MindSphereDataStorage", () => {
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -901,7 +934,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -935,11 +968,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -969,7 +1002,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1003,11 +1036,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1039,7 +1072,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1073,11 +1106,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1109,7 +1142,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -1122,11 +1155,11 @@ describe("MindSphereDataStorage", () => {
       cacheContent = {};
 
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
         null,
-        "testFile4.json",
-        "testFile5.json",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       await exec();
@@ -1140,7 +1173,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 4 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(4);
@@ -1170,10 +1203,10 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1188,11 +1221,11 @@ describe("MindSphereDataStorage", () => {
       cacheContent = {};
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": null,
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": null,
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       await exec();
@@ -1206,7 +1239,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1240,11 +1273,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1279,7 +1312,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -1310,7 +1343,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -1322,26 +1355,28 @@ describe("MindSphereDataStorage", () => {
   describe("init", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let cacheContent: any;
     let mockGetFileDataToReturnCollection: { [key: string]: any };
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       cacheContent = {};
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
@@ -1355,7 +1390,10 @@ describe("MindSphereDataStorage", () => {
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -1377,7 +1415,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1411,11 +1449,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1445,7 +1483,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1479,11 +1517,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1515,7 +1553,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1549,11 +1587,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1585,7 +1623,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -1598,11 +1636,11 @@ describe("MindSphereDataStorage", () => {
       cacheContent = {};
 
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
         null,
-        "testFile4.json",
-        "testFile5.json",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       await exec();
@@ -1616,7 +1654,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 4 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(4);
@@ -1646,10 +1684,10 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1664,11 +1702,11 @@ describe("MindSphereDataStorage", () => {
       cacheContent = {};
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": null,
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": null,
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       await exec();
@@ -1682,7 +1720,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 5 times
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -1716,11 +1754,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1755,7 +1793,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -1787,7 +1825,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should be called and throw
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalled();
@@ -1799,11 +1837,13 @@ describe("MindSphereDataStorage", () => {
   describe("getAllData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
     let assetId: string;
+    let extension: string;
     let cacheContent: any;
     let mockGetFileDataToReturnCollection: { [key: string]: any };
 
     beforeEach(() => {
       assetId = "testAssetId";
+      extension = "testExtension";
       cacheContent = {
         testFile3: { efgh: 9012 },
         testFile4: { ijkl: 3456 },
@@ -1812,19 +1852,19 @@ describe("MindSphereDataStorage", () => {
         testFile8: { yzab: 700 },
       };
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
@@ -1838,7 +1878,10 @@ describe("MindSphereDataStorage", () => {
     });
 
     let exec = async () => {
-      mindSphereDataStorage = new MindSphereDataStorage<any>(assetId);
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        assetId,
+        extension
+      );
 
       //Setting cache content for check if value is returned from cache or from file
       (mindSphereDataStorage as any)._cacheData = cacheContent;
@@ -1855,19 +1898,19 @@ describe("MindSphereDataStorage", () => {
         testFile8: { yzab: 700 },
       };
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       let result = await exec();
@@ -1893,7 +1936,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(3);
@@ -1920,9 +1963,9 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -1940,19 +1983,19 @@ describe("MindSphereDataStorage", () => {
     it("should returned all data only from storage and fetch all data from storage to cache - if cache is empty", async () => {
       cacheContent = {};
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       let result = await exec();
@@ -1975,7 +2018,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(5);
@@ -2010,11 +2053,11 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile3.json");
-      expect(arrayOfSecondArguments).toContain("testFile4.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile3.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile4.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -2056,7 +2099,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -2081,19 +2124,19 @@ describe("MindSphereDataStorage", () => {
         testFile8: { yzab: 700 },
       };
       mockedGetAllFilesResult = [
-        "testFile1.json",
+        "testFile1.testExtension",
         null,
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": { efgh: 5678 },
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": { efgh: 5678 },
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       let result = await exec();
@@ -2118,7 +2161,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1 and 5
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(2);
@@ -2141,8 +2184,8 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -2165,19 +2208,19 @@ describe("MindSphereDataStorage", () => {
         testFile8: { yzab: 700 },
       };
       mockedGetAllFilesResult = [
-        "testFile1.json",
-        "testFile2.json",
-        "testFile3.json",
-        "testFile4.json",
-        "testFile5.json",
+        "testFile1.testExtension",
+        "testFile2.testExtension",
+        "testFile3.testExtension",
+        "testFile4.testExtension",
+        "testFile5.testExtension",
       ];
 
       mockGetFileDataToReturnCollection = {
-        "testFile1.json": { abcd: 1234 },
-        "testFile2.json": null,
-        "testFile3.json": { ijkl: 9012 },
-        "testFile4.json": { mnop: 3456 },
-        "testFile5.json": { rstu: 7890 },
+        "testFile1.testExtension": { abcd: 1234 },
+        "testFile2.testExtension": null,
+        "testFile3.testExtension": { ijkl: 9012 },
+        "testFile4.testExtension": { mnop: 3456 },
+        "testFile5.testExtension": { rstu: 7890 },
       };
 
       let result = await exec();
@@ -2202,7 +2245,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(3);
@@ -2229,9 +2272,9 @@ describe("MindSphereDataStorage", () => {
         mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
         mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
       ];
-      expect(arrayOfSecondArguments).toContain("testFile1.json");
-      expect(arrayOfSecondArguments).toContain("testFile2.json");
-      expect(arrayOfSecondArguments).toContain("testFile5.json");
+      expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
+      expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
 
       //Checking cache content
       expect((mindSphereDataStorage as any)._cacheData).toEqual({
@@ -2272,7 +2315,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should not have been called
       expect(mindSphereFileServiceGetFileMockFunc).not.toHaveBeenCalled();
@@ -2315,7 +2358,7 @@ describe("MindSphereDataStorage", () => {
       ).toEqual("testAssetId");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
-      ).toEqual("json");
+      ).toEqual("testExtension");
 
       //Get file should have been called and throw
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalled();

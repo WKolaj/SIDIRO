@@ -10,26 +10,32 @@ import {
 
 export class FileDataStorage<T> extends CachedDataStorage<T> {
   private _dirPath: string;
+  private _extension: string;
 
   get DirPath(): string {
     return this._dirPath;
   }
 
-  constructor(dirPath: string) {
+  get Extension(): string {
+    return this._extension;
+  }
+
+  constructor(dirPath: string, extension: string) {
     super();
     this._dirPath = dirPath;
+    this._extension = extension;
   }
 
   private _getFilePathBasedOnId(id: string): string {
-    return path.join(this.DirPath, `${id}.json`);
+    return path.join(this.DirPath, `${id}.${this.Extension}`);
   }
 
   private _getIdBasedOnFileName(path: string): string {
-    return path.replace(".json", "");
+    return path.replace(`.${this.Extension}`, "");
   }
 
   private _isFilePathValid(path: string): boolean {
-    return path.includes(".json");
+    return path.includes(`.${this.Extension}`);
   }
 
   protected async _dataExistsInStorage(id: string): Promise<boolean> {

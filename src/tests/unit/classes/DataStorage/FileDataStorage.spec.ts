@@ -24,13 +24,15 @@ describe("FileDataStorage", () => {
 
   describe("constructor", () => {
     let dirPath: string;
+    let extension: string;
 
     beforeEach(() => {
       dirPath = testDirPath;
+      extension = "testExtension";
     });
 
     let exec = () => {
-      return new FileDataStorage(dirPath);
+      return new FileDataStorage(dirPath, extension);
     };
 
     it("should create and return valid FileDataStorage with valid dirPath", () => {
@@ -44,6 +46,7 @@ describe("FileDataStorage", () => {
   describe("dataExists", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let dataId: string;
     let file1Path: string;
     let file1Content: any;
@@ -58,14 +61,15 @@ describe("FileDataStorage", () => {
 
     beforeEach(() => {
       dirPath = testDirPath;
+      extension = "testExtension";
       dataId = "testFile2";
-      file1Path = `${testDirPath}/testFile1.json`;
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -78,7 +82,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check behaviour based on cache content
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -100,7 +104,7 @@ describe("FileDataStorage", () => {
       expect(result).toEqual(false);
     });
 
-    it("should return false if file of given id does exist but with different extension than JSON", async () => {
+    it("should return false if file of given id does exist but with different extension than given extension", async () => {
       dataId = "fakeName";
       await writeFileAsync(
         `${testDirPath}/fakeName.txt`,
@@ -137,6 +141,7 @@ describe("FileDataStorage", () => {
   describe("getData", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let dataId: string;
     let file1Path: string;
     let file1Content: any;
@@ -152,13 +157,14 @@ describe("FileDataStorage", () => {
     beforeEach(() => {
       dirPath = testDirPath;
       dataId = "testFile2";
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -171,7 +177,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -244,7 +250,7 @@ describe("FileDataStorage", () => {
       expect(result).toEqual(null);
     });
 
-    it("should return null if file of given id does exist but with different extension than JSON", async () => {
+    it("should return null if file of given id does exist but with different extension than testExtension", async () => {
       dataId = "fakeName";
       await writeFileAsync(
         `${testDirPath}/fakeName.txt`,
@@ -268,6 +274,7 @@ describe("FileDataStorage", () => {
 
   describe("setData", () => {
     let fileDataStorage: FileDataStorage<any>;
+    let extension: string;
     let dirPath: string;
     let dataId: string;
     let dataToSet: any;
@@ -285,13 +292,14 @@ describe("FileDataStorage", () => {
     beforeEach(() => {
       dirPath = testDirPath;
       dataId = "testFile4";
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       dataToSet = { mno: "prs123" };
@@ -305,7 +313,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -319,12 +327,12 @@ describe("FileDataStorage", () => {
       await exec();
 
       let fileExists = await checkIfFileExistsAsync(
-        `${testDirPath}/testFile4.json`
+        `${testDirPath}/testFile4.testExtension`
       );
       expect(fileExists).toEqual(true);
 
       let fileContent = await readFileAsync(
-        `${testDirPath}/testFile4.json`,
+        `${testDirPath}/testFile4.testExtension`,
         "utf8"
       );
 
@@ -346,12 +354,12 @@ describe("FileDataStorage", () => {
       await exec();
 
       let fileExists = await checkIfFileExistsAsync(
-        `${testDirPath}/testFile2.json`
+        `${testDirPath}/testFile2.testExtension`
       );
       expect(fileExists).toEqual(true);
 
       let fileContent = await readFileAsync(
-        `${testDirPath}/testFile2.json`,
+        `${testDirPath}/testFile2.testExtension`,
         "utf8"
       );
 
@@ -371,12 +379,12 @@ describe("FileDataStorage", () => {
       await exec();
 
       let fileExists = await checkIfFileExistsAsync(
-        `${testDirPath}/testFile4.json`
+        `${testDirPath}/testFile4.testExtension`
       );
       expect(fileExists).toEqual(true);
 
       let fileContent = await readFileAsync(
-        `${testDirPath}/testFile4.json`,
+        `${testDirPath}/testFile4.testExtension`,
         "utf8"
       );
 
@@ -398,12 +406,12 @@ describe("FileDataStorage", () => {
       await exec();
 
       let fileExists = await checkIfFileExistsAsync(
-        `${testDirPath}/testFile2.json`
+        `${testDirPath}/testFile2.testExtension`
       );
       expect(fileExists).toEqual(true);
 
       let fileContent = await readFileAsync(
-        `${testDirPath}/testFile2.json`,
+        `${testDirPath}/testFile2.testExtension`,
         "utf8"
       );
 
@@ -456,6 +464,7 @@ describe("FileDataStorage", () => {
   describe("getAllIds", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let dataId: string;
     let file1Path: string;
     let file1Content: any;
@@ -471,13 +480,14 @@ describe("FileDataStorage", () => {
     beforeEach(() => {
       dirPath = testDirPath;
       dataId = "testFile2";
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -490,7 +500,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -646,6 +656,7 @@ describe("FileDataStorage", () => {
   describe("fetchData", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let dataId: string;
     let file1Path: string;
     let file1Content: any;
@@ -661,13 +672,14 @@ describe("FileDataStorage", () => {
     beforeEach(() => {
       dirPath = testDirPath;
       dataId = "testFile2";
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -680,7 +692,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -816,6 +828,7 @@ describe("FileDataStorage", () => {
   describe("fetchAllData", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let file1Path: string;
     let file1Content: any;
     let file1Create: boolean;
@@ -829,13 +842,14 @@ describe("FileDataStorage", () => {
 
     beforeEach(() => {
       dirPath = testDirPath;
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -848,7 +862,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -971,6 +985,7 @@ describe("FileDataStorage", () => {
   describe("init", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let file1Path: string;
     let file1Content: any;
     let file1Create: boolean;
@@ -984,13 +999,14 @@ describe("FileDataStorage", () => {
 
     beforeEach(() => {
       dirPath = testDirPath;
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {};
@@ -1003,7 +1019,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -1126,6 +1142,7 @@ describe("FileDataStorage", () => {
   describe("getAllData", () => {
     let fileDataStorage: FileDataStorage<any>;
     let dirPath: string;
+    let extension: string;
     let file1Path: string;
     let file1Content: any;
     let file1Create: boolean;
@@ -1139,13 +1156,14 @@ describe("FileDataStorage", () => {
 
     beforeEach(() => {
       dirPath = testDirPath;
-      file1Path = `${testDirPath}/testFile1.json`;
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
       file1Create = true;
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
       file2Create = true;
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
       file3Create = true;
       cacheContent = {
@@ -1162,7 +1180,7 @@ describe("FileDataStorage", () => {
         await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
       if (file3Create)
         await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
-      fileDataStorage = new FileDataStorage<any>(dirPath);
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
 
       //Setting cache content for check if value is returned from cache or from file
       (fileDataStorage as any)._cacheData = cacheContent;
@@ -1177,11 +1195,11 @@ describe("FileDataStorage", () => {
         testFile5: { ijklm: 7890 },
       };
 
-      file1Path = `${testDirPath}/testFile1.json`;
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
 
       let result = await exec();
@@ -1234,11 +1252,11 @@ describe("FileDataStorage", () => {
     it("should return data only from files and fetch cache - if cache is empty", async () => {
       cacheContent = {};
 
-      file1Path = `${testDirPath}/testFile1.json`;
+      file1Path = `${testDirPath}/testFile1.testExtension`;
       file1Content = { abcd: 123 };
-      file2Path = `${testDirPath}/testFile2.json`;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
       file2Content = { efgh: 456 };
-      file3Path = `${testDirPath}/testFile3.json`;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
       file3Content = { ijkl: 789 };
 
       let result = await exec();

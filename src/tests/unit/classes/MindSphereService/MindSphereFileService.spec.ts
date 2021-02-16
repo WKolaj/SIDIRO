@@ -1397,6 +1397,7 @@ describe("MindSphereFileService", () => {
       //"2021-01-31T13:01:00.000Z" - 1612098060000
       //"2021-02-01T13:00:00.000Z" - 1612184400000
       mockedReturnDataCollection = [
+        {},
         [
           {
             name: "testFileName1.json",
@@ -1414,9 +1415,77 @@ describe("MindSphereFileService", () => {
             name: "testFileName5.json",
           },
         ],
+        [
+          {
+            name: "testFileName6.json",
+          },
+          {
+            name: "testFileName7.testExtension",
+          },
+          {
+            name: "testFileName8.testExtension",
+          },
+          {
+            name: "testFileName9.testExtension",
+          },
+          {
+            name: "testFileName10.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
       ];
-      mockedReturnStatusCollection = [200];
-      mockedReturnHeadersCollection = [{}];
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+      mockedReturnStatusCollection = [200, 200, 200, 200, 200, 200];
       mockedAuthToken = "testAuthToken1234";
       mockedAuthTokenElapsedTime = 1612184400000;
       mockedNow = 1612098060000;
@@ -1449,122 +1518,1235 @@ describe("MindSphereFileService", () => {
       );
     };
 
-    it("should call search file API and return all files with given extension", async () => {
-      let result = await exec();
-
-      expect(result).toEqual([
-        "testFileName2.testExtension",
-        "testFileName3.testExtension",
-        "testFileName4.testExtension",
-      ]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should not filter files - if extension is set to undefined", async () => {
-      fileExtension = undefined;
-
-      let result = await exec();
-
-      expect(result).toEqual([
-        "testFileName1.json",
-        "testFileName2.testExtension",
-        "testFileName3.testExtension",
-        "testFileName4.testExtension",
-        "testFileName5.json",
-      ]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should not filter files - if extension is set to null", async () => {
-      fileExtension = null;
-
-      let result = await exec();
-
-      expect(result).toEqual([
-        "testFileName1.json",
-        "testFileName2.testExtension",
-        "testFileName3.testExtension",
-        "testFileName4.testExtension",
-        "testFileName5.json",
-      ]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should return empty array - if response is null", async () => {
-      mockedReturnDataCollection = [null];
-
-      let result = await exec();
-
-      expect(result).toEqual([]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should return empty array - if response is not an array", async () => {
-      mockedReturnDataCollection = ["fakeResponse"];
-
-      let result = await exec();
-
-      expect(result).toEqual([]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should return empty array - if there are no files with given extension", async () => {
+    it("should call search file api first - to get total number of files - and then call search file api according to total number of files and limit", async () => {
       mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName6.json",
+          },
+          {
+            name: "testFileName7.testExtension",
+          },
+          {
+            name: "testFileName8.testExtension",
+          },
+          {
+            name: "testFileName9.testExtension",
+          },
+          {
+            name: "testFileName10.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(15);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName7.testExtension");
+      expect(result).toContain("testFileName8.testExtension");
+      expect(result).toContain("testFileName9.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if some of call returns empty arrays", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        [],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(12);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if some of call returns null", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        null,
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(12);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if some of call returns all names with different extensions", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName6.json",
+          },
+          {
+            name: "testFileName7.json",
+          },
+          {
+            name: "testFileName8.json",
+          },
+          {
+            name: "testFileName9.json",
+          },
+          {
+            name: "testFileName10.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(12);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if some of call returns data with no name", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        [{}, {}, {}, {}, {}],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(12);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if some of call returns data with nulls", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+        [null, null, null, null, null],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.testExtension",
+          },
+          {
+            name: "testFileName13.testExtension",
+          },
+          {
+            name: "testFileName14.testExtension",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.testExtension",
+          },
+          {
+            name: "testFileName18.testExtension",
+          },
+          {
+            name: "testFileName19.testExtension",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.testExtension",
+          },
+          {
+            name: "testFileName23.testExtension",
+          },
+          {
+            name: "testFileName24.testExtension",
+          },
+          {
+            name: "testFileName25.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(12);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files - if count is smaller than file limit (499)", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 499 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(3);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+
+      //Axios request should have been called two times - first when calculating number of files, than  to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should return empty array - if there are only names with different extensions", async () => {
+      mockedReturnDataCollection = [
+        {},
         [
           {
             name: "testFileName1.json",
@@ -1582,67 +2764,567 @@ describe("MindSphereFileService", () => {
             name: "testFileName5.json",
           },
         ],
-      ];
-
-      let result = await exec();
-
-      expect(result).toEqual([]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should return empty array - if api call returns no file", async () => {
-      mockedReturnDataCollection = [[]];
-
-      let result = await exec();
-
-      expect(result).toEqual([]);
-
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
-        method: "GET",
-        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
-        headers: {
-          Authorization: `Bearer ${mockedAuthToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-    });
-
-    it("should not include empty responses and responses without name", async () => {
-      mockedReturnDataCollection = [
         [
           {
-            name: "testFileName1.json",
-          },
-          null,
-          {},
-          {
-            name: null,
+            name: "testFileName6.json",
           },
           {
-            name: "testFileName5.testExtension",
+            name: "testFileName7.json",
+          },
+          {
+            name: "testFileName8.json",
+          },
+          {
+            name: "testFileName9.json",
+          },
+          {
+            name: "testFileName10.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName11.json",
+          },
+          {
+            name: "testFileName12.json",
+          },
+          {
+            name: "testFileName13.json",
+          },
+          {
+            name: "testFileName14.json",
+          },
+          {
+            name: "testFileName15.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName16.json",
+          },
+          {
+            name: "testFileName17.json",
+          },
+          {
+            name: "testFileName18.json",
+          },
+          {
+            name: "testFileName19.json",
+          },
+          {
+            name: "testFileName20.json",
+          },
+        ],
+        [
+          {
+            name: "testFileName21.json",
+          },
+          {
+            name: "testFileName22.json",
+          },
+          {
+            name: "testFileName23.json",
+          },
+          {
+            name: "testFileName24.json",
+          },
+          {
+            name: "testFileName25.json",
           },
         ],
       ];
 
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
       let result = await exec();
 
-      expect(result).toEqual(["testFileName5.testExtension"]);
+      expect(result).toEqual([]);
 
-      //Axios request should have been called only once - token had been fetched before
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should return empty array - if there are only empty arrays in response", async () => {
+      mockedReturnDataCollection = [{}, [], [], [], [], []];
+
+      mockedReturnHeadersCollection = [{ count: 2500 }];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should not filter files - if extension is set to undefined", async () => {
+      fileExtension = undefined;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(25);
+      expect(result).toContain("testFileName1.json");
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName5.json");
+      expect(result).toContain("testFileName6.json");
+      expect(result).toContain("testFileName7.testExtension");
+      expect(result).toContain("testFileName8.testExtension");
+      expect(result).toContain("testFileName9.testExtension");
+      expect(result).toContain("testFileName10.json");
+      expect(result).toContain("testFileName11.json");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName15.json");
+      expect(result).toContain("testFileName16.json");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName20.json");
+      expect(result).toContain("testFileName21.json");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+      expect(result).toContain("testFileName25.json");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should not filter files - if extension is set to null", async () => {
+      fileExtension = null;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(25);
+      expect(result).toContain("testFileName1.json");
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName5.json");
+      expect(result).toContain("testFileName6.json");
+      expect(result).toContain("testFileName7.testExtension");
+      expect(result).toContain("testFileName8.testExtension");
+      expect(result).toContain("testFileName9.testExtension");
+      expect(result).toContain("testFileName10.json");
+      expect(result).toContain("testFileName11.json");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName15.json");
+      expect(result).toContain("testFileName16.json");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName20.json");
+      expect(result).toContain("testFileName21.json");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
+      expect(result).toContain("testFileName25.json");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+    });
+
+    it("should call search file api first - to get total number of files and return empty array - if count is 0", async () => {
+      mockedReturnDataCollection = [
+        {},
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+      ];
+
+      mockedReturnHeadersCollection = [{ count: 0 }];
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual([]);
+
+      //Axios request should have been called one time
       expect(mockedAxios.request).toHaveBeenCalledTimes(1);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         method: "GET",
@@ -1652,15 +3334,42 @@ describe("MindSphereFileService", () => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
+        params: {
+          count: true,
+        },
       });
     });
 
-    it("should throw if api call throws an error", async () => {
-      mockedAxios.__setMockError("testError");
+    it("should call search file api first - to get total number of files and return empty array - if there is no count", async () => {
+      mockedReturnDataCollection = [
+        null,
+        [
+          {
+            name: "testFileName1.json",
+          },
+          {
+            name: "testFileName2.testExtension",
+          },
+          {
+            name: "testFileName3.testExtension",
+          },
+          {
+            name: "testFileName4.testExtension",
+          },
+          {
+            name: "testFileName5.json",
+          },
+        ],
+      ];
 
-      await expect(exec()).rejects.toEqual("testError");
+      mockedReturnHeadersCollection = [{}];
 
-      //Axios request should have been called only once - token had been fetched before
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual([]);
+
+      //Axios request should have been called one time
       expect(mockedAxios.request).toHaveBeenCalledTimes(1);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         method: "GET",
@@ -1669,6 +3378,130 @@ describe("MindSphereFileService", () => {
           Authorization: `Bearer ${mockedAuthToken}`,
           "Content-Type": "application/json",
           Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+    });
+
+    it("should throw if search file api call throws an error", async () => {
+      mockedAxios.__setMockError("testError");
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Axios request should have been called one time
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+    });
+
+    it("should throw if calls of other api call throws", async () => {
+      mockedAxios.__setMockError("testError", 2);
+
+      await expect(exec()).rejects.toEqual("testError");
+
+      //Axios request should have been called six times - first when calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(6);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(1, 6);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
         },
       });
     });
@@ -1693,18 +3526,30 @@ describe("MindSphereFileService", () => {
       ];
 
       mockedReturnStatusCollection = [200, 200];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
 
       let result = await exec();
 
-      expect(result).toEqual([
-        "testFileName2.testExtension",
-        "testFileName3.testExtension",
-        "testFileName4.testExtension",
-      ]);
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(15);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName7.testExtension");
+      expect(result).toContain("testFileName8.testExtension");
+      expect(result).toContain("testFileName9.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
 
-      //CHECKING REQUESTS
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      //Axios request should have been called seven times - first when fetching token, then calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(7);
 
       //First call - fetch token
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
@@ -1722,7 +3567,6 @@ describe("MindSphereFileService", () => {
         },
       });
 
-      //Axios request should have been called only once - token had been fetched before
       expect(mockedAxios.request.mock.calls[1][0]).toEqual({
         method: "GET",
         url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
@@ -1730,6 +3574,88 @@ describe("MindSphereFileService", () => {
           Authorization: `Bearer testAccessToken2`,
           "Content-Type": "application/json",
           Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(2, 7);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
         },
       });
     });
@@ -1760,17 +3686,30 @@ describe("MindSphereFileService", () => {
 
       mockedReturnStatusCollection = [200, 200];
 
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
       let result = await exec();
 
-      expect(result).toEqual([
-        "testFileName2.testExtension",
-        "testFileName3.testExtension",
-        "testFileName4.testExtension",
-      ]);
+      expect(result).toBeDefined();
+      expect(result.length).toEqual(15);
+      expect(result).toContain("testFileName2.testExtension");
+      expect(result).toContain("testFileName3.testExtension");
+      expect(result).toContain("testFileName4.testExtension");
+      expect(result).toContain("testFileName7.testExtension");
+      expect(result).toContain("testFileName8.testExtension");
+      expect(result).toContain("testFileName9.testExtension");
+      expect(result).toContain("testFileName12.testExtension");
+      expect(result).toContain("testFileName13.testExtension");
+      expect(result).toContain("testFileName14.testExtension");
+      expect(result).toContain("testFileName17.testExtension");
+      expect(result).toContain("testFileName18.testExtension");
+      expect(result).toContain("testFileName19.testExtension");
+      expect(result).toContain("testFileName22.testExtension");
+      expect(result).toContain("testFileName23.testExtension");
+      expect(result).toContain("testFileName24.testExtension");
 
-      //CHECKING REQUESTS
-      //Axios request should have been called only once - token had been fetched before
-      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+      //Axios request should have been called seven times - first when fetching token, then calculating number of files, than 5 x to get name of files
+      expect(mockedAxios.request).toHaveBeenCalledTimes(7);
 
       //First call - fetch token
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
@@ -1788,7 +3727,6 @@ describe("MindSphereFileService", () => {
         },
       });
 
-      //Axios request should have been called only once - token had been fetched before
       expect(mockedAxios.request.mock.calls[1][0]).toEqual({
         method: "GET",
         url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
@@ -1796,6 +3734,88 @@ describe("MindSphereFileService", () => {
           Authorization: `Bearer testAccessToken2`,
           "Content-Type": "application/json",
           Accept: "application/json",
+        },
+        params: {
+          count: true,
+        },
+      });
+
+      //Checking rest mock calls - every call should be of the same api but with different offset
+      let restCalls = mockedAxios.request.mock.calls.slice(2, 7);
+
+      //Sorting calls on the basis of offset
+      let sortedCalls = restCalls.sort(
+        (a: any, b: any) => a[0].params.offset - b[0].params.offset
+      );
+
+      expect(sortedCalls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 0,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[2][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1000,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[3][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 1500,
+          limit: 500,
+          order: "name asc",
+        },
+      });
+      expect(sortedCalls[4][0]).toMatchObject({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files/${assetId}`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        params: {
+          offset: 2000,
+          limit: 500,
+          order: "name asc",
         },
       });
     });

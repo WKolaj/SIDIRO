@@ -48,6 +48,13 @@ export const isStringAValidJSON = function(str: string) {
   return true;
 };
 
+/**
+ * @description Method for checking wether string is a numeric value
+ * @param text string to check
+ */
+export function isNumeric(text: string) {
+  return !isNaN(parseFloat(text));
+}
 //#region ========== IO METHODS =========
 
 //Creating promise from non promise functions

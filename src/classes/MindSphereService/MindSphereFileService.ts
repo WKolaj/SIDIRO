@@ -1,6 +1,9 @@
 import { MindSphereService } from "./MindSphereService";
+import { isNumeric } from "../../utilities/utilities";
+import { AxiosResponse } from "axios";
 
 const mindSphereFileSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files`;
+const maxNumberOfFilesInOneQuery = 500;
 
 export type MindSphereTimeFileData = {
   name: string;
@@ -28,19 +31,28 @@ export class MindSphereFileService extends MindSphereService {
   public static getInstance(): MindSphereFileService {
     if (MindSphereFileService._instance == null) {
       MindSphereFileService._instance = new MindSphereFileService(
-        mindSphereFileSeriesApiUrl
+        mindSphereFileSeriesApiUrl,
+        maxNumberOfFilesInOneQuery
       );
     }
 
     return MindSphereFileService._instance;
   }
 
+  private _maxNumberOfFilesInOneQuery: number;
+
+  public get MaxNumberOfFilesInOneQuery(): number {
+    return this._maxNumberOfFilesInOneQuery;
+  }
+
   /**
    * @description Class for representing file service of MindSphere
    * @param url URL of MindSphere File Service
+   * @param maxNumberOfFilesToCallInOneQuery Maximum number of files to call in one query
    */
-  private constructor(url: string) {
+  private constructor(url: string, maxNumberOfFilesToCallInOneQuery: number) {
     super(url);
+    this._maxNumberOfFilesInOneQuery = maxNumberOfFilesToCallInOneQuery;
   }
 
   /**
@@ -157,7 +169,45 @@ export class MindSphereFileService extends MindSphereService {
   }
 
   /**
-   * @description Method for getting all files from given asset
+   * @description Method for getting indexes to get all files, based on total number of file and limit of file to get in one call
+   * @param totalNumberOfFiles Total number of files
+   */
+  private _getRangesOfFileNamesToGet(totalNumberOfFiles: number): number[] {
+    let offsetsToReturn = [];
+
+    for (
+      let i = 0;
+      i < totalNumberOfFiles;
+      i += this.MaxNumberOfFilesInOneQuery
+    ) {
+      offsetsToReturn.push(i);
+    }
+
+    return offsetsToReturn;
+  }
+
+  /**
+   * @description Private method to call get file details API with maximum limit starting from given offest
+   * @param assetId assetId from which files should be get
+   * @param offset offset to start getting the files
+   */
+  private async _getFilesDetails(
+    assetId: string,
+    offset: number
+  ): Promise<MindSphereTimeFileData[]> {
+    let result = await this._callAPI("GET", this._getFileToCheckUrl(assetId), {
+      order: "name asc",
+      offset: offset,
+      limit: this.MaxNumberOfFilesInOneQuery,
+    });
+
+    if (result.data == null || !Array.isArray(result.data)) return [];
+
+    return result.data as MindSphereTimeFileData[];
+  }
+
+  /**
+   * @description Method for getting all files from given asset. NOTICE! - Method gets all file names no matter the number of files - several calls
    * @param assetId id of asset where files are stored
    * @param extension file extension - optional
    */
@@ -165,28 +215,61 @@ export class MindSphereFileService extends MindSphereService {
     assetId: string,
     extension: string | null = null
   ): Promise<string[]> {
-    //Getting result and returning it if it is valid
-    let result: { data: MindSphereTimeFileData[] } = await this._callAPI(
-      "GET",
-      this._getFileToCheckUrl(assetId)
+    //Getting total number of files in the asset
+    let totalNumberOfFiles = await this.countTotalNumberOfFiles(assetId);
+    if (totalNumberOfFiles <= 0) return [];
+
+    //Getting groups offsets to call
+    let offsets: number[] = this._getRangesOfFileNamesToGet(totalNumberOfFiles);
+
+    //Creating all promises to get all groups
+    let promises = offsets.map((offset) =>
+      this._getFilesDetails(assetId, offset)
     );
 
-    if (result.data == null || !Array.isArray(result.data)) return [];
+    //Calling apis to get all files seperated into call groups
+    let allResponses = await Promise.all(promises);
 
-    let fileNames = result.data
-      .filter((fileData) => fileData != null && fileData.name != null)
-      .map((fileData) => fileData.name);
+    //Collection for storing all names
+    let allFileNames: string[] = [];
 
-    let fileNamesToReturn = fileNames;
+    //Retrieving and filtering all files names from all responses
+    allResponses.map((response) => {
+      //Getting all files names from responses - if name exists
+      let fileNames: string[] = response
+        .filter((fileData) => fileData != null && fileData.name != null)
+        .map((fileData) => fileData.name);
 
-    let extensionWithDot = `.${extension}`;
+      //Filtering extensions if filter exits
+      if (extension != null) {
+        let extensionWithDot = `.${extension}`;
+        fileNames = fileNames.filter((name) => name.includes(extensionWithDot));
+      }
 
-    //Filtering extensions manually - filtering it via MindSphere takes too much time
-    if (extension != null)
-      fileNamesToReturn = fileNames.filter((fileName) =>
-        fileName.includes(extensionWithDot)
-      );
+      //Extending file names array
+      allFileNames.push(...fileNames);
+    });
 
-    return fileNamesToReturn;
+    return allFileNames;
+  }
+
+  /**
+   * @description Method for counting total number of files for given asset
+   * @param assetId Asset id to check
+   */
+  public async countTotalNumberOfFiles(assetId: string): Promise<number> {
+    //Getting total number of files - number of files are stored in header
+    let result = await this._callAPI("GET", this._getFileToCheckUrl(assetId), {
+      count: true,
+    });
+
+    if (
+      result.headers == null ||
+      result.headers.count == null ||
+      !isNumeric(result.headers.count)
+    )
+      return 0;
+
+    return parseFloat(result.headers.count);
   }
 }
