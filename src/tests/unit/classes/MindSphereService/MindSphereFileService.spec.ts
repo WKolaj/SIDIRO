@@ -2681,7 +2681,7 @@ describe("MindSphereFileService", () => {
       });
     });
 
-    it("should call search file api first - to get total number of files - if count is smaller than file limit (499)", async () => {
+    it("should call search file api first - to get total number of files - if count is smaller than file limit (500)", async () => {
       mockedReturnDataCollection = [
         {},
         [
@@ -2703,7 +2703,7 @@ describe("MindSphereFileService", () => {
         ],
       ];
 
-      mockedReturnHeadersCollection = [{ count: 499 }];
+      mockedReturnHeadersCollection = [{ count: 500 }];
 
       let result = await exec();
 
