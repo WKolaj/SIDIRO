@@ -82,12 +82,18 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for checking if file of given name exists for given tenant. Returns eTag of file if it exists or null otherwise
+   * @param tenant tenant to call API
    * @param assetId assetId
    * @param fileName fileName (with extension) to find
    */
-  public async checkIfFileExists(assetId: string, fileName: string) {
+  public async checkIfFileExists(
+    tenant: string,
+    assetId: string,
+    fileName: string
+  ) {
     //Calling api in order to get file properties
     let result: { data: MindSphereTimeFileData[] } = await this._callAPI(
+      tenant,
       "GET",
       this._getFileToCheckUrl(assetId),
       {
@@ -110,11 +116,17 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for getting content of the file
+   * @param tenant tenant to call API
    * @param assetId id of asset to store the file
    * @param fileName name of file to store
    */
-  public async getFileContent(assetId: string, fileName: string): Promise<any> {
+  public async getFileContent(
+    tenant: string,
+    assetId: string,
+    fileName: string
+  ): Promise<any> {
     let result = await this._callAPI(
+      tenant,
       "GET",
       this._getFileServiceUrl(assetId, fileName),
       null,
@@ -130,17 +142,19 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for setting content of the file. Method creates new file if file does not exist or replace the file if it exists
+   * @param tenant tenant to call API
    * @param assetId Id of asset to set the file into
    * @param fileName name of file to set
    * @param fileContent content of the file
    */
   public async setFileContent(
+    tenant: string,
     assetId: string,
     fileName: string,
     fileContent: any
   ) {
     //Check if file exists
-    let eTagNumber = await this.checkIfFileExists(assetId, fileName);
+    let eTagNumber = await this.checkIfFileExists(tenant, assetId, fileName);
 
     let headers: { [key: string]: string | boolean | number | null } = {
       "Content-Type": "application/octet-stream",
@@ -151,6 +165,7 @@ export class MindSphereFileService extends MindSphereService {
     if (eTagNumber != null) headers["If-Match"] = eTagNumber;
 
     await this._callAPI(
+      tenant,
       "PUT",
       this._getFileServiceUrl(assetId, fileName),
       null,
@@ -161,11 +176,16 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for deleting the file from the MindSphere - NOTICE! Throws if there is no such file
+   * @param tenant tenant to call API
    * @param assetId Id of asset to delete the file from
    * @param fileName Name of the file to delete
    */
-  public async deleteFile(assetId: string, fileName: string) {
-    await this._callAPI("DELETE", this._getFileServiceUrl(assetId, fileName));
+  public async deleteFile(tenant: string, assetId: string, fileName: string) {
+    await this._callAPI(
+      tenant,
+      "DELETE",
+      this._getFileServiceUrl(assetId, fileName)
+    );
   }
 
   /**
@@ -188,18 +208,25 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Private method to call get file details API with maximum limit starting from given offest
+   * @param tenant tenant to call API
    * @param assetId assetId from which files should be get
    * @param offset offset to start getting the files
    */
   private async _getFilesDetails(
+    tenant: string,
     assetId: string,
     offset: number
   ): Promise<MindSphereTimeFileData[]> {
-    let result = await this._callAPI("GET", this._getFileToCheckUrl(assetId), {
-      order: "name asc",
-      offset: offset,
-      limit: this.MaxNumberOfFilesInOneQuery,
-    });
+    let result = await this._callAPI(
+      tenant,
+      "GET",
+      this._getFileToCheckUrl(assetId),
+      {
+        order: "name asc",
+        offset: offset,
+        limit: this.MaxNumberOfFilesInOneQuery,
+      }
+    );
 
     if (result.data == null || !Array.isArray(result.data)) return [];
 
@@ -208,15 +235,20 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for getting all files from given asset. NOTICE! - Method gets all file names no matter the number of files - several calls
+   * @param tenant tenant to call API
    * @param assetId id of asset where files are stored
    * @param extension file extension - optional
    */
   public async getAllFileNamesFromAsset(
+    tenant: string,
     assetId: string,
     extension: string | null = null
   ): Promise<string[]> {
     //Getting total number of files in the asset
-    let totalNumberOfFiles = await this.countTotalNumberOfFiles(assetId);
+    let totalNumberOfFiles = await this.countTotalNumberOfFiles(
+      tenant,
+      assetId
+    );
     if (totalNumberOfFiles <= 0) return [];
 
     //Getting groups offsets to call
@@ -224,7 +256,7 @@ export class MindSphereFileService extends MindSphereService {
 
     //Creating all promises to get all groups
     let promises = offsets.map((offset) =>
-      this._getFilesDetails(assetId, offset)
+      this._getFilesDetails(tenant, assetId, offset)
     );
 
     //Calling apis to get all files seperated into call groups
@@ -255,13 +287,22 @@ export class MindSphereFileService extends MindSphereService {
 
   /**
    * @description Method for counting total number of files for given asset
+   * @param tenant tenant to call API
    * @param assetId Asset id to check
    */
-  public async countTotalNumberOfFiles(assetId: string): Promise<number> {
+  public async countTotalNumberOfFiles(
+    tenant: string,
+    assetId: string
+  ): Promise<number> {
     //Getting total number of files - number of files are stored in header
-    let result = await this._callAPI("GET", this._getFileToCheckUrl(assetId), {
-      count: true,
-    });
+    let result = await this._callAPI(
+      tenant,
+      "GET",
+      this._getFileToCheckUrl(assetId),
+      {
+        count: true,
+      }
+    );
 
     if (
       result.headers == null ||
@@ -273,3 +314,5 @@ export class MindSphereFileService extends MindSphereService {
     return parseFloat(result.headers.count);
   }
 }
+
+//TODO - test and draw changes associated with tenant call in class diagram

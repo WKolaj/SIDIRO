@@ -1,6 +1,23 @@
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { encode, decode } from "js-base64";
+
+/**
+ * @description Method for decoding Base64 string
+ * @param text string to decode
+ */
+export const decodeBase64 = function(text: string) {
+  return decode(text);
+};
+
+/**
+ * @description Method for encoding Base64 string
+ * @param text string to encode
+ */
+export const encodeBase64 = function(text: string) {
+  return encode(text);
+};
 
 /**
  * @description Method for sleeping thread

@@ -95,11 +95,16 @@ export class MindSphereEventService extends MindSphereService {
 
   /**
    * @description Method for getting event (its details) based on id
+   * @param tenant tenant to call API
    * @param eventId id of the event to get
    */
-  public async getEvent(eventId: string): Promise<MindSphereStandardEvent> {
+  public async getEvent(
+    tenant: string,
+    eventId: string
+  ): Promise<MindSphereStandardEvent> {
     //MindSphere Event API cannot accept Application/JSON, plain text or */*
     let result = await this._callAPI(
+      tenant,
       "GET",
       this._getEventUrl(eventId),
       null,
@@ -114,18 +119,21 @@ export class MindSphereEventService extends MindSphereService {
 
   /**
    * @description Method for getting all events that suits filter criteria - method automatically gets total number of events even if there is paggination in MindSphere
+   * @param tenant tenant to call API
    * @param assetId Id of asset that stores the event
    * @param from Unix Date of the begin of search interval
    * @param to Unix Date of the end of search interval
    * @param source ID of asset associated with event. OPTIONAL - null if events should not be filtered by this field
    */
   public async getEvents(
+    tenant: string,
     assetId: string,
     from: number,
     to: number,
     source: string | null = null
   ): Promise<MindSphereStandardEvent[]> {
     let results = await this._callPaginatedAPI(
+      tenant,
       "GET",
       this._url,
       this._getEventFilter(assetId, from, to, source),
@@ -152,9 +160,10 @@ export class MindSphereEventService extends MindSphereService {
 
   /**
    * @description Method for posting event to MindSphere
+   * @param tenant tenant to call API
    * @param event Payload of event to send
    */
-  public async postEvent(event: MindSphereStandardEvent) {
+  public async postEvent(tenant: string, event: MindSphereStandardEvent) {
     if (event.typeId == null)
       event = {
         ...event,
@@ -163,6 +172,7 @@ export class MindSphereEventService extends MindSphereService {
       };
 
     await this._callAPI(
+      tenant,
       "POST",
       this._url,
       null,
@@ -173,3 +183,5 @@ export class MindSphereEventService extends MindSphereService {
     );
   }
 }
+
+//TODO - test and draw changes associated with tenant call in class diagram

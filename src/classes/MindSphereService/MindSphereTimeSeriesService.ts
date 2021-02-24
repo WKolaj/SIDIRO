@@ -190,11 +190,17 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
   /**
    * @description Method for getting last values of given aspect (event if theirs timestamp is different)
+   * @param tenant tenant to call API
    * @param assetId asset id to get data from
    * @param aspectName aspect name to get data from
    */
-  public async getLastValues(assetId: string, aspectName: string) {
+  public async getLastValues(
+    tenant: string,
+    assetId: string,
+    aspectName: string
+  ) {
     let result = await this._callAPI(
+      tenant,
       "GET",
       this._getTimeSeriesUrl(assetId, aspectName),
       { latestValue: true }
@@ -210,18 +216,21 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
   /**
    * @description Method for getting time-series data. NOTICE! Works event for huge intervals - calls API several times in order to retrieves all data without any limit. Beware of time for long intervals
+   * @param tenant tenant to call API
    * @param assetId Id of asset to get
    * @param aspectName Name of aspect to get
    * @param fromUnixDate Date (in Unix) of start of the interval
    * @param toUnixDate Date (in Unix) of end of the interval
    */
   public async getValues(
+    tenant: string,
     assetId: string,
     aspectName: string,
     fromUnixDate: number,
     toUnixDate: number
   ) {
     let results = await this._callLinkedAPI(
+      tenant,
       "GET",
       this._getTimeSeriesUrl(assetId, aspectName),
       {
@@ -245,11 +254,13 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
   /**
    * @description Method for setting timeseries data to MindSphere
+   * @param tenant tenant to call API
    * @param assetId id of asset to set data
    * @param aspectName name of aspect to set data into
    * @param dataToSet data to set into the aspect
    */
   public async setValues(
+    tenant: string,
     assetId: string,
     aspectName: string,
     dataToSet: TimeSeriesData
@@ -260,6 +271,7 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     if (dataToPut.length < 1) return;
 
     await this._callAPI(
+      tenant,
       "PUT",
       this._getTimeSeriesUrl(assetId, aspectName),
       {},
@@ -269,20 +281,29 @@ export class MindSphereTimeSeriesService extends MindSphereService {
 
   /**
    * @description Method for deleting the values. NOTICE beware that there is a limit in MindSphere for one call of such method a day
+   * @param tenant tenant to call API
    * @param assetId asset to delete data from
    * @param aspectName aspect name
    * @param fromUnixDate unix date to delete data from
    * @param toUnixDate unix date of the end of deleting interval
    */
   public async deleteValues(
+    tenant: string,
     assetId: string,
     aspectName: string,
     fromUnixDate: number,
     toUnixDate: number
   ) {
-    await this._callAPI("DELETE", this._getTimeSeriesUrl(assetId, aspectName), {
-      from: MindSphereService.convertUnixToMindSphereDate(fromUnixDate),
-      to: MindSphereService.convertUnixToMindSphereDate(toUnixDate),
-    });
+    await this._callAPI(
+      tenant,
+      "DELETE",
+      this._getTimeSeriesUrl(assetId, aspectName),
+      {
+        from: MindSphereService.convertUnixToMindSphereDate(fromUnixDate),
+        to: MindSphereService.convertUnixToMindSphereDate(toUnixDate),
+      }
+    );
   }
 }
+
+//TODO - test and draw changes associated with tenant call in class diagram

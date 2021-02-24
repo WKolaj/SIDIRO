@@ -1,7 +1,7 @@
 import { MindSphereTokenManager } from "./MindSphereToken/MindSphereTokenManager";
 import axios, { AxiosResponse } from "axios";
 import { getStringBetweenCharacters } from "../../utilities/utilities";
-import { isString } from "lodash";
+import { head, isString } from "lodash";
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -31,6 +31,13 @@ export type MindSpherePaginatedResponse = {
   };
 };
 
+export type MindSphereIndexedResponse = {
+  resources: any[];
+  startIndex: number;
+  itemsPerPage: number;
+  totalResults: number;
+};
+
 /**
  * @description Abstract class representing MindSphere Service - already fetches calls with Bearer Token
  */
@@ -40,10 +47,7 @@ export abstract class MindSphereService {
    */
   protected _url: string;
 
-  /**
-   * @description Token manager object for fetching calls with key
-   */
-  protected _tokenManager: MindSphereTokenManager;
+  //TODO - add changes of removing token in class diagram
 
   /**
    * @description Abstract class representing MindSphere Service - already fetches calls with Bearer Token
@@ -51,7 +55,6 @@ export abstract class MindSphereService {
    */
   protected constructor(url: string) {
     this._url = url;
-    this._tokenManager = MindSphereTokenManager.getInstance();
   }
 
   /**
@@ -78,7 +81,9 @@ export abstract class MindSphereService {
    * @description Method for checking if next response (in paginated call) is available
    * @param currentResponse current paginated response
    */
-  private _nextResponseAvailable(currentResponse: MindSpherePaginatedResponse) {
+  private _nextPaginatedResponseAvailable(
+    currentResponse: MindSpherePaginatedResponse
+  ) {
     if (
       currentResponse == null ||
       currentResponse.page == null ||
@@ -99,6 +104,7 @@ export abstract class MindSphereService {
 
   /**
    * @description Method for calling and getting responses of every call included in paginated MindSphere Call - eg. to get events data
+   * @param tenant Name of the tenant to call API
    * @param method HTTP method
    * @param url url to call
    * @param params HTTP query params
@@ -106,19 +112,28 @@ export abstract class MindSphereService {
    * @param headers HTTP headers
    */
   protected async _callPaginatedAPI(
+    tenant: string,
     method: HTTPMethod,
     url: string,
     params: any = null,
     data: any = null,
     headers: HTTPHeaders = {}
   ): Promise<MindSpherePaginatedResponse[]> {
-    let firstResult = await this._callAPI(method, url, params, data, headers);
+    let firstResult = await this._callAPI(
+      tenant,
+      method,
+      url,
+      params,
+      data,
+      headers
+    );
     let firstResponse: MindSpherePaginatedResponse = firstResult.data as MindSpherePaginatedResponse;
     let responsesToReturn = [firstResponse];
     let currentResponse = firstResponse;
 
-    while (this._nextResponseAvailable(currentResponse)) {
+    while (this._nextPaginatedResponseAvailable(currentResponse)) {
       let result = await this._callAPI(
+        tenant,
         method,
         currentResponse._links!.next.href,
         null,
@@ -170,6 +185,7 @@ export abstract class MindSphereService {
 
   /**
    * @description Method for calling Linked API - where URL to retrieve next part of data is in header - eg. for getting Time-series data
+   * @param tenant Name of the tenant to call API
    * @param method HTTP method
    * @param url starting URL
    * @param params HTTP query params
@@ -177,19 +193,28 @@ export abstract class MindSphereService {
    * @param headers HTTP headers
    */
   protected async _callLinkedAPI(
+    tenant: string,
     method: HTTPMethod,
     url: string,
     params: any = null,
     data: any = null,
     headers: HTTPHeaders = {}
   ) {
-    let firstResult = await this._callAPI(method, url, params, data, headers);
+    let firstResult = await this._callAPI(
+      tenant,
+      method,
+      url,
+      params,
+      data,
+      headers
+    );
     let firstResponse: any = firstResult.data;
     let responsesToReturn: any[] = [firstResponse];
     let currentLink = this._getLinkFromHeader(firstResult);
 
     while (currentLink != null) {
       let result = await this._callAPI(
+        tenant,
         method,
         currentLink,
         null,
@@ -209,14 +234,16 @@ export abstract class MindSphereService {
 
   /**
    * @description Method for getting authorization token from token manager
+   * @param tenant Name of the tenant to call API
    */
-  protected async _getAuthToken() {
-    let authToken = await this._tokenManager.getToken();
+  protected async _getAuthToken(tenant: string) {
+    let authToken = await MindSphereTokenManager.getInstance(tenant).getToken();
     return `Bearer ${authToken}`;
   }
 
   /**
    * @description Method for calling the API in MindSphere - fetching token if has not been fetched before and embedding it into the call
+   * @param tenant Name of the tenant to call API
    * @param method HTTP Method
    * @param url URL to call
    * @param params HTTP Query params
@@ -224,13 +251,15 @@ export abstract class MindSphereService {
    * @param headers HTTP Headers
    */
   protected async _callAPI(
+    tenant: string,
     method: HTTPMethod,
     url: string,
     params: any = null,
     data: any = null,
     headers: HTTPHeaders = {}
   ) {
-    let authToken = await this._getAuthToken();
+    let authToken = await this._getAuthToken(tenant);
+
     let headerToAppend = {
       Authorization: authToken,
       "Content-Type": "application/json",
@@ -246,4 +275,81 @@ export abstract class MindSphereService {
       params: params != null ? params : undefined,
     });
   }
+
+  /**
+   * @description Method for checking if next response (in paginated call) is available
+   * @param currentResponse current paginated response
+   */
+  private _nextIndexedResponseAvailable(
+    currentResponse: MindSphereIndexedResponse
+  ) {
+    if (
+      currentResponse == null ||
+      currentResponse.startIndex == null ||
+      currentResponse.itemsPerPage == null ||
+      currentResponse.totalResults == null
+    )
+      return false;
+
+    return (
+      currentResponse.startIndex - 1 + currentResponse.itemsPerPage <
+      currentResponse.totalResults
+    );
+  }
+
+  /**
+   * @description Method for calling and getting responses of every call included in indexed MindSphere Call - eg. to get all users
+   * @param tenant Name of the tenant to call API
+   * @param method HTTP method
+   * @param url url to call
+   * @param itemsPerPage max item to get per one call
+   * @param params HTTP query params
+   * @param data HTTP data
+   * @param headers HTTP headers
+   */
+  protected async _callIndexableAPI(
+    tenant: string,
+    method: HTTPMethod,
+    url: string,
+    itemsPerPage: number,
+    params: any = null,
+    data: any = null,
+    headers: HTTPHeaders = {}
+  ): Promise<MindSphereIndexedResponse[]> {
+    //TODO - test this method
+    let startIndex: number = 1;
+    let paramsToSend = params != null ? { ...params } : {};
+    let firstResult = await this._callAPI(
+      tenant,
+      method,
+      url,
+      { ...paramsToSend, startIndex: startIndex, count: itemsPerPage },
+      data,
+      headers
+    );
+    startIndex += itemsPerPage;
+    let firstResponse: MindSphereIndexedResponse = firstResult.data as MindSphereIndexedResponse;
+    let responsesToReturn = [firstResponse];
+    let currentResponse = firstResponse;
+
+    while (this._nextIndexedResponseAvailable(currentResponse)) {
+      let result = await this._callAPI(
+        tenant,
+        method,
+        url,
+        { ...paramsToSend, startIndex: startIndex, count: itemsPerPage },
+        data,
+        headers
+      );
+      startIndex += itemsPerPage;
+
+      currentResponse = result.data;
+
+      if (currentResponse != null) responsesToReturn.push(currentResponse);
+    }
+
+    return responsesToReturn;
+  }
 }
+
+//TODO - test and draw changes associated with tenant call in class diagram

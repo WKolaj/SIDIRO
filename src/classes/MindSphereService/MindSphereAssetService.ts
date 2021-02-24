@@ -138,10 +138,15 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * Method for getting asset. NOTICE! Method returns null if asset does not exist or etag of asset if it exists
+   * @param tenant tenant to call API
    * @param assetId id of asset to get
    */
-  public async checkIfAssetExists(assetId: string): Promise<number | null> {
+  public async checkIfAssetExists(
+    tenant: string,
+    assetId: string
+  ): Promise<number | null> {
     let result = await this._callAPI(
+      tenant,
       "GET",
       this._url,
       { filter: this._getAssetCheckFilter(assetId) },
@@ -165,11 +170,13 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * Method for getting assets
+   * @param tenant tenant to call API
    * @param name name of assets to get (optional)
    * @param parentId id of asset's parent (optional)
    * @param assetType type of asset (optional)
    */
   public async getAssets(
+    tenant: string,
     name: string | null = null,
     parentId: string | null = null,
     assetType: string | null = null
@@ -178,8 +185,8 @@ export class MindSphereAssetService extends MindSphereService {
     let params: { filter?: any; size: number } = { size: 100 };
     let filter = this._getAssetsFilter(name, parentId, assetType);
     if (filter != null) params.filter = filter;
-
     let responses = await this._callPaginatedAPI(
+      tenant,
       "GET",
       this._url,
       params,
@@ -205,10 +212,15 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * Method for getting asset
+   * @param tenant tenant to call API
    * @param assetId id of asset to get
    */
-  public async getAsset(assetId: string): Promise<MindSphereAsset> {
+  public async getAsset(
+    tenant: string,
+    assetId: string
+  ): Promise<MindSphereAsset> {
     let result = await this._callAPI(
+      tenant,
       "GET",
       this._getAssetURL(assetId),
       null,
@@ -222,12 +234,15 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * Method for creating an asset
+   * @param tenant tenant to call API
    * @param assetPayload asset payload used for creation
    */
   public async createAsset(
+    tenant: string,
     assetPayload: MindSphereAsset
   ): Promise<MindSphereAsset> {
     let result = await this._callAPI(
+      tenant,
       "POST",
       this._url,
       null,
@@ -243,17 +258,20 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * @description Method for updating the asset. NOTICE! Returns new updated payload or null - if there is no asset of given id
+   * @param tenant tenant to call API
    * @param assetId asset id to update
    * @param assetPayload asset payload used for update
    */
   public async updateAsset(
+    tenant: string,
     assetId: string,
     assetPayload: MindSphereAsset
   ): Promise<MindSphereAsset | null> {
-    let eTagNumber = await this.checkIfAssetExists(assetId);
+    let eTagNumber = await this.checkIfAssetExists(tenant, assetId);
     if (eTagNumber == null) return null;
 
     let result = await this._callAPI(
+      tenant,
       "PUT",
       this._getAssetURL(assetId),
       null,
@@ -270,17 +288,30 @@ export class MindSphereAssetService extends MindSphereService {
 
   /**
    * Method for deleting an asset. NOTICE - returns number of etag of deleted asset or null if there was no asset of given id
+   * @param tenant tenant to call API
    * @param assetId id of asset to delete
    */
-  public async deleteAsset(assetId: string): Promise<number | null> {
-    let eTagNumber = await this.checkIfAssetExists(assetId);
+  public async deleteAsset(
+    tenant: string,
+    assetId: string
+  ): Promise<number | null> {
+    let eTagNumber = await this.checkIfAssetExists(tenant, assetId);
     if (eTagNumber == null) return null;
 
-    await this._callAPI("DELETE", this._getAssetURL(assetId), null, null, {
-      Accept: "application/json, text/plain, */*",
-      "If-Match": eTagNumber,
-    });
+    await this._callAPI(
+      tenant,
+      "DELETE",
+      this._getAssetURL(assetId),
+      null,
+      null,
+      {
+        Accept: "application/json, text/plain, */*",
+        "If-Match": eTagNumber,
+      }
+    );
 
     return eTagNumber;
   }
 }
+
+//TODO - test and draw changes associated with tenant call in class diagram
