@@ -126,6 +126,22 @@ export class MindSphereUserService extends MindSphereService {
     return allUsersToReturn;
   }
 
+  public async checkIfUserExists(
+    tenant: string,
+    userId: string | null,
+    userName: string | null = null
+  ): Promise<boolean> {
+    if (userId == null && userName == null)
+      throw new Error("Both userId and userName not specified");
+    let allSuitableUsers = await this.getAllUsers(
+      tenant,
+      null,
+      userId,
+      userName
+    );
+    return allSuitableUsers.length > 0;
+  }
+
   public async getUser(
     tenant: string,
     userId: string
