@@ -1,5 +1,5 @@
 import express from "express";
-import fetchUser, { UserRequest } from "../middleware/fetchUser";
+import fetchUser, { UserRequest } from "../middleware/user/fetchUser";
 const router = express.Router();
 
 export type ReturnedUser = {

@@ -1,5 +1,8 @@
 import { config } from "node-config-ts";
-import { MindSphereAssetService } from "../MindSphereService/MindSphereAssetService";
+import {
+  MindSphereAsset,
+  MindSphereAssetService,
+} from "../MindSphereService/MindSphereAssetService";
 import { MindSphereApp } from "./MindSphereApp";
 
 const appContainerTenant: string = config.appSettings.appContainerTenant!;
@@ -27,7 +30,9 @@ export class MindSphereAppsManager {
   public static generateAppId(
     tenantId: string,
     subtenantId: string | undefined | null
-  ): string {
+  ): string | null {
+    if (tenantId == null || tenantId.length < 1) return null;
+
     let idToReturn = tenantId;
     if (subtenantId != null) {
       idToReturn += `-${subtenantId}`;
@@ -55,7 +60,15 @@ export class MindSphereAppsManager {
     this._appAssetType = appAssetType;
   }
 
-  public async checkIfAppExists(appId: string): Promise<string | null> {
+  public async getApp(appId: string): Promise<MindSphereApp> {
+    if (this._apps[appId] == null) await this.fetchApp(appId);
+    return this._apps[appId];
+  }
+
+  public async getAppAssetIdIfExists(appId: string): Promise<string | null> {
+    let app = this._apps[appId];
+    if (app != null) return app.AssetId;
+
     let allAssets = await MindSphereAssetService.getInstance().getAssets(
       this._storageTenant,
       appId,
@@ -67,9 +80,14 @@ export class MindSphereAppsManager {
     else return allAssets[0].assetId!;
   }
 
+  public async checkIfAppExists(appId: string): Promise<boolean> {
+    let assetId = await this.getAppAssetIdIfExists(appId);
+    return assetId != null;
+  }
+
   public async createNewApp(appId: string): Promise<MindSphereApp> {
-    let assetId = await this.checkIfAppExists(appId);
-    if (assetId != null) throw new Error(`App ${appId} already exists!`);
+    let appExists = await this.checkIfAppExists(appId);
+    if (appExists) throw new Error(`App ${appId} already exists!`);
 
     let assetForApp = await MindSphereAssetService.getInstance().createAsset(
       this._storageTenant,
@@ -94,45 +112,47 @@ export class MindSphereAppsManager {
   }
 
   public async deleteApp(appId: string) {
-    let assetId = await this.checkIfAppExists(appId);
-    if (assetId == null) throw new Error(`App ${appId} does not exist!`);
+    let appAssetId = await this.getAppAssetIdIfExists(appId);
+    if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
 
     await MindSphereAssetService.getInstance().deleteAsset(
       this._storageTenant,
-      assetId
+      appAssetId!
     );
   }
 
   public async fetchApp(appId: string): Promise<MindSphereApp> {
-    let assetId = await this.checkIfAppExists(appId);
-    if (assetId == null) throw new Error(`App ${appId} does not exist!`);
+    let appAssetId = await this.getAppAssetIdIfExists(appId);
+    if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
 
-    let newApp = new MindSphereApp(this._storageTenant, appId, assetId);
+    let newApp = new MindSphereApp(this._storageTenant, appId, appAssetId);
     await newApp.init();
     this._apps[appId] = newApp;
 
     return newApp;
   }
 
-  public async fetchAllApps(): Promise<{ [appId: string]: MindSphereApp }> {
-    let allAssets = await MindSphereAssetService.getInstance().getAssets(
+  public async fetchAppFromAsset(
+    asset: MindSphereAsset
+  ): Promise<MindSphereApp> {
+    let newApp = new MindSphereApp(
+      this._storageTenant,
+      asset.name,
+      asset.assetId!
+    );
+    await newApp.init();
+    this._apps[asset.name] = newApp;
+
+    return newApp;
+  }
+
+  public async getAllAppAssets(): Promise<MindSphereAsset[]> {
+    return MindSphereAssetService.getInstance().getAssets(
       this._storageTenant,
       null,
       this._mainAssetId,
       this._appAssetType
     );
-
-    for (let asset of allAssets) {
-      let newApp = new MindSphereApp(
-        this._storageTenant,
-        asset.name,
-        asset.assetId!
-      );
-      await newApp.init();
-      this._apps[asset.name] = newApp;
-    }
-
-    return this.Apps;
   }
 }
 

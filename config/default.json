@@ -9,8 +9,16 @@
   "appSettings": {
     "appContainerTenant": "@@HOST_TENANT_NAME",
     "appContainerAssetId": "@@APP_ASSET_ID",
-    "appContainerAssetType": "sidipol.SIDIRO_APP_CONTAINER",
-    "appAssetType": "sidipol.SIDIRO_APP"
+    "appContainerAssetType": "sidiop.SIDIRO_APP_CONTAINER",
+    "appAssetType": "sidiop.SIDIRO_APP",
+    "subtenantAssetType": "core.basicsubtenant"
+  },
+  "userPermissions": {
+    "superAdminRole": "sidiop.super_admin",
+    "globalAdminRole": "sidiop.global_admin",
+    "globalUserRole": "sidiop.global_user",
+    "localAdminRole": "sidiop.local_admin",
+    "localUserRole": "sidiop.local_user"
   },
   "port": 5000,
   "tokenExpireAdditionalTime": 100000,

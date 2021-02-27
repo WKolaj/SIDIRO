@@ -69,6 +69,7 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
   protected async _getAllIdsFromStorage(): Promise<string[]> {
     return (
       await this._fileService.getAllFileNamesFromAsset(
+        this.Tenant,
         this.AssetId,
         this.Extension
       )

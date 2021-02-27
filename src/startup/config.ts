@@ -8,8 +8,6 @@ let throwIfConfigDoesNotExist = (configName: string) => {
     throw new Error(`FATAL ERROR: ${configName} is not defined in config file`);
 };
 
-//TODO - change check of config based on new authorization - calling tenant API
-
 export default async function() {
   logger.info("initializing app configuration files...");
 
@@ -23,6 +21,13 @@ export default async function() {
   throwIfConfigDoesNotExist("appSettings.appContainerAssetId");
   throwIfConfigDoesNotExist("appSettings.appContainerAssetType");
   throwIfConfigDoesNotExist("appSettings.appAssetType");
+  throwIfConfigDoesNotExist("appSettings.subtenantAssetType");
+
+  throwIfConfigDoesNotExist("userPermissions.superAdminRole");
+  throwIfConfigDoesNotExist("userPermissions.globalAdminRole");
+  throwIfConfigDoesNotExist("userPermissions.globalUserRole");
+  throwIfConfigDoesNotExist("userPermissions.localAdminRole");
+  throwIfConfigDoesNotExist("userPermissions.localUserRole");
 
   throwIfConfigDoesNotExist("tokenExpireAdditionalTime");
 

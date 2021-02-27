@@ -14,24 +14,25 @@ export enum PlantPermissions {
   "Admin",
 }
 
-export type UserStorageData = {
+export interface UserStorageData {
+  email: string;
   config: object;
   data: object;
   permissions: {
     role: UserRole;
     plants: { [plantId: string]: PlantPermissions };
   };
-};
+}
 
-export type PlanStorageData = {
+export interface PlanStorageData {
   config: object;
   data: object;
-};
+}
 
-export type AppStorageData = {
+export interface AppStorageData {
   config: object;
   data: object;
-};
+}
 
 const appStorageFilePath = "main.app.config.json";
 const appStorageFileExtension = "app.config.json";

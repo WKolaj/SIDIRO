@@ -4,19 +4,22 @@ import "express-async-errors";
 import { config } from "node-config-ts";
 import path from "path";
 import logger from "../logger/logger";
-import fetchUser from "../middleware/fetchUser";
-import userFetch from "../middleware/fetchUser";
+import fetchUser from "../middleware/user/fetchUser";
+import userFetch from "../middleware/user/fetchUser";
 import configStartFunc from "./config";
 import logsStartFunc from "./logs";
 import routeStartFunc from "./route";
+import appDataStartFunction from "./appData";
+
 const app = express();
 
 export default async function(workingDirName: string | null) {
   if (!workingDirName) workingDirName = __dirname;
 
   //Startup of application
-  configStartFunc();
-  logsStartFunc();
+  await configStartFunc();
+  await logsStartFunc();
+  await appDataStartFunction();
 
   const port = process.env.PORT || config.port;
 
@@ -26,7 +29,7 @@ export default async function(workingDirName: string | null) {
   app.use(express.static(path.join(workingDirName, "public")));
 
   //Routes have to be initialized after initializing main middleware
-  routeStartFunc(app);
+  await routeStartFunc(app);
 
   //In order for react routing to work - implementing sending always for any not-recognized endpoints
   app.get("*", (req, res) => {

@@ -5,7 +5,7 @@ import express, { Request } from "express";
 /**
  * @description Type representing data of user after decoding the token
  */
-export type MindSphereUserData = {
+export type MindSphereUserJWTData = {
   jti: string;
   sub: string;
   scope: string[];
@@ -40,12 +40,12 @@ export interface UserRequest<
   ReqQuery = Query,
   Locals extends Record<string, any> = Record<string, any>
 > extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
-  user: MindSphereUserData;
+  user: MindSphereUserJWTData;
 }
 
 const decodeUserFromRequest = function(
   req: Request
-): MindSphereUserData | null {
+): MindSphereUserJWTData | null {
   const authorizationHeader = req.get("authorization");
 
   if (authorizationHeader == null) return null;
@@ -61,7 +61,7 @@ const decodeUserFromRequest = function(
 
   if (decodedToken == null || decodedToken.payload == null) return null;
 
-  let userToReturn = decodedToken.payload as MindSphereUserData;
+  let userToReturn = decodedToken.payload as MindSphereUserJWTData;
 
   return userToReturn;
 };
@@ -77,7 +77,9 @@ export default function(
   if (userData == null)
     return res
       .status(401)
-      .send("Access denied. No token provided to fetch the user!");
+      .send(
+        "Access denied. No token provided to fetch the user or token is invalid!"
+      );
 
   let userRequest = req as UserRequest;
   userRequest.user = userData;

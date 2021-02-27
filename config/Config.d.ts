@@ -4,6 +4,7 @@ declare module "node-config-ts" {
   interface IConfig {
     appCredentials: AppCredentials
     appSettings: AppSettings
+    userPermissions: UserPermissions
     port: number
     tokenExpireAdditionalTime: number
     logging: Logging
@@ -18,18 +19,26 @@ declare module "node-config-ts" {
     maxsize: number
     maxFiles: number
   }
+  interface UserPermissions {
+    superAdminRole: string
+    globalAdminRole: string
+    globalUserRole: string
+    localAdminRole: string
+    localUserRole: string
+  }
   interface AppSettings {
-    appContainerTenant: undefined
-    appContainerAssetId: undefined
+    appContainerTenant: string
+    appContainerAssetId: string
     appContainerAssetType: string
     appAssetType: string
+    subtenantAssetType: string
   }
   interface AppCredentials {
-    clientId: undefined
-    clientSecret: undefined
-    appName: undefined
-    appVersion: undefined
-    appId: undefined
+    clientId: string
+    clientSecret: string
+    appName: string
+    appVersion: string
+    appId: string
   }
   export const config: Config
   export type Config = IConfig
