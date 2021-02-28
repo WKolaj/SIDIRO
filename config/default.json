@@ -15,10 +15,12 @@
   },
   "userPermissions": {
     "superAdminRole": "sidiop.super_admin",
-    "globalAdminRole": "sidiop.global_admin",
-    "globalUserRole": "sidiop.global_user",
-    "localAdminRole": "sidiop.local_admin",
-    "localUserRole": "sidiop.local_user"
+    "globalAdminRole": "mdsp_customrole:testGlobalAdmin",
+    "globalUserRole": "mdsp_customrole:testGlobalUser",
+    "localAdminRole": "mdsp_customrole:testLocalAdmin",
+    "localUserRole": "mdsp_customrole:testLocalUser",
+    "msStandardUser": "mdsp:core:StandardUser",
+    "msSubtenantUser": "mdsp:core:SubTenantUser"
   },
   "port": 5000,
   "tokenExpireAdditionalTime": 100000,

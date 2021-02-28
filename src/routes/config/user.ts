@@ -9,13 +9,8 @@ import isGlobalAdmin from "../../middleware/user/isGlobalAdmin";
 import { MindSphereAppsManager } from "../../classes/MindSphereApp/MindSphereAppsManager";
 import { UserStorageData } from "../../classes/MindSphereApp/MindSphereApp";
 import { joiValidator } from "../../middleware/validation/joiValidate";
-import { validateUserCreate } from "../../models/App/User/User";
-import {
-  MindSphereUserData,
-  MindSphereUserService,
-} from "../../classes/MindSphereService/MindSphereUserService";
-import { MindSphereAssetService } from "../../classes/MindSphereService/MindSphereAssetService";
-import { config } from "node-config-ts";
+import { validateUser } from "../../models/App/User/User";
+import checkUserIdParam from "../../middleware/user/checkUserIdParam";
 
 const router = express.Router();
 
@@ -89,6 +84,7 @@ router.get(
   fetchUser,
   fetchAppId,
   checkAppIdParam,
+  checkUserIdParam,
   fetchUserData,
   isGlobalAdmin,
   async function(
@@ -100,13 +96,11 @@ router.get(
       req.params.appId
     );
 
-    let usersOfGivenApp = await appToGetTheUser.getUserData(req.params.userId);
-
-    if (usersOfGivenApp == null) return res.status(404).send("User not found!");
+    let userOfTheApp = await appToGetTheUser.getUserData(req.params.userId);
 
     return res
       .status(200)
-      .send(normalizeUserPayload(req.params.userId, usersOfGivenApp));
+      .send(normalizeUserPayload(req.params.userId, userOfTheApp!));
   }
 );
 
@@ -117,7 +111,7 @@ router.post(
   checkAppIdParam,
   fetchUserData,
   isGlobalAdmin,
-  joiValidator(validateUserCreate),
+  joiValidator(validateUser),
   async function(
     req: express.Request<{ appId: string }, any, UserStorageData>,
     res: express.Response,
@@ -129,53 +123,121 @@ router.post(
       UserStorageData
     >;
 
-    //Id of user to operate on files
-    let userId: string | null = null;
-    let usersWithTheSameName = await MindSphereUserService.getInstance().getAllUsers(
-      userRequest.user.ten,
-      null,
-      null,
-      userRequest.body.email
-    );
-
-    if (usersWithTheSameName.length < 1) {
-      console.log("creating user...");
-      //User does not exist - create the user
-      let userCreatePayload: MindSphereUserData = {
-        active: true,
-        name: {},
-        userName: userRequest.body.email,
-      };
-
-      if (userRequest.user.subtenant != null) {
-        userCreatePayload.subtenants = [
-          {
-            id: userRequest.user.subtenant,
-          },
-        ];
-      }
-
-      let createdUser = await MindSphereUserService.getInstance().createUser(
-        userRequest.user.ten,
-        userCreatePayload
-      );
-
-      userId = createdUser.id!;
-    } else {
-      console.log(`user already created!`);
-      //User already exists - just get his id
-      userId = usersWithTheSameName[0].id!;
-    }
-
-    console.log(userId);
-
     let appToCreateTheUser = await MindSphereAppsManager.getInstance().getApp(
       userRequest.params.appId
     );
 
-    await appToCreateTheUser.setUserData(userId, userRequest.body);
+    //Checking if user of given email exists and return if it already exists
+    let userExists = await appToCreateTheUser.UsersManager.checkIfUserIsCreatedInMindSphere(
+      null,
+      userRequest.body.email
+    );
 
-    return res.status(200).send(normalizeUserPayload(userId, userRequest.body));
+    if (userExists)
+      return res
+        .status(400)
+        .send(`User of email: ${userRequest.body.email} - already exists!`);
+
+    //Creating user in mindsphere and in storage
+    let createdUser = await appToCreateTheUser.UsersManager.createUser(
+      userRequest.body
+    );
+
+    //Returning created user
+    return res
+      .status(200)
+      .send(normalizeUserPayload(createdUser.msData.id!, userRequest.body));
+  }
+);
+
+router.delete(
+  "/global/:appId/:userId",
+  fetchUser,
+  fetchAppId,
+  checkAppIdParam,
+  checkUserIdParam,
+  fetchUserData,
+  isGlobalAdmin,
+  async function(
+    req: express.Request<{ appId: string; userId: string }>,
+    res: express.Response,
+    next: express.NextFunction
+  ) {
+    let userRequest = req as UserDataRequest<{ appId: string; userId: string }>;
+
+    let appToDeleteTheUser = await MindSphereAppsManager.getInstance().getApp(
+      userRequest.params.appId
+    );
+
+    let userToDeleteStorageData = await appToDeleteTheUser.getUserData(
+      userRequest.params.userId
+    );
+
+    if (userToDeleteStorageData == null)
+      return res
+        .status(404)
+        .send(`User of id: ${userRequest.params.userId} does not exist!`);
+
+    //Deleting user
+    await appToDeleteTheUser.UsersManager.deleteUser(userRequest.params.userId);
+
+    //Returning created user
+    return res
+      .status(200)
+      .send(
+        normalizeUserPayload(userRequest.params.userId, userToDeleteStorageData)
+      );
+  }
+);
+
+router.put(
+  "/global/:appId/:userId",
+  fetchUser,
+  fetchAppId,
+  checkAppIdParam,
+  checkUserIdParam,
+  fetchUserData,
+  isGlobalAdmin,
+  joiValidator(validateUser),
+  async function(
+    req: express.Request<
+      { appId: string; userId: string },
+      any,
+      UserStorageData
+    >,
+    res: express.Response,
+    next: express.NextFunction
+  ) {
+    let userRequest = req as UserDataRequest<
+      { appId: string; userId: string },
+      any,
+      UserStorageData
+    >;
+
+    let appToUpdateTheUser = await MindSphereAppsManager.getInstance().getApp(
+      userRequest.params.appId
+    );
+
+    let userToUpdateStorageData = await appToUpdateTheUser.getUserData(
+      userRequest.params.userId
+    );
+
+    if (userToUpdateStorageData == null)
+      return res
+        .status(404)
+        .send(`User of id: ${userRequest.params.userId} does not exist!`);
+
+    let updatedUser = await appToUpdateTheUser.UsersManager.updateUser(
+      userRequest.params.userId,
+      req.body
+    );
+
+    //Returning created user
+    return res
+      .status(200)
+      .send(
+        normalizeUserPayload(userRequest.params.userId, updatedUser.storageData)
+      );
   }
 );
 

@@ -2,6 +2,7 @@ import express, { Request } from "express";
 import { config } from "node-config-ts";
 import { UserRole } from "../../classes/MindSphereApp/MindSphereApp";
 import { UserDataRequest } from "./fetchUserData";
+import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 
 export default async function(
   req: express.Request,
@@ -11,14 +12,12 @@ export default async function(
   let userDataRequest = req as UserDataRequest;
 
   let mindSphereScopeValid =
-    userDataRequest.user.scope.includes(
-      config.userPermissions.globalAdminRole
-    ) ||
-    userDataRequest.user.scope.includes(config.userPermissions.globalUserRole);
+    MindSphereAppUsersManager.hasGlobalAdminScope(userDataRequest.user) ||
+    MindSphereAppUsersManager.hasGlobalUserScope(userDataRequest.user);
 
   let userPermissionsValid =
-    userDataRequest.userData?.permissions.role === UserRole.GlobalAdmin ||
-    userDataRequest.userData?.permissions.role === UserRole.GlobalUser;
+    MindSphereAppUsersManager.hasGlobalAdminRole(userDataRequest.userData!) ||
+    MindSphereAppUsersManager.hasGlobalUserRole(userDataRequest.userData!);
 
   if (!mindSphereScopeValid || !userPermissionsValid)
     return res

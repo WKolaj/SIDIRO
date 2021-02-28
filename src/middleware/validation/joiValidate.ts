@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import Joi from "joi";
 
-export type JoiValidatior = (objectToValidate: any) => Joi.ValidationResult;
+export type JoiValidatior = (
+  objectToValidate: any
+) => { error?: { details: { message: string }[] } };
 
 /**
  * @description Method for validating request body - sending 400 to client if there was an error

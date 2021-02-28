@@ -3,7 +3,7 @@ import {
   MindSphereAsset,
   MindSphereAssetService,
 } from "../MindSphereService/MindSphereAssetService";
-import { MindSphereApp } from "./MindSphereApp";
+import { MindSphereApp, UserRole } from "./MindSphereApp";
 
 const appContainerTenant: string = config.appSettings.appContainerTenant!;
 const appContainerAssetId: string = config.appSettings.appContainerAssetId!;
@@ -33,11 +33,42 @@ export class MindSphereAppsManager {
   ): string | null {
     if (tenantId == null || tenantId.length < 1) return null;
 
-    let idToReturn = tenantId;
+    let idToReturn = `ten-${tenantId}`;
     if (subtenantId != null) {
-      idToReturn += `-${subtenantId}`;
+      idToReturn += `-sub-${subtenantId}`;
     }
     return idToReturn;
+  }
+
+  public static splitAppId(
+    appId: string
+  ): {
+    tenantName: string;
+    subtenantName: string | null;
+  } {
+    if (appId.includes("-sub-")) {
+      //Version with subtenant
+
+      let splittedApp = appId.split("-sub-");
+      if (splittedApp.length != 2)
+        throw new Error(`Invalid appId format: ${appId}`);
+
+      let tenantName = splittedApp[0].replace("ten-", "");
+      let subtenantName = splittedApp[1];
+
+      return {
+        tenantName: tenantName,
+        subtenantName: subtenantName,
+      };
+    } else {
+      //Version without subtenant
+      let tenantName = appId.replace("ten-", "");
+
+      return {
+        tenantName: tenantName,
+        subtenantName: null,
+      };
+    }
   }
 
   private _storageTenant: string;
@@ -89,6 +120,8 @@ export class MindSphereAppsManager {
     let appExists = await this.checkIfAppExists(appId);
     if (appExists) throw new Error(`App ${appId} already exists!`);
 
+    let appTenants = MindSphereAppsManager.splitAppId(appId);
+
     let assetForApp = await MindSphereAssetService.getInstance().createAsset(
       this._storageTenant,
       {
@@ -101,7 +134,9 @@ export class MindSphereAppsManager {
     let newApp = new MindSphereApp(
       this._storageTenant,
       appId,
-      assetForApp.assetId!
+      assetForApp.assetId!,
+      appTenants.tenantName,
+      appTenants.subtenantName
     );
 
     await newApp.init();
@@ -125,7 +160,15 @@ export class MindSphereAppsManager {
     let appAssetId = await this.getAppAssetIdIfExists(appId);
     if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
 
-    let newApp = new MindSphereApp(this._storageTenant, appId, appAssetId);
+    let appTenants = MindSphereAppsManager.splitAppId(appId);
+
+    let newApp = new MindSphereApp(
+      this._storageTenant,
+      appId,
+      appAssetId,
+      appTenants.tenantName,
+      appTenants.subtenantName
+    );
     await newApp.init();
     this._apps[appId] = newApp;
 
@@ -135,10 +178,14 @@ export class MindSphereAppsManager {
   public async fetchAppFromAsset(
     asset: MindSphereAsset
   ): Promise<MindSphereApp> {
+    let appTenants = MindSphereAppsManager.splitAppId(asset.name);
+
     let newApp = new MindSphereApp(
       this._storageTenant,
       asset.name,
-      asset.assetId!
+      asset.assetId!,
+      appTenants.tenantName,
+      appTenants.subtenantName
     );
     await newApp.init();
     this._apps[asset.name] = newApp;

@@ -77,4 +77,9 @@ export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
       .filter((fileName) => fileName != null)
       .map((fileName) => this._getIdBasedOnFileName(fileName));
   }
+
+  protected async _deleteDataFromStorage(id: string): Promise<void> {
+    let filePath = this._getFilePathBasedOnId(id);
+    await this._fileService.deleteFile(this.Tenant, this.AssetId, filePath);
+  }
 }

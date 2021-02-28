@@ -1,17 +1,17 @@
 import { config } from "node-config-ts";
 import { MindSphereDataStorage } from "../DataStorage/MindSphereDataStorage";
+import { MindSphereAppUsersManager } from "./MindSphereAppUsersManager";
 
 export enum UserRole {
-  "SuperAdmin",
-  "GlobalAdmin",
-  "GlobalUser",
-  "LocalAdmin",
-  "LocalUser",
+  "GlobalAdmin" = 0,
+  "GlobalUser" = 1,
+  "LocalAdmin" = 2,
+  "LocalUser" = 3,
 }
 
 export enum PlantPermissions {
-  "User",
-  "Admin",
+  "Admin" = 0,
+  "User" = 1,
 }
 
 export interface UserStorageData {
@@ -44,6 +44,14 @@ export class MindSphereApp {
   protected _plantStorage: MindSphereDataStorage<PlanStorageData>;
   protected _userStorage: MindSphereDataStorage<UserStorageData>;
 
+  protected _usersManager: MindSphereAppUsersManager;
+  /**
+   * @description Object to manage users of the app
+   */
+  get UsersManager() {
+    return this._usersManager;
+  }
+
   protected _storageTenant: string;
   /**
    * @description Name of the tenant where app config file is stored
@@ -60,7 +68,7 @@ export class MindSphereApp {
     return this._appId;
   }
 
-  private _assetId: string;
+  protected _assetId: string;
   /**
    * @description id of asset associated with the app
    */
@@ -68,16 +76,41 @@ export class MindSphereApp {
     return this._assetId;
   }
 
+  protected _tenantName: string;
+  /**
+   * @description name of the tenant associated with application
+   */
+  get TenantName() {
+    return this._tenantName;
+  }
+
+  protected _subtenantId: string | null;
+  /**
+   * @description id of subtenant associated with application (if app runs as a subtenant)
+   */
+  get SubtenantId() {
+    return this._subtenantId;
+  }
+
   /**
    * @description Class representing single instance of the app
    * @param storageTenant name of tenant where app config file is stored
    * @param appId  Id of the app - should be build based on `${tenantId}.${subtenantId}` if subtenant exists or `${tenantId}` if only tenant exists
    * @param assetId Id of asset associated with app
+   * @param tenantName name of tenant assined
    */
-  public constructor(storageTenant: string, appId: string, assetId: string) {
+  public constructor(
+    storageTenant: string,
+    appId: string,
+    assetId: string,
+    tenantName: string,
+    subtenantId: string | null = null
+  ) {
     this._storageTenant = storageTenant;
     this._appId = appId;
     this._assetId = assetId;
+    this._tenantName = tenantName;
+    this._subtenantId = subtenantId;
     this._appStorage = new MindSphereDataStorage(
       storageTenant,
       assetId,
@@ -93,9 +126,16 @@ export class MindSphereApp {
       assetId,
       userStorageFileExtension
     );
+    this._usersManager = new MindSphereAppUsersManager(
+      this.TenantName,
+      this._userStorage,
+      this.SubtenantId
+    );
   }
 
   public async init() {
+    await this.UsersManager.init();
+
     //Initializing storages
     await Promise.all([
       this._appStorage.init(),

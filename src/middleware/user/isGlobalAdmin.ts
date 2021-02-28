@@ -2,6 +2,7 @@ import express, { Request } from "express";
 import { config } from "node-config-ts";
 import { UserRole } from "../../classes/MindSphereApp/MindSphereApp";
 import { UserDataRequest } from "./fetchUserData";
+import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 
 export default async function(
   req: express.Request,
@@ -10,12 +11,13 @@ export default async function(
 ) {
   let userDataRequest = req as UserDataRequest;
 
-  let mindSphereScopeValid = userDataRequest.user.scope.includes(
-    config.userPermissions.globalAdminRole
+  let mindSphereScopeValid = MindSphereAppUsersManager.hasGlobalAdminScope(
+    userDataRequest.user
   );
 
-  let userPermissionsValid =
-    userDataRequest.userData?.permissions.role === UserRole.GlobalAdmin;
+  let userPermissionsValid = MindSphereAppUsersManager.hasGlobalAdminRole(
+    userDataRequest.userData!
+  );
 
   if (!mindSphereScopeValid || !userPermissionsValid)
     return res.status(403).send("Access denied. User must be a global admin!");

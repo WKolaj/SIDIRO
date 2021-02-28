@@ -28,6 +28,8 @@ export default async function() {
   throwIfConfigDoesNotExist("userPermissions.globalUserRole");
   throwIfConfigDoesNotExist("userPermissions.localAdminRole");
   throwIfConfigDoesNotExist("userPermissions.localUserRole");
+  throwIfConfigDoesNotExist("userPermissions.msStandardUser");
+  throwIfConfigDoesNotExist("userPermissions.msSubtenantUser");
 
   throwIfConfigDoesNotExist("tokenExpireAdditionalTime");
 

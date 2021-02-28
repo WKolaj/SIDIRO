@@ -6,6 +6,7 @@ import {
   writeFileAsync,
   readDirAsync,
   isStringAValidJSON,
+  removeFileIfExistsAsync,
 } from "../../utilities/utilities";
 
 export class FileDataStorage<T> extends CachedDataStorage<T> {
@@ -61,5 +62,10 @@ export class FileDataStorage<T> extends CachedDataStorage<T> {
     return (await readDirAsync(this.DirPath))
       .filter((path) => this._isFilePathValid(path))
       .map((fileName) => this._getIdBasedOnFileName(fileName));
+  }
+
+  protected async _deleteDataFromStorage(id: string): Promise<void> {
+    let filePath = this._getFilePathBasedOnId(id);
+    await removeFileIfExistsAsync(filePath);
   }
 }

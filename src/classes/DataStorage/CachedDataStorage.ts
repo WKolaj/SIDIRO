@@ -103,9 +103,17 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
     return this._getAllDataFromCache();
   }
 
+  public async deleteData(id: string) {
+    let dataExistsInStorage = await this._dataExistsInStorage(id);
+    if (dataExistsInStorage) await this._deleteDataFromStorage(id);
+    if (this._getDataFromCache(id) != null) this._clearDataInCache(id);
+  }
+
   public async init(): Promise<void> {
     await this.fetchAllData();
   }
+
+  protected abstract _deleteDataFromStorage(id: string): Promise<void>;
 
   protected abstract _getDataFromStorage(id: string): Promise<T | null>;
 
@@ -115,3 +123,5 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
 
   protected abstract _getAllIdsFromStorage(): Promise<string[]>;
 }
+
+//TODO - add changes to class diagram regarding data deletion

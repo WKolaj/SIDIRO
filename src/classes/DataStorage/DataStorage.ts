@@ -6,5 +6,6 @@ export abstract class DataStorage<T> {
   public abstract getAllData(): Promise<{ [key: string]: T }>;
   public abstract setData(id: string, data: T): Promise<void>;
   public abstract getAllIds(): Promise<string[]>;
+  public abstract deleteData(id: string): Promise<void>;
   public abstract init(): Promise<void>;
 }

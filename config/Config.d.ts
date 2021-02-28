@@ -25,6 +25,8 @@ declare module "node-config-ts" {
     globalUserRole: string
     localAdminRole: string
     localUserRole: string
+    msStandardUser: string
+    msSubtenantUser: string
   }
   interface AppSettings {
     appContainerTenant: string
