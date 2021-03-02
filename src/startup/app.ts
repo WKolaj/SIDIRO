@@ -4,8 +4,6 @@ import "express-async-errors";
 import { config } from "node-config-ts";
 import path from "path";
 import logger from "../logger/logger";
-import fetchUser from "../middleware/user/fetchUser";
-import userFetch from "../middleware/user/fetchUser";
 import configStartFunc from "./config";
 import logsStartFunc from "./logs";
 import routeStartFunc from "./route";

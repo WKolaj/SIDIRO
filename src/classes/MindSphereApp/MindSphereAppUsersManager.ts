@@ -9,7 +9,7 @@ import {
 } from "../MindSphereService/MindSphereUserService";
 import { UserRole, UserStorageData } from "./MindSphereApp";
 import { MindSphereDataStorage } from "../DataStorage/MindSphereDataStorage";
-import { MindSphereUserJWTData } from "../../middleware/user/fetchUser";
+import { MindSphereUserJWTData } from "../../middleware/userToken/fetchUserTokenData";
 
 /**
  * @description Class for managing mindsphere app users
@@ -99,32 +99,32 @@ export class MindSphereAppUsersManager {
 
     let standardUserGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.msStandardUser
+      config.userPermissions.msStandardUserGroup
     );
 
     let subtenantUserGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.msSubtenantUser
+      config.userPermissions.msSubtenantUserGroup
     );
 
     let globalAdminGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.globalAdminRole
+      config.userPermissions.globalAdminGroup
     );
 
     let globalUserGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.globalUserRole
+      config.userPermissions.globalUserGroup
     );
 
     let localAdminGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.localAdminRole
+      config.userPermissions.localAdminGroup
     );
 
     let localUserGroup = this._findUserGroupBasedOnDisplayName(
       allUserGroups,
-      config.userPermissions.localUserRole
+      config.userPermissions.localUserGroup
     );
 
     //In case some group is absent - at this point the mehtod will already have thrown
@@ -136,20 +136,49 @@ export class MindSphereAppUsersManager {
     this._localUserGroup = localUserGroup;
   }
 
+  public static getSuperAdminUserIds() {
+    let usersString = config.userPermissions.superAdminUserIds! as string;
+    return usersString.split(" ");
+  }
+
+  /**
+   * @description Method for checking if user is a super admin
+   * @param user user jwt data to check
+   */
+  public static async isSuperAdmin(user: MindSphereUserJWTData) {
+    //Super Admin has to be assigned to the operator tenant - the same tenant when container is assigned
+    if (user.ten !== config.appSettings.appContainerTenant) return false;
+
+    //Getting user from operator tenant to get his real id
+    let users = await MindSphereUserService.getInstance().getAllUsers(
+      user.ten,
+      user.subtenant,
+      null,
+      user.email.toLowerCase()
+    );
+
+    //User not found - return false
+    if (users.length < 1 || users[0].id == null) return false;
+
+    let superAdminIds = MindSphereAppUsersManager.getSuperAdminUserIds();
+
+    return superAdminIds.includes(users[0].id);
+  }
+
   public static hasGlobalAdminScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.globalAdminRole);
+    return user.scope.includes(config.userPermissions.globalAdminScope);
   }
 
   public static hasGlobalUserScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.globalUserRole);
+    return user.scope.includes(config.userPermissions.globalUserScope);
   }
 
   public static hasLocalAdminScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.localAdminRole);
+    return user.scope.includes(config.userPermissions.localAdminScope);
   }
 
   public static hasLocalUserScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.localUserRole);
+    return user.scope.includes(config.userPermissions.localUserScope);
   }
 
   public static hasGlobalAdminRole(user: UserStorageData) {
@@ -166,6 +195,26 @@ export class MindSphereAppUsersManager {
 
   public static hasLocalUserRole(user: UserStorageData) {
     return user.permissions.role === UserRole.LocalUser;
+  }
+
+  /**
+   * @description Methof for getting users id based on his email. Returns null if there is no user of given email
+   * @param userEmail Email of the user to get id from
+   */
+  public async getUserIdIfExists(userEmail: string): Promise<string | null> {
+    if (!this._initialized) throw new Error(`UserManager not initialized!`);
+
+    let allPossibleUsers = await this._mindSphereUserService.getAllUsers(
+      this.TenantName,
+      this.SubtenantId,
+      null,
+      userEmail.toLowerCase()
+    );
+
+    if (allPossibleUsers.length < 1 || allPossibleUsers[0].id == null)
+      return null;
+
+    return allPossibleUsers[0].id;
   }
 
   public getUserRoleBasedOnUserGroup(

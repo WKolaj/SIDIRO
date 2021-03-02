@@ -6,41 +6,25 @@ import express, { Request } from "express";
  * @description Type representing data of user after decoding the token
  */
 export type MindSphereUserJWTData = {
-  jti: string;
-  sub: string;
-  scope: string[];
   client_id: string;
-  cid: string;
-  azp: string;
-  grant_type: string;
-  user_id: string;
-  origin: string;
   user_name: string;
   email: string;
-  auth_time: number;
-  rev_sig: string;
-  iat: number;
-  exp: number;
-  iss: string;
-  zid: string;
-  aud: string[];
   ten: string;
-  schemas: string[];
-  cat: string;
+  scope: string[];
   subtenant?: string;
 };
 
 /**
  * @description Type representing data of user after decoding the token
  */
-export interface UserRequest<
+export interface UserTokenRequest<
   P = ParamsDictionary,
   ResBody = any,
   ReqBody = any,
   ReqQuery = Query,
   Locals extends Record<string, any> = Record<string, any>
 > extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
-  user: MindSphereUserJWTData;
+  userTokenData: MindSphereUserJWTData;
 }
 
 const decodeUserFromRequest = function(
@@ -81,8 +65,8 @@ export default function(
         "Access denied. No token provided to fetch the user or token is invalid!"
       );
 
-  let userRequest = req as UserRequest;
-  userRequest.user = userData;
+  let userRequest = req as UserTokenRequest;
+  userRequest.userTokenData = userData;
 
   next();
 }

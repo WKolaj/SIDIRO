@@ -1,16 +1,17 @@
 import express from "express";
-import checkAppIdParam from "../../middleware/app/checkAppIdParam";
-import fetchAppId, { AppRequest } from "../../middleware/app/fetchAppId";
-import fetchUser from "../../middleware/user/fetchUser";
+import checkAppIdParam from "../../middleware/checkParams/checkAppIdParam";
+import fetchAppId from "../../middleware/appData/fetchAppData";
 import fetchUserData, {
   UserDataRequest,
-} from "../../middleware/user/fetchUserData";
-import isGlobalAdmin from "../../middleware/user/isGlobalAdmin";
+} from "../../middleware/userData/fetchUserData";
+import isGlobalAdmin from "../../middleware/authorization/isGlobalAdmin";
 import { MindSphereAppsManager } from "../../classes/MindSphereApp/MindSphereAppsManager";
 import { UserStorageData } from "../../classes/MindSphereApp/MindSphereApp";
 import { joiValidator } from "../../middleware/validation/joiValidate";
 import { validateUser } from "../../models/App/User/User";
-import checkUserIdParam from "../../middleware/user/checkUserIdParam";
+import checkUserIdParam from "../../middleware/checkParams/checkUserIdParam";
+import fetchUserTokenData from "../../middleware/userToken/fetchUserTokenData";
+import fetchAppData from "../../middleware/appData/fetchAppData";
 
 const router = express.Router();
 
@@ -40,40 +41,36 @@ const normalizeUsersPayload = function(userPayload: {
   return payloadToReturn;
 };
 
-router.get("/me", fetchUser, fetchAppId, fetchUserData, async function(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) {
-  let appDataRequest = req as UserDataRequest;
+router.get(
+  "/me",
+  fetchUserTokenData,
+  fetchAppData,
+  fetchUserData,
+  async function(req: express.Request, res: express.Response) {
+    let appDataRequest = req as UserDataRequest;
 
-  return res
-    .status(200)
-    .send(
-      normalizeUserPayload(
-        appDataRequest.user.user_id,
-        appDataRequest.userData!
-      )
-    );
-});
+    return res
+      .status(200)
+      .send(
+        normalizeUserPayload(appDataRequest.userId!, appDataRequest.userData!)
+      );
+  }
+);
 
 router.get(
   "/global/:appId",
-  fetchUser,
-  fetchAppId,
+  fetchUserTokenData,
+  fetchAppData,
   checkAppIdParam,
   fetchUserData,
   isGlobalAdmin,
   async function(
     req: express.Request<{ appId: string }>,
-    res: express.Response,
-    next: express.NextFunction
+    res: express.Response
   ) {
-    let appToGetTheUser = await MindSphereAppsManager.getInstance().getApp(
-      req.params.appId
-    );
+    let userDataReq = req as UserDataRequest<{ appId: string }>;
 
-    let usersOfGivenApp = await appToGetTheUser.getAllUsers();
+    let usersOfGivenApp = await userDataReq.appData!.getAllUsers();
 
     return res.status(200).send(normalizeUsersPayload(usersOfGivenApp));
   }
@@ -81,41 +78,40 @@ router.get(
 
 router.get(
   "/global/:appId/:userId",
-  fetchUser,
-  fetchAppId,
+  fetchUserTokenData,
+  fetchAppData,
   checkAppIdParam,
-  checkUserIdParam,
   fetchUserData,
   isGlobalAdmin,
   async function(
     req: express.Request<{ appId: string; userId: string }>,
-    res: express.Response,
-    next: express.NextFunction
+    res: express.Response
   ) {
-    let appToGetTheUser = await MindSphereAppsManager.getInstance().getApp(
-      req.params.appId
+    let userDataReq = req as UserDataRequest<{ appId: string; userId: string }>;
+
+    let userToReturn = await userDataReq.appData!.getUserData(
+      req.params.userId
     );
 
-    let userOfTheApp = await appToGetTheUser.getUserData(req.params.userId);
+    if (userToReturn == null) return res.status(404).send("User not found!");
 
     return res
       .status(200)
-      .send(normalizeUserPayload(req.params.userId, userOfTheApp!));
+      .send(normalizeUserPayload(req.params.userId, userToReturn!));
   }
 );
 
 router.post(
   "/global/:appId",
-  fetchUser,
-  fetchAppId,
+  fetchUserTokenData,
+  fetchAppData,
   checkAppIdParam,
   fetchUserData,
   isGlobalAdmin,
   joiValidator(validateUser),
   async function(
     req: express.Request<{ appId: string }, any, UserStorageData>,
-    res: express.Response,
-    next: express.NextFunction
+    res: express.Response
   ) {
     let userRequest = req as UserDataRequest<
       { appId: string },
@@ -123,12 +119,8 @@ router.post(
       UserStorageData
     >;
 
-    let appToCreateTheUser = await MindSphereAppsManager.getInstance().getApp(
-      userRequest.params.appId
-    );
-
     //Checking if user of given email exists and return if it already exists
-    let userExists = await appToCreateTheUser.UsersManager.checkIfUserIsCreatedInMindSphere(
+    let userExists = await userRequest.appData!.UsersManager.checkIfUserIsCreatedInMindSphere(
       null,
       userRequest.body.email
     );
@@ -139,7 +131,7 @@ router.post(
         .send(`User of email: ${userRequest.body.email} - already exists!`);
 
     //Creating user in mindsphere and in storage
-    let createdUser = await appToCreateTheUser.UsersManager.createUser(
+    let createdUser = await userRequest.appData!.UsersManager.createUser(
       userRequest.body
     );
 
@@ -152,10 +144,9 @@ router.post(
 
 router.delete(
   "/global/:appId/:userId",
-  fetchUser,
-  fetchAppId,
+  fetchUserTokenData,
+  fetchAppData,
   checkAppIdParam,
-  checkUserIdParam,
   fetchUserData,
   isGlobalAdmin,
   async function(
@@ -165,11 +156,7 @@ router.delete(
   ) {
     let userRequest = req as UserDataRequest<{ appId: string; userId: string }>;
 
-    let appToDeleteTheUser = await MindSphereAppsManager.getInstance().getApp(
-      userRequest.params.appId
-    );
-
-    let userToDeleteStorageData = await appToDeleteTheUser.getUserData(
+    let userToDeleteStorageData = await userRequest.appData!.getUserData(
       userRequest.params.userId
     );
 
@@ -179,7 +166,9 @@ router.delete(
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
 
     //Deleting user
-    await appToDeleteTheUser.UsersManager.deleteUser(userRequest.params.userId);
+    await userRequest.appData!.UsersManager.deleteUser(
+      userRequest.params.userId
+    );
 
     //Returning created user
     return res
@@ -192,10 +181,9 @@ router.delete(
 
 router.put(
   "/global/:appId/:userId",
-  fetchUser,
-  fetchAppId,
+  fetchUserTokenData,
+  fetchAppData,
   checkAppIdParam,
-  checkUserIdParam,
   fetchUserData,
   isGlobalAdmin,
   joiValidator(validateUser),
@@ -214,11 +202,7 @@ router.put(
       UserStorageData
     >;
 
-    let appToUpdateTheUser = await MindSphereAppsManager.getInstance().getApp(
-      userRequest.params.appId
-    );
-
-    let userToUpdateStorageData = await appToUpdateTheUser.getUserData(
+    let userToUpdateStorageData = await userRequest.appData!.getUserData(
       userRequest.params.userId
     );
 
@@ -227,7 +211,7 @@ router.put(
         .status(404)
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
 
-    let updatedUser = await appToUpdateTheUser.UsersManager.updateUser(
+    let updatedUser = await userRequest.appData!.UsersManager.updateUser(
       userRequest.params.userId,
       req.body
     );

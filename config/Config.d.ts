@@ -20,20 +20,23 @@ declare module "node-config-ts" {
     maxFiles: number
   }
   interface UserPermissions {
-    superAdminRole: string
-    globalAdminRole: string
-    globalUserRole: string
-    localAdminRole: string
-    localUserRole: string
-    msStandardUser: string
-    msSubtenantUser: string
+    globalAdminScope: string
+    globalUserScope: string
+    localAdminScope: string
+    localUserScope: string
+    globalAdminGroup: string
+    globalUserGroup: string
+    localAdminGroup: string
+    localUserGroup: string
+    msStandardUserGroup: string
+    msSubtenantUserGroup: string
+    superAdminUserIds: undefined
   }
   interface AppSettings {
     appContainerTenant: string
     appContainerAssetId: string
     appContainerAssetType: string
     appAssetType: string
-    subtenantAssetType: string
   }
   interface AppCredentials {
     clientId: string

@@ -1,0 +1,8 @@
+# Dependency directories
+node_modules/
+
+# development env variables
+developEnvVariables.sh
+
+# test Dir
+__testDir

@@ -1,25 +1,30 @@
-import jwt from "jsonwebtoken";
 import { ParamsDictionary, Query } from "express-serve-static-core";
-import express, { Request } from "express";
+import express from "express";
 import { MindSphereAppsManager } from "../../classes/MindSphereApp/MindSphereAppsManager";
-import { UserRequest } from "../user/fetchUser";
+import { MindSphereApp } from "../../classes/MindSphereApp/MindSphereApp";
+import { UserTokenRequest } from "../userToken/fetchUserTokenData";
 
 /**
  * @description Type representing data of user after decoding the token
  */
-export interface AppRequest<
+export interface AppDataRequest<
   P = ParamsDictionary,
   ResBody = any,
   ReqBody = any,
   ReqQuery = Query,
   Locals extends Record<string, any> = Record<string, any>
-> extends UserRequest<P, ResBody, ReqBody, ReqQuery, Locals> {
-  appId?: string;
+> extends UserTokenRequest<P, ResBody, ReqBody, ReqQuery, Locals> {
+  appData?: MindSphereApp;
 }
 
-export const getAppIdFromRequest = function(req: AppRequest): string | null {
-  if (req.user == null) return null;
-  return MindSphereAppsManager.generateAppId(req.user.ten, req.user.subtenant);
+export const getAppIdFromRequest = function(
+  req: AppDataRequest
+): string | null {
+  if (req.userTokenData == null) return null;
+  return MindSphereAppsManager.generateAppId(
+    req.userTokenData.ten,
+    req.userTokenData.subtenant
+  );
 };
 
 export default async function(
@@ -27,7 +32,7 @@ export default async function(
   res: express.Response,
   next: express.NextFunction
 ) {
-  let appRequest = req as AppRequest;
+  let appRequest = req as AppDataRequest;
   let appId = getAppIdFromRequest(appRequest);
 
   //Checking there is app id created from user's tenant and subtenant
@@ -47,7 +52,9 @@ export default async function(
       .status(403)
       .send("Access denied. Application of given id not found for the user!");
 
-  appRequest.appId = appId;
+  let appData = await MindSphereAppsManager.getInstance().getApp(appId);
+
+  appRequest.appData = appData;
 
   next();
 }

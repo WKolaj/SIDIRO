@@ -9,18 +9,21 @@
   "appSettings": {
     "appContainerTenant": "@@HOST_TENANT_NAME",
     "appContainerAssetId": "@@APP_ASSET_ID",
-    "appContainerAssetType": "sidiop.SIDIRO_APP_CONTAINER",
-    "appAssetType": "sidiop.SIDIRO_APP",
-    "subtenantAssetType": "core.basicsubtenant"
+    "appContainerAssetType": "@@APP_CONTAINER_ASSET_TYPE",
+    "appAssetType": "@@APP_ASSET_TYPE"
   },
   "userPermissions": {
-    "superAdminRole": "sidiop.super_admin",
-    "globalAdminRole": "mdsp_customrole:testGlobalAdmin",
-    "globalUserRole": "mdsp_customrole:testGlobalUser",
-    "localAdminRole": "mdsp_customrole:testLocalAdmin",
-    "localUserRole": "mdsp_customrole:testLocalUser",
-    "msStandardUser": "mdsp:core:StandardUser",
-    "msSubtenantUser": "mdsp:core:SubTenantUser"
+    "globalAdminScope": "@@GLOBAL_ADMIN_SCOPE",
+    "globalUserScope": "@@GLOBAL_USER_SCOPE",
+    "localAdminScope": "@@LOCAL_ADMIN_SCOPE",
+    "localUserScope": "@@LOCAL_USER_SCOPE",
+    "globalAdminGroup": "@@GLOBAL_ADMIN_GROUP",
+    "globalUserGroup": "@@GLOBAL_USER_GROUP",
+    "localAdminGroup": "@@LOCAL_ADMIN_GROUP",
+    "localUserGroup": "@@LOCAL_USER_GROUP",
+    "msStandardUserGroup": "@@MS_STANDARD_USER_GROUP",
+    "msSubtenantUserGroup": "@@MS_SUBTENANT_USER_GROUP",
+    "superAdminUserIds": "@@SUPER_ADMIN_IDS"
   },
   "port": 5000,
   "tokenExpireAdditionalTime": 100000,

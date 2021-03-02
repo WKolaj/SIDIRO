@@ -21,15 +21,18 @@ export default async function() {
   throwIfConfigDoesNotExist("appSettings.appContainerAssetId");
   throwIfConfigDoesNotExist("appSettings.appContainerAssetType");
   throwIfConfigDoesNotExist("appSettings.appAssetType");
-  throwIfConfigDoesNotExist("appSettings.subtenantAssetType");
 
-  throwIfConfigDoesNotExist("userPermissions.superAdminRole");
-  throwIfConfigDoesNotExist("userPermissions.globalAdminRole");
-  throwIfConfigDoesNotExist("userPermissions.globalUserRole");
-  throwIfConfigDoesNotExist("userPermissions.localAdminRole");
-  throwIfConfigDoesNotExist("userPermissions.localUserRole");
-  throwIfConfigDoesNotExist("userPermissions.msStandardUser");
-  throwIfConfigDoesNotExist("userPermissions.msSubtenantUser");
+  throwIfConfigDoesNotExist("userPermissions.superAdminUserIds");
+  throwIfConfigDoesNotExist("userPermissions.globalAdminScope");
+  throwIfConfigDoesNotExist("userPermissions.globalUserScope");
+  throwIfConfigDoesNotExist("userPermissions.localAdminScope");
+  throwIfConfigDoesNotExist("userPermissions.localUserScope");
+  throwIfConfigDoesNotExist("userPermissions.globalAdminGroup");
+  throwIfConfigDoesNotExist("userPermissions.globalUserGroup");
+  throwIfConfigDoesNotExist("userPermissions.localAdminGroup");
+  throwIfConfigDoesNotExist("userPermissions.localUserGroup");
+  throwIfConfigDoesNotExist("userPermissions.msStandardUserGroup");
+  throwIfConfigDoesNotExist("userPermissions.msSubtenantUserGroup");
 
   throwIfConfigDoesNotExist("tokenExpireAdditionalTime");
 

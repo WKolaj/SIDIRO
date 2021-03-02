@@ -1,5 +1,5 @@
 import express, { Request } from "express";
-import { AppRequest } from "../app/fetchAppId";
+import { AppDataRequest } from "../appData/fetchAppData";
 import { MindSphereAppsManager } from "../../classes/MindSphereApp/MindSphereAppsManager";
 
 export default async function(
@@ -7,7 +7,7 @@ export default async function(
   res: express.Response,
   next: express.NextFunction
 ) {
-  let appDataRequest = req as AppRequest<{ appId: string; userId: string }>;
+  let appDataRequest = req as AppDataRequest<{ appId: string; userId: string }>;
 
   let userApp = await MindSphereAppsManager.getInstance().getApp(
     appDataRequest.params.appId

@@ -1,7 +1,7 @@
 import express, { Request } from "express";
 import { config } from "node-config-ts";
 import { UserRole } from "../../classes/MindSphereApp/MindSphereApp";
-import { UserDataRequest } from "./fetchUserData";
+import { UserDataRequest } from "../userData/fetchUserData";
 import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 
 export default async function(
@@ -12,7 +12,7 @@ export default async function(
   let userDataRequest = req as UserDataRequest;
 
   let mindSphereScopeValid = MindSphereAppUsersManager.hasGlobalAdminScope(
-    userDataRequest.user
+    userDataRequest.userTokenData
   );
 
   let userPermissionsValid = MindSphereAppUsersManager.hasGlobalAdminRole(
