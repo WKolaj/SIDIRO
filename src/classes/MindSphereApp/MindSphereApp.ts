@@ -34,7 +34,7 @@ export interface AppStorageData {
   data: object;
 }
 
-const appStorageFilePath = "main.app.config.json";
+const mainAppStorageId = "main";
 const appStorageFileExtension = "app.config.json";
 const plantStorageFileExtension = "plant.config.json";
 const userStorageFileExtension = "user.config.json";
@@ -145,11 +145,11 @@ export class MindSphereApp {
   }
 
   public async getAppData(): Promise<AppStorageData | null> {
-    return this._appStorage.getData(appStorageFilePath);
+    return this._appStorage.getData(mainAppStorageId);
   }
 
   public async setAppData(appData: AppStorageData) {
-    return this._appStorage.setData(appStorageFilePath, appData);
+    return this._appStorage.setData(mainAppStorageId, appData);
   }
 
   public async getUserData(userId: string): Promise<UserStorageData | null> {

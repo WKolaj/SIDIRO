@@ -9,7 +9,7 @@ import {
 } from "../MindSphereService/MindSphereUserService";
 import { UserRole, UserStorageData } from "./MindSphereApp";
 import { MindSphereDataStorage } from "../DataStorage/MindSphereDataStorage";
-import { MindSphereUserJWTData } from "../../middleware/userToken/fetchUserTokenData";
+import { MindSphereUserJWTData } from "../../middleware/tokenData/fetchTokenData";
 
 /**
  * @description Class for managing mindsphere app users

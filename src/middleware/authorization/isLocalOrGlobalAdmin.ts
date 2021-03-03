@@ -1,13 +1,13 @@
 import express from "express";
 import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
-import { UserDataRequest } from "../userData/fetchUserData";
+import { AppDataRequest } from "../appData/fetchUserAndAppData";
 
 export default async function(
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) {
-  let userDataRequest = req as UserDataRequest;
+  let userDataRequest = req as AppDataRequest;
 
   let mindSphereScopeValid =
     MindSphereAppUsersManager.hasGlobalAdminScope(

@@ -1,7 +1,7 @@
 import express from "express";
-import fetchUserTokenData, {
-  UserTokenRequest,
-} from "../middleware/userToken/fetchUserTokenData";
+import fetchTokenData, {
+  TokenRequest,
+} from "../middleware/tokenData/fetchTokenData";
 const router = express.Router();
 
 export type ReturnedUser = {
@@ -13,12 +13,11 @@ export type ReturnedUser = {
   subtenant?: string;
 };
 
-router.get("/me", fetchUserTokenData, function(
+router.get("/me", fetchTokenData, function(
   req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
+  res: express.Response
 ) {
-  let userRequest = req as UserTokenRequest;
+  let userRequest = req as TokenRequest;
   let userToReturn: ReturnedUser = {
     client_id: userRequest.userTokenData.client_id,
     email: userRequest.userTokenData.email,

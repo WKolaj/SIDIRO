@@ -1,5 +1,5 @@
-import express, { Request } from "express";
-import { AppDataRequest } from "../appData/fetchAppData";
+import express from "express";
+import { AppDataRequest } from "../appData/fetchUserAndAppData";
 import { MindSphereAppsManager } from "../../classes/MindSphereApp/MindSphereAppsManager";
 
 export default async function(

@@ -1,5 +1,5 @@
 import express, { Request } from "express";
-import { AppDataRequest } from "../appData/fetchAppData";
+import { AppDataRequest } from "../appData/fetchUserAndAppData";
 
 export default async function(
   req: express.Request<{ appId: string }>,
@@ -10,8 +10,8 @@ export default async function(
 
   //Checking if app id from params and from user credentails are the same
   if (
-    appDataRequest.appData?.AppId == null ||
-    appDataRequest.appData?.AppId !== appDataRequest.params.appId
+    appDataRequest.appId == null ||
+    appDataRequest.appId !== appDataRequest.params.appId
   )
     return res
       .status(403)

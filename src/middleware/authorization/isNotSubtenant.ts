@@ -9,12 +9,8 @@ export default async function(
 ) {
   let userDataRequest = req as TokenRequest;
 
-  let mindSphereScopeValid = MindSphereAppUsersManager.isSuperAdmin(
-    userDataRequest.userTokenData
-  );
-
-  if (!mindSphereScopeValid)
-    return res.status(403).send("Access denied. User must be a super admin!");
+  if (userDataRequest.userTokenData.subtenant != null)
+    return res.status(403).send("Subtenant users cannot access this route!");
 
   next();
 }

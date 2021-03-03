@@ -17,7 +17,7 @@ export type MindSphereUserJWTData = {
 /**
  * @description Type representing data of user after decoding the token
  */
-export interface UserTokenRequest<
+export interface TokenRequest<
   P = ParamsDictionary,
   ResBody = any,
   ReqBody = any,
@@ -65,7 +65,7 @@ export default function(
         "Access denied. No token provided to fetch the user or token is invalid!"
       );
 
-  let userRequest = req as UserTokenRequest;
+  let userRequest = req as TokenRequest;
   userRequest.userTokenData = userData;
 
   next();
