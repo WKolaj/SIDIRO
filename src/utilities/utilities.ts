@@ -2,6 +2,10 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 import { encode, decode } from "js-base64";
+import express, { Router } from "express";
+import jsonError from "../middleware/jsonError";
+
+//#region ========== COMMON =========
 
 /**
  * @description Method for decoding Base64 string
@@ -66,12 +70,50 @@ export const isStringAValidJSON = function(str: string) {
 };
 
 /**
+ * @description Method to check wether arrays contain the same elements - order does not matter
+ * @param array1 array 1 to check
+ * @param array2 array 2 to check
+ */
+export const containsTheSameElements = function(
+  array1: any[],
+  array2: any[]
+): boolean {
+  if (array1.length !== array2.length) return false;
+
+  for (let array1Element of array1) {
+    if (!array2.includes(array1Element)) return false;
+  }
+
+  return true;
+};
+
+/**
  * @description Method for checking wether string is a numeric value
  * @param text string to check
  */
 export function isNumeric(text: string) {
   return !isNaN(parseFloat(text));
 }
+
+//#endregion ========== COMMON =========
+
+//#region ========== EXPRESS ROUTES =========
+
+/**
+ * @description method for assigning JSON body parsing to Route. Applyning also a middleware to return 400 if body is not a valid json
+ * @param {Object} express Express main object
+ * @param {Object} router Express router object where parsing is to be applied
+ */
+export const applyJSONParsingToRoute = function(router: Router) {
+  //assigning JSON parsing to router
+  router.use(express.json());
+
+  //assigning JSON parsing error validation
+  router.use(jsonError);
+};
+
+//#endregion ========== EXPRESS ROUTES =========
+
 //#region ========== IO METHODS =========
 
 //Creating promise from non promise functions

@@ -21,8 +21,6 @@ export default async function(workingDirName: string | null) {
 
   const port = process.env.PORT || config.port;
 
-  app.use(express.json());
-
   //Static front-end files are stored under public dir
   app.use(express.static(path.join(workingDirName, "public")));
 

@@ -16,8 +16,12 @@ export enum PlantPermissions {
 
 export interface UserStorageData {
   email: string;
-  config: object;
-  data: object;
+  config: {
+    [plantId: string]: object;
+  };
+  data: {
+    [plantId: string]: object;
+  };
   permissions: {
     role: UserRole;
     plants: { [plantId: string]: PlantPermissions };

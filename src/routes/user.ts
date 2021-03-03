@@ -2,6 +2,7 @@ import express from "express";
 import fetchTokenData, {
   TokenRequest,
 } from "../middleware/tokenData/fetchTokenData";
+import { applyJSONParsingToRoute } from "../utilities/utilities";
 const router = express.Router();
 
 export type ReturnedUser = {
@@ -12,6 +13,9 @@ export type ReturnedUser = {
   ten: string;
   subtenant?: string;
 };
+
+//Applying json error validation for these routes
+applyJSONParsingToRoute(router);
 
 router.get("/me", fetchTokenData, function(
   req: express.Request,

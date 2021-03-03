@@ -4,6 +4,7 @@ import {
   UserStorageData,
 } from "../../../classes/MindSphereApp/MindSphereApp";
 import { MindSphereAppUsersManager } from "../../../classes/MindSphereApp/MindSphereAppUsersManager";
+import { containsTheSameElements } from "../../../utilities/utilities";
 
 /**
  * @description Method for check wether plant permissions are valid vs. role of the user
@@ -26,12 +27,38 @@ function checkUserPlantPermissions(userStoragePayload: UserStorageData) {
   );
 }
 
+/**
+ * @description Method for check whether plant config is ok - whether config exists for every plant id from permissions
+ * @param userStoragePayload user storage data to check
+ */
+function checkUserPlantConfig(userStoragePayload: UserStorageData) {
+  let accessiblePlants = Object.keys(userStoragePayload.permissions.plants);
+  let configPlants = Object.keys(userStoragePayload.config);
+
+  return containsTheSameElements(configPlants, accessiblePlants);
+}
+
+/**
+ * @description Method for check whether plant data is ok - whether data exists for every plant id from permissions
+ * @param userStoragePayload user storage data to check
+ */
+function checkUserPlantData(userStoragePayload: UserStorageData) {
+  let accessiblePlants = Object.keys(userStoragePayload.permissions.plants);
+  let dataPlants = Object.keys(userStoragePayload.data);
+
+  return containsTheSameElements(dataPlants, accessiblePlants);
+}
+
 export const schemaContent = {
   email: Joi.string()
     .email()
     .required(),
-  data: Joi.object().required(),
-  config: Joi.object().required(),
+  data: Joi.object()
+    .pattern(/.*/, Joi.object())
+    .required(),
+  config: Joi.object()
+    .pattern(/.*/, Joi.object())
+    .required(),
   permissions: Joi.object({
     role: Joi.valid(0, 1, 2, 3).required(),
     plants: Joi.object()
@@ -60,6 +87,34 @@ export function validateUser(payload: any) {
           {
             message:
               "Users role should be a local or global admin, if they have administrative permissions for a plant!",
+          },
+        ],
+      },
+    };
+
+  let configOk = checkUserPlantConfig(payload);
+
+  if (!configOk)
+    return {
+      error: {
+        details: [
+          {
+            message:
+              "User config invalid - plantIds in config and in permissions must be identical!",
+          },
+        ],
+      },
+    };
+
+  let dataOk = checkUserPlantData(payload);
+
+  if (!dataOk)
+    return {
+      error: {
+        details: [
+          {
+            message:
+              "User data invalid - plantIds in data and in permissions must be identical!",
           },
         ],
       },

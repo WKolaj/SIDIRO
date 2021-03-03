@@ -2,7 +2,7 @@ import express, { Request } from "express";
 import { AppDataRequest } from "../appData/fetchUserAndAppData";
 
 export default async function(
-  req: express.Request<{ appId: string }>,
+  req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) {

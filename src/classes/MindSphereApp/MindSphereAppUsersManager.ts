@@ -7,7 +7,7 @@ import {
   MindSphereUserData,
   MindSphereUserService,
 } from "../MindSphereService/MindSphereUserService";
-import { UserRole, UserStorageData } from "./MindSphereApp";
+import { PlantPermissions, UserRole, UserStorageData } from "./MindSphereApp";
 import { MindSphereDataStorage } from "../DataStorage/MindSphereDataStorage";
 import { MindSphereUserJWTData } from "../../middleware/tokenData/fetchTokenData";
 
@@ -195,6 +195,21 @@ export class MindSphereAppUsersManager {
 
   public static hasLocalUserRole(user: UserStorageData) {
     return user.permissions.role === UserRole.LocalUser;
+  }
+
+  public static isAdminOfPlant(plantId: string, user: UserStorageData) {
+    return user.permissions.plants[plantId] === PlantPermissions.Admin;
+  }
+
+  public static isUserOfPlant(plantId: string, user: UserStorageData) {
+    return user.permissions.plants[plantId] === PlantPermissions.User;
+  }
+
+  public static hasAccessToPlant(plantId: string, user: UserStorageData) {
+    return (
+      MindSphereAppUsersManager.isAdminOfPlant(plantId, user) ||
+      MindSphereAppUsersManager.isUserOfPlant(plantId, user)
+    );
   }
 
   /**
