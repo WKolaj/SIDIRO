@@ -54,10 +54,10 @@ export const schemaContent = {
     .email()
     .required(),
   data: Joi.object()
-    .pattern(/.*/, Joi.object())
+    .pattern(/.*/, Joi.any())
     .required(),
   config: Joi.object()
-    .pattern(/.*/, Joi.object())
+    .pattern(/.*/, Joi.any())
     .required(),
   permissions: Joi.object({
     role: Joi.valid(0, 1, 2, 3).required(),

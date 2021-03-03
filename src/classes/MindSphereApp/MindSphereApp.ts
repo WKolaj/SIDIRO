@@ -156,12 +156,20 @@ export class MindSphereApp {
     return this._appStorage.setData(mainAppStorageId, appData);
   }
 
+  public async removeAppData() {
+    return this._appStorage.deleteData(mainAppStorageId);
+  }
+
   public async getUserData(userId: string): Promise<UserStorageData | null> {
     return this._userStorage.getData(userId);
   }
 
   public async setUserData(userId: string, userData: UserStorageData) {
     return this._userStorage.setData(userId, userData);
+  }
+
+  public async removeUserData(userId: string) {
+    return this._userStorage.deleteData(userId);
   }
 
   public async getAllUsers() {
@@ -174,6 +182,10 @@ export class MindSphereApp {
 
   public async setPlantData(plantId: string, plantData: PlanStorageData) {
     return this._plantStorage.setData(plantId, plantData);
+  }
+
+  public async removePlantData(plantId: string) {
+    return this._plantStorage.deleteData(plantId);
   }
 
   public async getAllPlants() {

@@ -14,7 +14,7 @@ import isLocalOrGlobalAdmin from "../../middleware/authorization/isLocalOrGlobal
 import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamAdmin";
 import { applyJSONParsingToRoute } from "../../utilities/utilities";
 import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
-import { boolean } from "joi";
+import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAdmin";
 
 const router = express.Router();
 
@@ -164,7 +164,7 @@ router.get(
   fetchTokenData,
   fetchUserAndAppData,
   checkAppIdParam,
-  isGlobalAdmin,
+  isGlobalUserOrAdmin,
   async function(
     req: express.Request<{ appId: string }>,
     res: express.Response
@@ -186,7 +186,7 @@ router.get(
   fetchTokenData,
   fetchUserAndAppData,
   checkAppIdParam,
-  isGlobalAdmin,
+  isGlobalUserOrAdmin,
   async function(
     req: express.Request<{ appId: string; userId: string }>,
     res: express.Response
