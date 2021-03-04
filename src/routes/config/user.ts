@@ -631,7 +631,7 @@ router.post(
         normalizeLocalUserPayload(
           userRequest.params.appId,
           createdUser.msData.id!,
-          req.params.appId,
+          req.params.plantId,
           createdUser.storageData
         )
       );
@@ -828,7 +828,7 @@ router.put(
         normalizeLocalUserPayload(
           userRequest.params.appId,
           editedUser.msData.id!,
-          req.params.appId,
+          req.params.plantId,
           editedUser.storageData
         )
       );
