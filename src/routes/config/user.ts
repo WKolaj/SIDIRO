@@ -12,9 +12,14 @@ import isNotSubtenant from "../../middleware/authorization/isNotSubtenant";
 import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamUserOrAdmin";
 import isLocalOrGlobalAdmin from "../../middleware/authorization/isLocalOrGlobalAdmin";
 import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamAdmin";
-import { applyJSONParsingToRoute } from "../../utilities/utilities";
+import {
+  applyJSONParsingToRoute,
+  areObjectsIdentical,
+  containsTheSameElements,
+} from "../../utilities/utilities";
 import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAdmin";
+import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
 
 const router = express.Router();
 
@@ -155,6 +160,71 @@ router.get("/me", fetchTokenData, fetchUserAndAppData, async function(
     );
 });
 
+router.put(
+  "/me",
+  fetchTokenData,
+  fetchUserAndAppData,
+  isUserOrAdmin,
+  joiValidator(validateUser),
+  async function(
+    req: express.Request<any, any, UserStorageData>,
+    res: express.Response
+  ) {
+    let appDataRequest = req as AppDataRequest<any, any, UserStorageData>;
+
+    //#region  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR EMAIL ==========
+
+    //Checking email
+    if (appDataRequest.body.email !== appDataRequest.userData!.email)
+      return res.status(400).send(`Users email cannot be modified!`);
+
+    //Checking permissions - role
+    if (
+      appDataRequest.body.permissions.role !==
+      appDataRequest.userData!.permissions.role
+    )
+      return res.status(400).send(`Users role cannot be modified!`);
+
+    //Checking permissions - plants
+    if (
+      !areObjectsIdentical(
+        appDataRequest.body.permissions.plants,
+        appDataRequest.userData!.permissions.plants
+      )
+    )
+      return res
+        .status(400)
+        .send(`Users plant permissions cannot be modified!`);
+
+    //Users config and data do not have to be checked for plant keys - plant keys vs. plant permissions were checked by Joi, and plant permissions cannot be modified
+
+    //#endregion  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR EMAIL ==========
+
+    //#region  ========== UPDATING USERS STORAGE DATA ==========
+
+    let userPayloadToUpdate = { ...appDataRequest.userData! };
+    userPayloadToUpdate.data = appDataRequest.body.data;
+    userPayloadToUpdate.config = appDataRequest.body.config;
+
+    await appDataRequest.appInstance!.setUserData(
+      appDataRequest.userId!,
+      userPayloadToUpdate
+    );
+
+    //#endregion  ========== UPDATING USERS STORAGE DATA ==========
+
+    return res
+      .status(200)
+      .send(
+        normalizeGlobalUserPayload(
+          appDataRequest.appId!,
+          appDataRequest.userId!,
+          userPayloadToUpdate
+        )
+      );
+  }
+);
+
 //#endregion ========== ME ROUTES ==========
 
 //#region ========== GLOBAL ROUTES ==========
@@ -171,7 +241,11 @@ router.get(
   ) {
     let userDataReq = req as AppDataRequest<{ appId: string }>;
 
+    //#region  ========== GETTING ALL USERS OF GIVEN APP ==========
+
     let usersOfGivenApp = await userDataReq.appInstance!.getAllUsers();
+
+    //#endregion  ========== GETTING ALL USERS OF GIVEN APP ==========
 
     return res
       .status(200)
@@ -193,11 +267,15 @@ router.get(
   ) {
     let userDataReq = req as AppDataRequest<{ appId: string; userId: string }>;
 
+    //#region  ========== GETTING USER'S DATA AND CHECKING IF IT EXISTS ==========
+
     let userToReturn = await userDataReq.appInstance!.getUserData(
       req.params.userId
     );
 
     if (userToReturn == null) return res.status(404).send("User not found!");
+
+    //#endregion  ========== GETTING USER'S DATA AND CHECKING IF IT EXISTS ==========
 
     return res
       .status(200)
@@ -230,6 +308,8 @@ router.post(
       UserStorageData
     >;
 
+    //#region  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
+
     //Checking if user of given email exists and return if it already exists
     let userExists = await userRequest.appInstance!.UsersManager.checkIfUserIsCreatedInMindSphere(
       null,
@@ -241,10 +321,16 @@ router.post(
         .status(400)
         .send(`User of email: ${userRequest.body.email} - already exists!`);
 
+    //#endregion  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
+
+    //#region  ========== CREATING NEW USER ==========
+
     //Creating user in mindsphere and in storage
     let createdUser = await userRequest.appInstance!.UsersManager.createUser(
       userRequest.body
     );
+
+    //#endregion  ========== CREATING NEW USER ==========
 
     //Returning created user
     return res
@@ -273,6 +359,8 @@ router.delete(
   ) {
     let userRequest = req as AppDataRequest<{ appId: string; userId: string }>;
 
+    //#region  ========== CHECKING IF USER EXISTS ==========
+
     let userToDeleteStorageData = await userRequest.appInstance!.getUserData(
       userRequest.params.userId
     );
@@ -282,10 +370,16 @@ router.delete(
         .status(404)
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
 
+    //#endregion  ========== CHECKING IF USER EXISTS ==========
+
+    //#region  ========== DELETING USER ==========
+
     //Deleting user
     await userRequest.appInstance!.UsersManager.deleteUser(
       userRequest.params.userId
     );
+
+    //#endregion  ========== DELETING USER ==========
 
     //Returning created user
     return res
@@ -321,6 +415,8 @@ router.put(
       UserStorageData
     >;
 
+    //#region  ========== CHECKING IF USER EXISTS ==========
+
     let userToUpdateStorageData = await userRequest.appInstance!.getUserData(
       userRequest.params.userId
     );
@@ -330,15 +426,25 @@ router.put(
         .status(404)
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
 
+    //#endregion  ========== CHECKING IF USER EXISTS ==========
+
+    //#region  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S EMAIL ==========
+
     if (req.body.email !== userToUpdateStorageData.email)
       return res.status(400).send(`Users email cannot be modified!`);
+
+    //#endregion  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S EMAIL ==========
+
+    //#region  ========== UPDATING USER ==========
 
     let updatedUser = await userRequest.appInstance!.UsersManager.updateUser(
       userRequest.params.userId,
       req.body
     );
 
-    //Returning created user
+    //#endregion  ========== UPDATING USER ==========
+
+    //Returning updated user
     return res
       .status(200)
       .send(
@@ -431,7 +537,7 @@ router.get(
     //Checking if user exists and have access to given plant
     if (
       userPayload == null ||
-      !MindSphereAppUsersManager.hasAccessToPlant(
+      !MindSphereAppUsersManager.hasLocalAccessToPlant(
         req.params.plantId,
         userPayload
       )
@@ -561,7 +667,7 @@ router.delete(
     //Returning 404 if user not found or it is not assigned to given app
     if (
       userToDeleteStorageData == null ||
-      !MindSphereAppUsersManager.hasAccessToPlant(
+      !MindSphereAppUsersManager.hasLocalAccessToPlant(
         req.params.plantId,
         userToDeleteStorageData
       )
@@ -653,7 +759,7 @@ router.put(
     //Returning 404 if user not found or it is not assigned to given app
     if (
       userToEditStorageData == null ||
-      !MindSphereAppUsersManager.hasAccessToPlant(
+      !MindSphereAppUsersManager.hasLocalAccessToPlant(
         req.params.plantId,
         userToEditStorageData
       )

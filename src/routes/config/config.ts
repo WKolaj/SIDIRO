@@ -9,18 +9,19 @@ import fetchUserAndAppData, {
   AppDataRequest,
 } from "../../middleware/appData/fetchUserAndAppData";
 import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
-import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamUserOrAdmin";
 import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 
 const router = express.Router();
 
 const normalizeConfigPlantPayload = function(
   appId: string,
+  plantId: string,
   plantsData: PlanStorageData
 ) {
   return {
     ...plantsData,
     appId: appId,
+    plantId: plantId,
   };
 };
 
@@ -49,6 +50,7 @@ const normalizeConfigTotalPayload = function(
   for (let plantId of Object.keys(plantsData)) {
     payloadToReturn.plantsData[plantId] = normalizeConfigPlantPayload(
       appId,
+      plantId,
       plantsData[plantId]
     );
   }
@@ -56,8 +58,10 @@ const normalizeConfigTotalPayload = function(
   return payloadToReturn;
 };
 
+//#region ========== ME ROUTES ==========
+
 router.get(
-  "/",
+  "/me",
   fetchTokenData,
   fetchUserAndAppData,
   isUserOrAdmin,
@@ -70,9 +74,21 @@ router.get(
 
     //#region ========== GENERETING PLANTS PAYLOAD ==========
 
-    for (let plantId of Object.keys(appDataReq.userData!.permissions.plants)) {
-      let plantData = await appDataReq.appInstance!.getPlantData(plantId);
-      if (plantData != null) plantPayload[plantId] = plantData;
+    let allPlants = await appDataReq.appInstance!.getAllPlants();
+
+    for (let plantId of Object.keys(allPlants)) {
+      let plantData = allPlants[plantId];
+
+      //Adding plant to plant payload to return only if user is a global admin or global user or has local access to plant
+      if (
+        MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) ||
+        MindSphereAppUsersManager.hasGlobalUserRole(appDataReq.userData!) ||
+        MindSphereAppUsersManager.hasLocalAccessToPlant(
+          plantId,
+          appDataReq.userData!
+        )
+      )
+        plantPayload[plantId] = plantData;
     }
 
     //#endregion ========== GENERETING PLANTS PAYLOAD ==========
@@ -90,5 +106,7 @@ router.get(
       );
   }
 );
+
+//#endregion ========== ME ROUTES ==========
 
 export default router;

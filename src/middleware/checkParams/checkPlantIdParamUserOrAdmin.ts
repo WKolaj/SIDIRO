@@ -15,7 +15,7 @@ export default async function(
 
   //Checking if user is admin or user for plant
   if (
-    !MindSphereAppUsersManager.hasAccessToPlant(
+    !MindSphereAppUsersManager.hasLocalAccessToPlant(
       appDataRequest.params.plantId,
       appDataRequest.userData!
     )

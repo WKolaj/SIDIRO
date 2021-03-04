@@ -55,6 +55,132 @@ const normalizePlantsPayload = function(
 //Applying json error validation for these routes
 applyJSONParsingToRoute(router);
 
+//#region ========== ME ROUTES ==========
+
+router.get(
+  "/me/:plantId",
+  fetchTokenData,
+  fetchUserAndAppData,
+  isLocalOrGlobalAdmin,
+  async function(
+    req: express.Request<{ plantId: string }>,
+    res: express.Response
+  ) {
+    let appDataReq = req as AppDataRequest<
+      { plantId: string },
+      any,
+      PlantPayload
+    >;
+
+    //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
+
+    if (
+      !MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) &&
+      !MindSphereAppUsersManager.isLocalAdminOfPlant(
+        req.params.plantId,
+        appDataReq.userData!
+      )!
+    )
+      return res.status(404).send("Plant does not exist!");
+
+    //#endregion ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
+
+    //#region ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
+
+    let plantData = await appDataReq.appInstance!.getPlantData(
+      req.params.plantId
+    );
+
+    if (plantData == null) return res.status(404).send("Plant does not exist!");
+
+    //#endregion ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
+
+    return res
+      .status(200)
+      .send(
+        normalizePlantPayload(
+          appDataReq.appId!,
+          appDataReq.params.plantId,
+          plantData
+        )
+      );
+  }
+);
+
+router.put(
+  "/me/:plantId",
+  fetchTokenData,
+  fetchUserAndAppData,
+  isLocalOrGlobalAdmin,
+  joiValidator(validatePlant),
+  async function(
+    req: express.Request<{ plantId: string }>,
+    res: express.Response
+  ) {
+    let appDataReq = req as AppDataRequest<
+      { plantId: string },
+      any,
+      PlantPayload
+    >;
+
+    //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
+
+    if (
+      !MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) &&
+      !MindSphereAppUsersManager.isLocalAdminOfPlant(
+        req.params.plantId,
+        appDataReq.userData!
+      )!
+    )
+      return res.status(404).send("Plant does not exist!");
+
+    //#endregion ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
+
+    //#region ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
+
+    let plantData = await appDataReq.appInstance!.getPlantData(
+      req.params.plantId
+    );
+
+    if (plantData == null) return res.status(404).send("Plant does not exist!");
+
+    //#endregion ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
+
+    //#region ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE PLANT ID ==========
+
+    if (req.params.plantId !== appDataReq.body.plantId)
+      return res.status(400).send("Plant id cannot be changed!");
+
+    //#endregion ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE PLANT ID ==========
+
+    //#region ========== UPDATING PLANT DATA ==========
+
+    let payloadToUpdate: PlanStorageData = {
+      data: appDataReq.body.data,
+      config: appDataReq.body.config,
+    };
+
+    await appDataReq.appInstance!.setPlantData(
+      req.params.plantId,
+      payloadToUpdate
+    );
+
+    //#endregion ========== UPDATING PLANT DATA ==========
+
+    return res
+      .status(200)
+      .send(
+        normalizePlantPayload(
+          appDataReq.appId!,
+          appDataReq.params.plantId,
+          payloadToUpdate
+        )
+      );
+  }
+);
+
+//#endregion ========== ME ROUTES ==========
+
 //#region ========== GLOBAL ROUTES ==========
 
 router.get(
@@ -285,7 +411,7 @@ router.get(
       let plantData = allPlants[plantId];
 
       if (
-        MindSphereAppUsersManager.hasAccessToPlant(
+        MindSphereAppUsersManager.hasLocalAccessToPlant(
           plantId,
           appDataReq.userData!
         )
@@ -377,7 +503,11 @@ router.put(
     return res
       .status(200)
       .send(
-        normalizePlantPayload(req.params.appId, req.params.plantId, plantData)
+        normalizePlantPayload(
+          req.params.appId,
+          req.params.plantId,
+          payloadToUpdate
+        )
       );
   }
 );

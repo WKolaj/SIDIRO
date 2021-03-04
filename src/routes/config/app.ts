@@ -29,8 +29,10 @@ const normalizeAppPayload = function(
 //Applying json error validation for these routes
 applyJSONParsingToRoute(router);
 
+//#region ========== ME ROUTES ==========
+
 router.get(
-  "/",
+  "/me",
   fetchTokenData,
   fetchUserAndAppData,
   isUserOrAdmin,
@@ -44,7 +46,7 @@ router.get(
 );
 
 router.put(
-  "/",
+  "/me",
   fetchTokenData,
   fetchUserAndAppData,
   isGlobalAdmin,
@@ -75,5 +77,7 @@ router.put(
       .send(normalizeAppPayload(appDataReq.appId!, payloadToUpdate));
   }
 );
+
+//#endregion ========== ME ROUTES ==========
 
 export default router;

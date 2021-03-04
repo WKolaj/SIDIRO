@@ -88,6 +88,29 @@ export const containsTheSameElements = function(
 };
 
 /**
+ * @description Method to check wether arrays contain the same elements - order does not matter
+ * @param array1 array 1 to check
+ * @param array2 array 2 to check
+ */
+export const areObjectsIdentical = function(
+  object1: { [key: string]: number | string | boolean },
+  object2: { [key: string]: number | string | boolean }
+): boolean {
+  //Checking keys of both object
+  let keysObject1 = Object.keys(object1);
+  let keysObject2 = Object.keys(object2);
+
+  if (!containsTheSameElements(keysObject1, keysObject2)) return false;
+
+  //Checking values
+  for (let object1Key of keysObject1) {
+    if (object1[object1Key] !== object2[object1Key]) return false;
+  }
+
+  //Returns true if no difference was detected
+  return true;
+};
+/**
  * @description Method for checking wether string is a numeric value
  * @param text string to check
  */

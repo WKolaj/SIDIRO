@@ -197,18 +197,18 @@ export class MindSphereAppUsersManager {
     return user.permissions.role === UserRole.LocalUser;
   }
 
-  public static isAdminOfPlant(plantId: string, user: UserStorageData) {
+  public static isLocalAdminOfPlant(plantId: string, user: UserStorageData) {
     return user.permissions.plants[plantId] === PlantPermissions.Admin;
   }
 
-  public static isUserOfPlant(plantId: string, user: UserStorageData) {
+  public static isLocalUserOfPlant(plantId: string, user: UserStorageData) {
     return user.permissions.plants[plantId] === PlantPermissions.User;
   }
 
-  public static hasAccessToPlant(plantId: string, user: UserStorageData) {
+  public static hasLocalAccessToPlant(plantId: string, user: UserStorageData) {
     return (
-      MindSphereAppUsersManager.isAdminOfPlant(plantId, user) ||
-      MindSphereAppUsersManager.isUserOfPlant(plantId, user)
+      MindSphereAppUsersManager.isLocalAdminOfPlant(plantId, user) ||
+      MindSphereAppUsersManager.isLocalUserOfPlant(plantId, user)
     );
   }
 
