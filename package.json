@@ -1,6 +1,6 @@
 {
   "name": "sidiro",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MindSphere app for monitoring LV switchgears",
   "main": "server.js",
   "scripts": {
