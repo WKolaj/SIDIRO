@@ -7,7 +7,10 @@ import {
   writeFileAsync,
   removeDirectoryIfExists,
   checkIfDirectoryExistsAsync,
+  removeFileIfExistsAsync,
 } from "../../../../utilities/utilities";
+import * as utilties from "../../../../utilities/utilities";
+import fs from "fs";
 
 const testDirPath = "__testDir/fileDataStorage";
 
@@ -1298,6 +1301,200 @@ describe("FileDataStorage", () => {
         testFile3: { abcde: 1234 },
         testFile4: { efghi: 4567 },
         testFile5: { ijklm: 7890 },
+      });
+    });
+  });
+
+  describe("deleteData", () => {
+    let fileDataStorage: FileDataStorage<any>;
+    let extension: string;
+    let dirPath: string;
+    let dataId: string;
+    let file1Path: string;
+    let file1Content: any;
+    let file1Create: boolean;
+    let file2Path: string;
+    let file2Content: any;
+    let file2Create: boolean;
+    let file3Path: string;
+    let file3Content: any;
+    let file3Create: boolean;
+    let cacheContent: any;
+    let deleteFileFromStroageThrows: boolean;
+
+    beforeEach(() => {
+      deleteFileFromStroageThrows = false;
+      dirPath = testDirPath;
+      dataId = "testFile2";
+      extension = "testExtension";
+      file1Path = `${testDirPath}/testFile1.testExtension`;
+      file1Content = { abcd: 123 };
+      file1Create = true;
+      file2Path = `${testDirPath}/testFile2.testExtension`;
+      file2Content = { efgh: 456 };
+      file2Create = true;
+      file3Path = `${testDirPath}/testFile3.testExtension`;
+      file3Content = { ijkl: 789 };
+      file3Create = true;
+      cacheContent = {};
+    });
+
+    let exec = async () => {
+      if (file1Create)
+        await writeFileAsync(file1Path, JSON.stringify(file1Content), "utf8");
+      if (file2Create)
+        await writeFileAsync(file2Path, JSON.stringify(file2Content), "utf8");
+      if (file3Create)
+        await writeFileAsync(file3Path, JSON.stringify(file3Content), "utf8");
+      fileDataStorage = new FileDataStorage<any>(dirPath, extension);
+
+      //Setting cache content for check if value is returned from cache or from file
+      (fileDataStorage as any)._cacheData = cacheContent;
+
+      if (deleteFileFromStroageThrows)
+        (fileDataStorage as any)._deleteDataFromStorage = jest.fn(async () => {
+          throw new Error("test read file error");
+        });
+
+      return fileDataStorage.deleteData(dataId);
+    };
+
+    it("should delete content form cache and delete file - if both exists", async () => {
+      cacheContent = {
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile2: {
+          testContent2: 2001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      };
+
+      await exec();
+
+      let fileExists = await checkIfFileExistsAsync(
+        `${testDirPath}/testFile2.testExtension`
+      );
+      expect(fileExists).toEqual(false);
+
+      //Checking cache
+      let mockedFileDataStorage = fileDataStorage as any;
+
+      expect(mockedFileDataStorage._cacheData).toEqual({
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      });
+    });
+
+    it("should only delete file - if data does not exist in cache", async () => {
+      cacheContent = {
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      };
+
+      await exec();
+
+      let fileExists = await checkIfFileExistsAsync(
+        `${testDirPath}/testFile2.testExtension`
+      );
+      expect(fileExists).toEqual(false);
+
+      //Checking cache
+      let mockedFileDataStorage = fileDataStorage as any;
+
+      expect(mockedFileDataStorage._cacheData).toEqual({
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      });
+    });
+
+    it("should only delete content from cache - if file does not exist", async () => {
+      cacheContent = {
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile2: {
+          testContent2: 2001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      };
+
+      file2Create = false;
+
+      await exec();
+
+      let fileExists = await checkIfFileExistsAsync(
+        `${testDirPath}/testFile2.testExtension`
+      );
+      expect(fileExists).toEqual(false);
+
+      //Checking cache
+      let mockedFileDataStorage = fileDataStorage as any;
+
+      expect(mockedFileDataStorage._cacheData).toEqual({
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      });
+    });
+
+    it("should throw and no delete content from cache - if deleting file throws", async () => {
+      cacheContent = {
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile2: {
+          testContent2: 2001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
+      };
+
+      deleteFileFromStroageThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test read file error",
+      });
+
+      //File should not have been deleted
+      let fileExists = await checkIfFileExistsAsync(
+        `${testDirPath}/testFile2.testExtension`
+      );
+      expect(fileExists).toEqual(true);
+
+      //Data should have stayed in cache as it was
+      let mockedFileDataStorage = fileDataStorage as any;
+
+      expect(mockedFileDataStorage._cacheData).toEqual({
+        testFile1: {
+          testContent1: 1001,
+        },
+        testFile2: {
+          testContent2: 2001,
+        },
+        testFile3: {
+          testContent3: 3001,
+        },
       });
     });
   });

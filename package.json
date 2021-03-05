@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "jest --watchAll --runInBand --detectOpenHandles --forceExit --coverage",
-    "start": "npm run build && node dist/server.js",
+    "start": "node dist/server.js",
     "postinstall": "node-config-ts",
     "clean": "rimraf dist/",
     "copy-files": "copyfiles -u 1 src/public/* dist/",

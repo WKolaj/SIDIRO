@@ -7,7 +7,7 @@ export default async function() {
     let appManager = MindSphereAppsManager.getInstance();
 
     let allAppsAssets = await appManager.getAllAppAssets();
-    console.log(allAppsAssets);
+
     await Promise.all(
       allAppsAssets.map(
         (asset) =>
