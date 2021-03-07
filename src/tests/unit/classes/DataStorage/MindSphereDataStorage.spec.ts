@@ -10,6 +10,7 @@ describe("MindSphereDataStorage", () => {
   let mindSphereFileServiceSetFileMockFunc: jest.Mock;
   let mindSphereFileServiceCheckFileMockFunc: jest.Mock;
   let mindSphereFileServiceGetAllFileNamesMockFunc: jest.Mock;
+  let mindSphereFileServiceDeleteFileMockFunc: jest.Mock;
   let mockedGetFileResult: any;
   let mockedCheckFileResult: any;
   let mockedGetAllFilesResult: any;
@@ -41,11 +42,13 @@ describe("MindSphereDataStorage", () => {
     mindSphereFileServiceGetAllFileNamesMockFunc = jest.fn(async () => {
       return mockedGetAllFilesResult;
     });
+    mindSphereFileServiceDeleteFileMockFunc = jest.fn();
     mindSphereFileService = MindSphereFileService.getInstance();
     mindSphereFileService.checkIfFileExists = mindSphereFileServiceCheckFileMockFunc;
     mindSphereFileService.getFileContent = mindSphereFileServiceGetFileMockFunc;
     mindSphereFileService.setFileContent = mindSphereFileServiceSetFileMockFunc;
     mindSphereFileService.getAllFileNamesFromAsset = mindSphereFileServiceGetAllFileNamesMockFunc;
+    mindSphereFileService.deleteFile = mindSphereFileServiceDeleteFileMockFunc;
   });
 
   afterEach(() => {
@@ -55,22 +58,25 @@ describe("MindSphereDataStorage", () => {
   });
 
   describe("constructor", () => {
+    let TenantName: string;
     let AssetId: string;
     let Extension: string;
 
     beforeEach(() => {
+      TenantName = "testTenantName";
       AssetId = "testAssetId";
       Extension = "testExtension";
     });
 
     let exec = () => {
-      return new MindSphereDataStorage(AssetId, Extension);
+      return new MindSphereDataStorage(TenantName, AssetId, Extension);
     };
 
-    it("should create and return valid MindSphereDataStorage with valid AssetId and extension", () => {
+    it("should create and return valid MindSphereDataStorage with valid TenantName, AssetId and extension", () => {
       let result = exec();
 
       expect(result).toBeDefined();
+      expect(result.Tenant).toEqual("testTenantName");
       expect(result.AssetId).toEqual("testAssetId");
       expect(result.Extension).toEqual("testExtension");
     });
@@ -87,12 +93,14 @@ describe("MindSphereDataStorage", () => {
 
   describe("dataExists", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let dataId: string;
     let cacheContent: any;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       dataId = "testFile2";
@@ -101,6 +109,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -116,9 +125,12 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile2.testExtension"
       );
     });
@@ -171,12 +183,14 @@ describe("MindSphereDataStorage", () => {
 
   describe("getData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let dataId: string;
     let cacheContent: any;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       dataId = "testFile2";
@@ -185,6 +199,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -203,18 +218,24 @@ describe("MindSphereDataStorage", () => {
       //Checking checkFile call
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile2.testExtension"
       );
 
       //Checking getFile call
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile2.testExtension"
       );
 
@@ -238,9 +259,12 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile2.testExtension"
       );
 
@@ -314,6 +338,7 @@ describe("MindSphereDataStorage", () => {
 
   describe("setData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let dataId: string;
@@ -321,6 +346,7 @@ describe("MindSphereDataStorage", () => {
     let cacheContent: any;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       dataId = "testFile4";
@@ -330,6 +356,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -347,12 +374,15 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceSetFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile4.testExtension"
       );
-      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual({
+      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][3]).toEqual({
         mno: "prs123",
       });
 
@@ -373,12 +403,15 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceSetFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual(
         "testFile4.testExtension"
       );
-      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][2]).toEqual({
+      expect(mindSphereFileServiceSetFileMockFunc.mock.calls[0][3]).toEqual({
         mno: "prs123",
       });
 
@@ -404,11 +437,13 @@ describe("MindSphereDataStorage", () => {
 
   describe("getAllIds", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let cacheContent: any;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       cacheContent = {};
@@ -416,6 +451,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -444,9 +480,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Checking result
@@ -474,9 +513,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Checking result
@@ -502,9 +544,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Checking result
@@ -540,9 +585,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Checking result
@@ -589,9 +637,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Checking result
@@ -636,8 +687,10 @@ describe("MindSphereDataStorage", () => {
     let extension: string;
     let cacheContent: any;
     let dataId: string;
+    let tenantName: string;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       cacheContent = {};
@@ -646,6 +699,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -678,18 +732,24 @@ describe("MindSphereDataStorage", () => {
       //Check file should have been called
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
       //Get file should have been called
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
@@ -730,18 +790,24 @@ describe("MindSphereDataStorage", () => {
       //Check file should have been called
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
       //Get file should have been called
       expect(mindSphereFileServiceGetFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
@@ -778,9 +844,12 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
@@ -811,9 +880,12 @@ describe("MindSphereDataStorage", () => {
 
       expect(mindSphereFileServiceCheckFileMockFunc).toHaveBeenCalledTimes(1);
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceCheckFileMockFunc.mock.calls[0][2]).toEqual(
         "testDataId.testExtension"
       );
 
@@ -873,12 +945,14 @@ describe("MindSphereDataStorage", () => {
 
   describe("fetchAllData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let cacheContent: any;
     let mockGetFileDataToReturnCollection: { [key: string]: any };
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       cacheContent = {};
@@ -899,7 +973,7 @@ describe("MindSphereDataStorage", () => {
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
-        async (assetId: string, fileName: string) => {
+        async (tenantName: string, assetId: string, fileName: string) => {
           await snooze(10);
           return mockGetFileDataToReturnCollection[fileName];
         }
@@ -910,6 +984,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -931,9 +1006,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -946,27 +1024,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -999,9 +1092,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1014,27 +1110,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1069,9 +1180,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1084,27 +1198,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1139,9 +1268,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should not have been called
@@ -1170,9 +1302,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 4 times
@@ -1185,23 +1320,35 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1236,9 +1383,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1251,27 +1401,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1309,9 +1474,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have not have been called
@@ -1340,9 +1508,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have not have been called
@@ -1354,12 +1525,14 @@ describe("MindSphereDataStorage", () => {
 
   describe("init", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let cacheContent: any;
     let mockGetFileDataToReturnCollection: { [key: string]: any };
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       assetId = "testAssetId";
       extension = "testExtension";
       cacheContent = {};
@@ -1380,7 +1553,7 @@ describe("MindSphereDataStorage", () => {
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
-        async (assetId: string, fileName: string) => {
+        async (tenantName: string, assetId: string, fileName: string) => {
           await snooze(10);
           return mockGetFileDataToReturnCollection[fileName];
         }
@@ -1391,6 +1564,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -1412,9 +1586,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1427,27 +1604,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1480,9 +1672,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1495,27 +1690,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1550,9 +1760,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1565,27 +1778,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1620,9 +1848,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should not have been called
@@ -1651,9 +1882,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 4 times
@@ -1666,23 +1900,35 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1717,9 +1963,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 5 times
@@ -1732,27 +1981,42 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -1790,9 +2054,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have not have been called
@@ -1822,9 +2089,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should be called and throw
@@ -1836,6 +2106,7 @@ describe("MindSphereDataStorage", () => {
 
   describe("getAllData", () => {
     let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
     let assetId: string;
     let extension: string;
     let cacheContent: any;
@@ -1844,6 +2115,7 @@ describe("MindSphereDataStorage", () => {
     beforeEach(() => {
       assetId = "testAssetId";
       extension = "testExtension";
+      tenantName = "testTenantName";
       cacheContent = {
         testFile3: { efgh: 9012 },
         testFile4: { ijkl: 3456 },
@@ -1868,7 +2140,7 @@ describe("MindSphereDataStorage", () => {
       };
 
       mindSphereFileServiceGetFileMockFunc = jest.fn(
-        async (assetId: string, fileName: string) => {
+        async (tenantName: string, assetId: string, fileName: string) => {
           await snooze(10);
           return mockGetFileDataToReturnCollection[fileName];
         }
@@ -1879,6 +2151,7 @@ describe("MindSphereDataStorage", () => {
 
     let exec = async () => {
       mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
         assetId,
         extension
       );
@@ -1933,9 +2206,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
@@ -1948,20 +2224,29 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
         "testAssetId"
       );
 
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -2015,9 +2300,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
@@ -2030,28 +2318,44 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][0]).toEqual(
+        "testTenantName"
+      );
+
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[3][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[4][1]).toEqual(
         "testAssetId"
       );
 
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[3][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[4][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[3][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[4][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -2096,9 +2400,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should not have been called
@@ -2158,9 +2465,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1 and 5
@@ -2173,16 +2483,22 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
         "testAssetId"
       );
 
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile5.testExtension");
@@ -2242,9 +2558,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called 2 times - for files 1,2 and 5
@@ -2257,20 +2576,29 @@ describe("MindSphereDataStorage", () => {
       //Get file should be called for every file name returned from GetAllFileNames with no particular order
       //For every call asset id should be the same
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][0]).toEqual(
-        "testAssetId"
+        "testTenantName"
       );
       expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[1][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceGetFileMockFunc.mock.calls[2][1]).toEqual(
         "testAssetId"
       );
 
       //File names should be called with no particular order - Promise.all
       let arrayOfSecondArguments = [
-        mindSphereFileServiceGetFileMockFunc.mock.calls[0][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[1][1],
-        mindSphereFileServiceGetFileMockFunc.mock.calls[2][1],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[0][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[1][2],
+        mindSphereFileServiceGetFileMockFunc.mock.calls[2][2],
       ];
       expect(arrayOfSecondArguments).toContain("testFile1.testExtension");
       expect(arrayOfSecondArguments).toContain("testFile2.testExtension");
@@ -2312,9 +2640,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should not have been called
@@ -2355,9 +2686,12 @@ describe("MindSphereDataStorage", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][0]
-      ).toEqual("testAssetId");
+      ).toEqual("testTenantName");
       expect(
         mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][1]
+      ).toEqual("testAssetId");
+      expect(
+        mindSphereFileServiceGetAllFileNamesMockFunc.mock.calls[0][2]
       ).toEqual("testExtension");
 
       //Get file should have been called and throw
@@ -2370,6 +2704,184 @@ describe("MindSphereDataStorage", () => {
         testFile6: { oprs: 900 },
         testFile7: { tuwx: 800 },
         testFile8: { yzab: 700 },
+      });
+    });
+  });
+
+  describe("deleteData", () => {
+    let mindSphereDataStorage: MindSphereDataStorage<any>;
+    let tenantName: string;
+    let assetId: string;
+    let extension: string;
+    let dataId: string;
+    let cacheContent: any;
+
+    beforeEach(() => {
+      tenantName = "testTenantName";
+      assetId = "testAssetId";
+      extension = "testExtension";
+      dataId = "testFile2";
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      };
+      //Mocked result of file check
+      mockedCheckFileResult = 123;
+    });
+
+    let exec = async () => {
+      mindSphereDataStorage = new MindSphereDataStorage<any>(
+        tenantName,
+        assetId,
+        extension
+      );
+
+      //Setting cache content for check the behaviour with filled cache
+      (mindSphereDataStorage as any)._cacheData = cacheContent;
+
+      return mindSphereDataStorage.deleteData(dataId);
+    };
+
+    it("should call mindsphere deleteFile and delete file content from cache - if file exists in MindSphere and in cache", async () => {
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      };
+      mockedCheckFileResult = 123;
+
+      await exec();
+
+      expect(mindSphereFileServiceDeleteFileMockFunc).toHaveBeenCalledTimes(1);
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][2]).toEqual(
+        "testFile2.testExtension"
+      );
+
+      //Checking cache
+      let mockedMindSphereDataStorage = mindSphereDataStorage as any;
+
+      expect(mockedMindSphereDataStorage._cacheData).toEqual({
+        testFile1: { abcd: 5678 },
+        testFile3: { ijkl: 3456 },
+      });
+    });
+
+    it("should call mindsphere deleteFile and and leave cache as it is - if file exists in MindSphere but not in cache", async () => {
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile3: { ijkl: 3456 },
+      };
+      mockedCheckFileResult = 123;
+
+      await exec();
+
+      expect(mindSphereFileServiceDeleteFileMockFunc).toHaveBeenCalledTimes(1);
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][2]).toEqual(
+        "testFile2.testExtension"
+      );
+
+      //Checking cache
+      let mockedMindSphereDataStorage = mindSphereDataStorage as any;
+
+      expect(mockedMindSphereDataStorage._cacheData).toEqual({
+        testFile1: { abcd: 5678 },
+        testFile3: { ijkl: 3456 },
+      });
+    });
+
+    it("should not call mindsphere deleteFile but delete file content from cache - if file does not exist in MindSphere but does exist in cache", async () => {
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      };
+      mockedCheckFileResult = null;
+
+      await exec();
+
+      expect(mindSphereFileServiceDeleteFileMockFunc).not.toHaveBeenCalled();
+      //Checking cache
+      let mockedMindSphereDataStorage = mindSphereDataStorage as any;
+
+      expect(mockedMindSphereDataStorage._cacheData).toEqual({
+        testFile1: { abcd: 5678 },
+        testFile3: { ijkl: 3456 },
+      });
+    });
+
+    it("should throw and not delete anything - if file check throws", async () => {
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      };
+      mindSphereFileServiceCheckFileMockFunc = jest.fn(() => {
+        throw new Error("test check file error");
+      });
+      mindSphereFileService.checkIfFileExists = mindSphereFileServiceCheckFileMockFunc;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test check file error",
+      });
+
+      expect(mindSphereFileServiceDeleteFileMockFunc).not.toHaveBeenCalled();
+
+      //Checking cache
+      let mockedMindSphereDataStorage = mindSphereDataStorage as any;
+
+      expect(mockedMindSphereDataStorage._cacheData).toEqual({
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      });
+    });
+
+    it("should throw and not delete fileContent from cache - if delete file throws in mindsphere", async () => {
+      cacheContent = {
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
+      };
+      mindSphereFileServiceDeleteFileMockFunc = jest.fn(() => {
+        throw new Error("test delete file error");
+      });
+      mindSphereFileService.deleteFile = mindSphereFileServiceDeleteFileMockFunc;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test delete file error",
+      });
+
+      expect(mindSphereFileServiceDeleteFileMockFunc).toHaveBeenCalledTimes(1);
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][0]).toEqual(
+        "testTenantName"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][1]).toEqual(
+        "testAssetId"
+      );
+      expect(mindSphereFileServiceDeleteFileMockFunc.mock.calls[0][2]).toEqual(
+        "testFile2.testExtension"
+      );
+
+      //Checking cache
+      let mockedMindSphereDataStorage = mindSphereDataStorage as any;
+
+      expect(mockedMindSphereDataStorage._cacheData).toEqual({
+        testFile1: { abcd: 5678 },
+        testFile2: { efgh: 9012 },
+        testFile3: { ijkl: 3456 },
       });
     });
   });
