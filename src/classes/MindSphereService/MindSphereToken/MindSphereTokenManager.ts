@@ -29,7 +29,6 @@ export class MindSphereTokenManager {
    * @param tenantName tenant name of
    */
   public static getInstance(tenantName: string): MindSphereTokenManager {
-    //TODO - draw this changes of instances in CLASS DIAGRAM
     if (MindSphereTokenManager._instances[tenantName] == null) {
       MindSphereTokenManager._instances[
         tenantName
@@ -41,7 +40,7 @@ export class MindSphereTokenManager {
           clientSecret: config.appCredentials.clientSecret!,
           appName: config.appCredentials.appName!,
           appVersion: config.appCredentials.appVersion!,
-          hostTenant: config.appSettings.appContainerTenant!,
+          hostTenant: config.appCredentials.hostTenant!,
         },
         config.tokenExpireAdditionalTime
       );
@@ -161,4 +160,4 @@ export class MindSphereTokenManager {
   }
 }
 
-//TODO - test and draw changes associated with tenant call in class diagram
+//TODO - test this class

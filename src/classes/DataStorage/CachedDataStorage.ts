@@ -123,5 +123,3 @@ export abstract class CachedDataStorage<T> extends DataStorage<T> {
 
   protected abstract _getAllIdsFromStorage(): Promise<string[]>;
 }
-
-//TODO - add changes to class diagram regarding data deletion

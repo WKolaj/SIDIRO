@@ -1,10 +1,31 @@
 {
+  "tokenExpireAdditionalTime": 1234,
   "appCredentials": {
-    "xSpaceAuthKey": "testSpaceAuthKey",
+    "clientId": "testClientId",
+    "clientSecret": "testClientSecret",
     "appName": "testAppName",
     "appVersion": "testAppVersion",
-    "hostTenant": "testHostTenant",
-    "userTenant": "testUserTenant"
+    "appId": "testAppId",
+    "hostTenant": "testHostTenant"
   },
-  "tokenExpireAdditionalTime": 1234
+  "appSettings": {
+    "appContainerTenant": "testAppContainerTenant",
+    "appContainerAssetId": "testAppContainerAssetId",
+    "appContainerAssetType": "testAppContainerAssetType",
+    "appAssetType": "testAppAssetType"
+  },
+  "userPermissions": {
+    "globalAdminScope": "testGlobalAdminScope",
+    "globalUserScope": "testGlobalUserScope",
+    "localAdminScope": "testLocalAdminScope",
+    "localUserScope": "testLocalUserScope",
+    "globalAdminGroup": "testGlobalAdminGroup",
+    "globalUserGroup": "testGlobalUserGroup",
+    "localAdminGroup": "testLocalAdminGroup",
+    "localUserGroup": "testLocalUserGroup",
+    "msStandardUserGroup": "testMsStandardUserGroup",
+    "msSubtenantUserGroup": "testMsSubtenantUserGroup",
+    "superAdminUserIds": "testSuperAdminId1 testSuperAdminId2 testSuperAdminId3"
+  },
+  "port": 5000
 }

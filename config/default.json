@@ -4,10 +4,11 @@
     "clientSecret": "@@MDSP_KEY_STORE_CLIENT_SECRET",
     "appName": "@@MDSP_OS_VM_APP_NAME",
     "appVersion": "@@MDSP_OS_VM_APP_VERSION",
-    "appId": "@@MDSP_OS_VM_APP_ID"
+    "appId": "@@MDSP_OS_VM_APP_ID",
+    "hostTenant": "@@HOST_TENANT_NAME"
   },
   "appSettings": {
-    "appContainerTenant": "@@HOST_TENANT_NAME",
+    "appContainerTenant": "@@APP_CONTAINER_TENANT_NAME",
     "appContainerAssetId": "@@APP_ASSET_ID",
     "appContainerAssetType": "@@APP_CONTAINER_ASSET_TYPE",
     "appAssetType": "@@APP_ASSET_TYPE"

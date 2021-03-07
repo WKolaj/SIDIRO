@@ -147,7 +147,7 @@ export class MindSphereAppUsersManager {
    */
   public static async isSuperAdmin(user: MindSphereUserJWTData) {
     //Super Admin has to be assigned to the operator tenant - the same tenant when container is assigned
-    if (user.ten !== config.appSettings.appContainerTenant) return false;
+    if (user.ten !== config.appCredentials.hostTenant) return false;
 
     //Getting user from operator tenant to get his real id
     let users = await MindSphereUserService.getInstance().getAllUsers(

@@ -16,6 +16,7 @@ export default async function() {
   throwIfConfigDoesNotExist("appCredentials.appName");
   throwIfConfigDoesNotExist("appCredentials.appVersion");
   throwIfConfigDoesNotExist("appCredentials.appId");
+  throwIfConfigDoesNotExist("appCredentials.hostTenant");
 
   throwIfConfigDoesNotExist("appSettings.appContainerTenant");
   throwIfConfigDoesNotExist("appSettings.appContainerAssetId");
