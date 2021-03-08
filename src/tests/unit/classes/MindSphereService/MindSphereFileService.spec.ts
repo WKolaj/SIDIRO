@@ -3,6 +3,7 @@ import axios from "axios";
 import { MindSphereFileService } from "../../../../classes/MindSphereService/MindSphereFileService";
 import MockDate from "mockdate";
 import { testPrivateProperty } from "../../../testUtilities";
+import { encodeBase64 } from "../../../../utilities/utilities";
 
 let mockedAxios = axios as any;
 
@@ -30,12 +31,7 @@ describe("MindSphereFileService", () => {
   });
 
   describe("getInstance", () => {
-    let mockedMindSphereTokenManager: MindSphereTokenManager;
-
     let exec = () => {
-      //Getting token manager to check if it is the same as global instance
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance();
-
       return MindSphereFileService.getInstance();
     };
 
@@ -65,19 +61,10 @@ describe("MindSphereFileService", () => {
         `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files`
       );
     });
-
-    it("should properly set tokenManager", () => {
-      let result = exec();
-
-      testPrivateProperty(
-        result,
-        "_tokenManager",
-        mockedMindSphereTokenManager
-      );
-    });
   });
 
   describe("checkIfFileExists", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -90,6 +77,7 @@ describe("MindSphereFileService", () => {
     let fileName: string;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       //"2021-01-31T12:58:00.000Z" - 1612097880000
       //"2021-01-31T12:59:00.000Z" - 1612097940000
       //"2021-01-31T13:00:00.000Z" - 1612098000000
@@ -121,7 +109,9 @@ describe("MindSphereFileService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -137,7 +127,11 @@ describe("MindSphereFileService", () => {
 
       MockDate.set(mockedNow);
 
-      return mindSphereFileService.checkIfFileExists(assetId, fileName);
+      return mindSphereFileService.checkIfFileExists(
+        tenantName,
+        assetId,
+        fileName
+      );
     };
 
     it("should return eTag value if file exists", async () => {
@@ -409,6 +403,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -416,11 +411,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -484,6 +479,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -491,11 +487,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -530,6 +526,7 @@ describe("MindSphereFileService", () => {
   });
 
   describe("getFileContent", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -542,6 +539,7 @@ describe("MindSphereFileService", () => {
     let fileName: string;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       //"2021-01-31T12:58:00.000Z" - 1612097880000
       //"2021-01-31T12:59:00.000Z" - 1612097940000
       //"2021-01-31T13:00:00.000Z" - 1612098000000
@@ -566,7 +564,9 @@ describe("MindSphereFileService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -582,7 +582,11 @@ describe("MindSphereFileService", () => {
 
       MockDate.set(mockedNow);
 
-      return mindSphereFileService.getFileContent(assetId, fileName);
+      return mindSphereFileService.getFileContent(
+        tenantName,
+        assetId,
+        fileName
+      );
     };
 
     it("should return file content if file exists", async () => {
@@ -663,6 +667,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -670,11 +675,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -733,6 +738,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -740,11 +746,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -776,6 +782,7 @@ describe("MindSphereFileService", () => {
   });
 
   describe("deleteFile", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -788,6 +795,8 @@ describe("MindSphereFileService", () => {
     let fileName: string;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
+
       //"2021-01-31T12:58:00.000Z" - 1612097880000
       //"2021-01-31T12:59:00.000Z" - 1612097940000
       //"2021-01-31T13:00:00.000Z" - 1612098000000
@@ -806,7 +815,9 @@ describe("MindSphereFileService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -822,7 +833,7 @@ describe("MindSphereFileService", () => {
 
       MockDate.set(mockedNow);
 
-      return mindSphereFileService.deleteFile(assetId, fileName);
+      return mindSphereFileService.deleteFile(tenantName, assetId, fileName);
     };
 
     it("should call DELETE API of file", async () => {
@@ -886,6 +897,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -893,11 +905,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -944,6 +956,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -951,11 +964,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -987,6 +1000,7 @@ describe("MindSphereFileService", () => {
   });
 
   describe("setFileContent", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -1000,6 +1014,7 @@ describe("MindSphereFileService", () => {
     let fileContent: any;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       //"2021-01-31T12:58:00.000Z" - 1612097880000
       //"2021-01-31T12:59:00.000Z" - 1612097940000
       //"2021-01-31T13:00:00.000Z" - 1612098000000
@@ -1041,7 +1056,9 @@ describe("MindSphereFileService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -1058,6 +1075,7 @@ describe("MindSphereFileService", () => {
       MockDate.set(mockedNow);
 
       return mindSphereFileService.setFileContent(
+        tenantName,
         assetId,
         fileName,
         fileContent
@@ -1230,6 +1248,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(3);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -1237,11 +1256,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -1320,6 +1339,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(3);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -1327,11 +1347,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -1379,6 +1399,7 @@ describe("MindSphereFileService", () => {
   });
 
   describe("getAllFileNamesFromAsset", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -1391,6 +1412,7 @@ describe("MindSphereFileService", () => {
     let fileExtension: string | null | undefined;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       //"2021-01-31T12:58:00.000Z" - 1612097880000
       //"2021-01-31T12:59:00.000Z" - 1612097940000
       //"2021-01-31T13:00:00.000Z" - 1612098000000
@@ -1496,7 +1518,9 @@ describe("MindSphereFileService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -1513,6 +1537,7 @@ describe("MindSphereFileService", () => {
       MockDate.set(mockedNow);
 
       return mindSphereFileService.getAllFileNamesFromAsset(
+        tenantName,
         assetId,
         fileExtension
       );
@@ -3552,6 +3577,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(7);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -3559,11 +3585,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -3712,6 +3738,7 @@ describe("MindSphereFileService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(7);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -3719,11 +3746,11 @@ describe("MindSphereFileService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 

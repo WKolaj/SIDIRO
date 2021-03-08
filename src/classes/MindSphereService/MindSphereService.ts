@@ -47,14 +47,20 @@ export abstract class MindSphereService {
    */
   protected _url: string;
 
-  //TODO - add changes of removing token in class diagram
-
   /**
    * @description Abstract class representing MindSphere Service - already fetches calls with Bearer Token
    * @param url  Main url of given service
    */
   protected constructor(url: string) {
     this._url = url;
+  }
+
+  /**
+   * @description Method for getting token manager for given tenant name
+   * @param tenantName Tenant name to get token manager for
+   */
+  protected _getTokenManager(tenantName: string) {
+    return MindSphereTokenManager.getInstance(tenantName);
   }
 
   /**
@@ -237,7 +243,7 @@ export abstract class MindSphereService {
    * @param tenant Name of the tenant to call API
    */
   protected async _getAuthToken(tenant: string) {
-    let authToken = await MindSphereTokenManager.getInstance(tenant).getToken();
+    let authToken = await this._getTokenManager(tenant).getToken();
     return `Bearer ${authToken}`;
   }
 
@@ -316,7 +322,6 @@ export abstract class MindSphereService {
     data: any = null,
     headers: HTTPHeaders = {}
   ): Promise<MindSphereIndexedResponse[]> {
-    //TODO - test this method
     let startIndex: number = 1;
     let paramsToSend = params != null ? { ...params } : {};
     let firstResult = await this._callAPI(
@@ -351,5 +356,3 @@ export abstract class MindSphereService {
     return responsesToReturn;
   }
 }
-
-//TODO - test and draw changes associated with tenant call in class diagram

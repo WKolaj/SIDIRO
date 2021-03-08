@@ -6,6 +6,7 @@ import {
 } from "../../../../classes/MindSphereService/MindSphereEventService";
 import MockDate from "mockdate";
 import { testPrivateProperty } from "../../../testUtilities";
+import { encodeBase64 } from "../../../../utilities/utilities";
 
 let mockedAxios = axios as any;
 
@@ -33,12 +34,7 @@ describe("MindSphereEventService", () => {
   });
 
   describe("getInstance", () => {
-    let mockedMindSphereTokenManager: MindSphereTokenManager;
-
     let exec = () => {
-      //Getting token manager to check if it is the same as global instance
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance();
-
       return MindSphereEventService.getInstance();
     };
 
@@ -68,16 +64,6 @@ describe("MindSphereEventService", () => {
         `https://gateway.eu1.mindsphere.io/api/eventmanagement/v3/events`
       );
     });
-
-    it("should properly set tokenManager", () => {
-      let result = exec();
-
-      testPrivateProperty(
-        result,
-        "_tokenManager",
-        mockedMindSphereTokenManager
-      );
-    });
   });
 
   describe("getEvent", () => {
@@ -90,6 +76,7 @@ describe("MindSphereEventService", () => {
     let mockedAuthTokenElapsedTime: number | null;
     let mockedNow: number;
     let eventId: string;
+    let tenantName: string;
 
     beforeEach(() => {
       mockedReturnDataCollection = [
@@ -114,11 +101,14 @@ describe("MindSphereEventService", () => {
       mockedNow = 1612098060000;
 
       eventId = "testEventId";
+      tenantName = "testTenantName";
     });
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -134,7 +124,7 @@ describe("MindSphereEventService", () => {
 
       MockDate.set(mockedNow);
 
-      return mindSphereEventService.getEvent(eventId);
+      return mindSphereEventService.getEvent(tenantName, eventId);
     };
 
     it("should return event if it exists", async () => {
@@ -239,6 +229,7 @@ describe("MindSphereEventService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -246,11 +237,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -324,6 +315,7 @@ describe("MindSphereEventService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -331,11 +323,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -366,6 +358,7 @@ describe("MindSphereEventService", () => {
   });
 
   describe("getEvents", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -469,11 +462,14 @@ describe("MindSphereEventService", () => {
       //1581320100000 - "2020-02-10T07:35:00.000Z"
       toDate = 1581320100000;
       source = "testSource";
+      tenantName = "testTenantName";
     });
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -490,6 +486,7 @@ describe("MindSphereEventService", () => {
       MockDate.set(mockedNow);
 
       return mindSphereEventService.getEvents(
+        tenantName,
         assetID,
         fromDate,
         toDate,
@@ -1103,6 +1100,7 @@ describe("MindSphereEventService", () => {
 
       //Axios request should have been called three times - getting three pages
       expect(mockedAxios.request).toHaveBeenCalledTimes(4);
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       //First call - fetch token
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
@@ -1111,11 +1109,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -1200,6 +1198,7 @@ describe("MindSphereEventService", () => {
 
       //Axios request should have been called three times - getting three pages
       expect(mockedAxios.request).toHaveBeenCalledTimes(4);
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       //First call - fetch token
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
@@ -1208,11 +1207,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -1272,6 +1271,7 @@ describe("MindSphereEventService", () => {
   });
 
   describe("postEvent", () => {
+    let tenantName: string;
     let mockedMindSphereTokenManager: any;
     let mockedReturnDataCollection: any[];
     let mockedReturnStatusCollection: number[];
@@ -1284,6 +1284,7 @@ describe("MindSphereEventService", () => {
     let eventPayload: MindSphereStandardEvent;
 
     beforeEach(() => {
+      tenantName = "testTenantName";
       mockedReturnDataCollection = [{}];
       mockedReturnStatusCollection = [200];
       mockedReturnHeadersCollection = [{}];
@@ -1308,7 +1309,9 @@ describe("MindSphereEventService", () => {
 
     let exec = async () => {
       //Mocking Token Manager
-      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance() as any;
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
       mockedMindSphereTokenManager._token = mockedAuthToken;
       mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
 
@@ -1324,7 +1327,7 @@ describe("MindSphereEventService", () => {
 
       MockDate.set(mockedNow);
 
-      return mindSphereEventService.postEvent(eventPayload);
+      return mindSphereEventService.postEvent(tenantName, eventPayload);
     };
 
     it("should post event payload to MindSphere", async () => {
@@ -1414,6 +1417,7 @@ describe("MindSphereEventService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -1421,11 +1425,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
@@ -1473,6 +1477,7 @@ describe("MindSphereEventService", () => {
       expect(mockedAxios.request).toHaveBeenCalledTimes(2);
 
       //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
       expect(mockedAxios.request.mock.calls[0][0]).toEqual({
         url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
         method: "POST",
@@ -1480,11 +1485,11 @@ describe("MindSphereEventService", () => {
           appName: "testAppName",
           appVersion: "testAppVersion",
           hostTenant: "testHostTenant",
-          userTenant: "testUserTenant",
+          userTenant: "testTenantName",
         },
         headers: {
           "Content-Type": "application/json",
-          "X-SPACE-AUTH-KEY": `Basic testSpaceAuthKey`,
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
         },
       });
 
