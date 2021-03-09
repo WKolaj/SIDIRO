@@ -25,13 +25,16 @@ export class MindSphereUserGroupService extends MindSphereService {
    */
   private static _instance: MindSphereUserGroupService | null = null;
 
+  private _maxNumberOfUserGroupsPerOneCall: number;
+
   /**
    * @description Method for getting (or creating if not exists) main instance of Singleton
    */
   public static getInstance(): MindSphereUserGroupService {
     if (MindSphereUserGroupService._instance == null) {
       MindSphereUserGroupService._instance = new MindSphereUserGroupService(
-        mindSphereUserGroupApiUrl
+        mindSphereUserGroupApiUrl,
+        maxNumberOfUserGroupsInOneQuery
       );
     }
 
@@ -41,9 +44,11 @@ export class MindSphereUserGroupService extends MindSphereService {
   /**
    * @description Class for representing MindSphere service for managing users
    * @param url URL for managing users
+   * @param maxNumberOfUserGroupsPerOneCall Max number of user group to get per one call
    */
-  private constructor(url: string) {
+  private constructor(url: string, maxNumberOfUserGroupsPerOneCall: number) {
     super(url);
+    this._maxNumberOfUserGroupsPerOneCall = maxNumberOfUserGroupsPerOneCall;
   }
 
   /**
@@ -104,23 +109,38 @@ export class MindSphereUserGroupService extends MindSphereService {
       tenant,
       "GET",
       this._url,
-      maxNumberOfUserGroupsInOneQuery,
+      this._maxNumberOfUserGroupsPerOneCall,
       { ...params, sortBy: "id" }
     );
 
     //Collection for storing all names
-    let allUsersToReturn: MindSphereUserGroupData[] = [];
+    let allUserGroupsToReturn: MindSphereUserGroupData[] = [];
 
     for (let response of allRespones) {
       if (response.resources != null) {
-        for (let user of response.resources) {
-          if (user != null)
-            allUsersToReturn.push(user as MindSphereUserGroupData);
+        for (let userGroup of response.resources) {
+          if (userGroup != null)
+            allUserGroupsToReturn.push(userGroup as MindSphereUserGroupData);
         }
       }
     }
 
-    return allUsersToReturn;
+    return allUserGroupsToReturn;
+  }
+
+  public async checkIfUserGroupExists(
+    tenant: string,
+    userGroupId: string | null,
+    userGroupName: string | null = null
+  ): Promise<boolean> {
+    if (userGroupId == null && userGroupName == null)
+      throw new Error("Both userGroupId and userGroupName not specified");
+    let allSuitableGroups = await this.getAllUserGroups(
+      tenant,
+      userGroupId,
+      userGroupName
+    );
+    return allSuitableGroups.length > 0;
   }
 
   public async getUserGroup(
