@@ -20,31 +20,31 @@ declare module "node-config-ts" {
     maxFiles: number
   }
   interface UserPermissions {
-    globalAdminScope: undefined
-    globalUserScope: undefined
-    localAdminScope: undefined
-    localUserScope: undefined
-    globalAdminGroup: undefined
-    globalUserGroup: undefined
-    localAdminGroup: undefined
-    localUserGroup: undefined
-    msStandardUserGroup: undefined
-    msSubtenantUserGroup: undefined
-    superAdminUserIds: undefined
+    globalAdminScope: string
+    globalUserScope: string
+    localAdminScope: string
+    localUserScope: string
+    globalAdminGroup: string
+    globalUserGroup: string
+    localAdminGroup: string
+    localUserGroup: string
+    msStandardUserGroup: string
+    msSubtenantUserGroup: string
+    superAdminUserIds: string
   }
   interface AppSettings {
-    appContainerTenant: undefined
-    appContainerAssetId: undefined
-    appContainerAssetType: undefined
-    appAssetType: undefined
+    appContainerTenant: string
+    appContainerAssetId: string
+    appContainerAssetType: string
+    appAssetType: string
   }
   interface AppCredentials {
-    clientId: undefined
-    clientSecret: undefined
-    appName: undefined
-    appVersion: undefined
-    appId: undefined
-    hostTenant: undefined
+    clientId: string
+    clientSecret: string
+    appName: string
+    appVersion: string
+    appId: string
+    hostTenant: string
   }
   export const config: Config
   export type Config = IConfig

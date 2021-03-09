@@ -332,6 +332,9 @@ export abstract class MindSphereService {
       data,
       headers
     );
+    //Checking if response is valid
+    if (firstResult == null || firstResult.data == null) return [];
+
     startIndex += itemsPerPage;
     let firstResponse: MindSphereIndexedResponse = firstResult.data as MindSphereIndexedResponse;
     let responsesToReturn = [firstResponse];

@@ -35,13 +35,16 @@ export class MindSphereUserService extends MindSphereService {
    */
   private static _instance: MindSphereUserService | null = null;
 
+  private _maxNumberOfUserPerOneCall: number;
+
   /**
    * @description Method for getting (or creating if not exists) main instance of Singleton
    */
   public static getInstance(): MindSphereUserService {
     if (MindSphereUserService._instance == null) {
       MindSphereUserService._instance = new MindSphereUserService(
-        mindSphereUserApiUrl
+        mindSphereUserApiUrl,
+        maxNumberOfUsersInOneQuery
       );
     }
 
@@ -51,9 +54,11 @@ export class MindSphereUserService extends MindSphereService {
   /**
    * @description Class for representing MindSphere service for managing users
    * @param url URL for managing users
+   * @param maxNumberOfUserPerOneCall Max number of user to get per one call
    */
-  private constructor(url: string) {
+  private constructor(url: string, maxNumberOfUserPerOneCall: number) {
     super(url);
+    this._maxNumberOfUserPerOneCall = maxNumberOfUserPerOneCall;
   }
 
   /**
@@ -65,10 +70,9 @@ export class MindSphereUserService extends MindSphereService {
   }
 
   private _getUsersToCheckParams(
-    subtenantName: string | null = null,
+    subtenantId: string | null = null,
     userId: string | null = null,
-    userName: string | null = null,
-    userGroupId: string | null = null
+    userName: string | null = null
   ) {
     let paramsToReturn: {
       subtenant?: string;
@@ -77,38 +81,31 @@ export class MindSphereUserService extends MindSphereService {
 
     let filters: string[] = [];
     if (userId != null) filters.push(`id eq "${userId}"`);
-    if (userName != null) filters.push(`userName eq "${userName}"`);
-    if (userGroupId != null) filters.push(`groups.display eq "${userGroupId}"`);
+    if (userName != null) filters.push(`username eq "${userName}"`);
 
     if (filters.length > 0) {
       let filterString = filters.join(" and ");
       paramsToReturn.filter = filterString;
     }
 
-    if (subtenantName != null) paramsToReturn.subtenant = subtenantName;
+    if (subtenantId != null) paramsToReturn.subtenant = subtenantId;
 
     return paramsToReturn;
   }
 
   public async getAllUsers(
     tenant: string,
-    subtenantName: string | null = null,
+    subtenantId: string | null = null,
     userId: string | null = null,
-    userName: string | null = null,
-    userGroupId: string | null = null
+    userName: string | null = null
   ): Promise<MindSphereUserData[]> {
-    let params = this._getUsersToCheckParams(
-      subtenantName,
-      userId,
-      userName,
-      userGroupId
-    );
+    let params = this._getUsersToCheckParams(subtenantId, userId, userName);
 
     let allRespones = await this._callIndexableAPI(
       tenant,
       "GET",
       this._url,
-      maxNumberOfUsersInOneQuery,
+      this._maxNumberOfUserPerOneCall,
       { ...params, sortBy: "id" }
     );
 
