@@ -1,4 +1,3 @@
-import { filter } from "lodash";
 import { MindSphereService } from "./MindSphereService";
 
 const mindSphereUserGroupApiUrl = `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups`;

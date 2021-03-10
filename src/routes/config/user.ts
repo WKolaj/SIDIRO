@@ -1,7 +1,10 @@
 import express from "express";
 import checkAppIdParam from "../../middleware/checkParams/checkAppIdParam";
 import isGlobalAdmin from "../../middleware/authorization/isGlobalAdmin";
-import { UserStorageData } from "../../classes/MindSphereApp/MindSphereApp";
+import {
+  MindSphereApp,
+  UserStorageData,
+} from "../../classes/MindSphereApp/MindSphereApp";
 import { joiValidator } from "../../middleware/validation/joiValidate";
 import { validateUser } from "../../models/App/User/User";
 import fetchTokenData from "../../middleware/tokenData/fetchTokenData";
@@ -17,7 +20,6 @@ import {
   areObjectsIdentical,
   containsTheSameElements,
 } from "../../utilities/utilities";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAdmin";
 import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
 
@@ -243,7 +245,7 @@ router.get(
 
     //#region  ========== GETTING ALL USERS OF GIVEN APP ==========
 
-    let usersOfGivenApp = await userDataReq.appInstance!.getAllUsers();
+    let usersOfGivenApp = await userDataReq.appInstance!.getAllUsersData();
 
     //#endregion  ========== GETTING ALL USERS OF GIVEN APP ==========
 
@@ -311,8 +313,7 @@ router.post(
     //#region  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
 
     //Checking if user of given email exists and return if it already exists
-    let userExists = await userRequest.appInstance!.UsersManager.checkIfUserIsCreatedInMindSphere(
-      null,
+    let userExists = await userRequest.appInstance!.userExistsInTenant(
       userRequest.body.email
     );
 
@@ -326,7 +327,7 @@ router.post(
     //#region  ========== CREATING NEW USER ==========
 
     //Creating user in mindsphere and in storage
-    let createdUser = await userRequest.appInstance!.UsersManager.createUser(
+    let createdUser = await userRequest.appInstance!.createUser(
       userRequest.body
     );
 
@@ -375,9 +376,7 @@ router.delete(
     //#region  ========== DELETING USER ==========
 
     //Deleting user
-    await userRequest.appInstance!.UsersManager.deleteUser(
-      userRequest.params.userId
-    );
+    await userRequest.appInstance!.deleteUser(userRequest.params.userId);
 
     //#endregion  ========== DELETING USER ==========
 
@@ -437,7 +436,7 @@ router.put(
 
     //#region  ========== UPDATING USER ==========
 
-    let updatedUser = await userRequest.appInstance!.UsersManager.updateUser(
+    let updatedUser = await userRequest.appInstance!.updateUser(
       userRequest.params.userId,
       req.body
     );
@@ -477,7 +476,7 @@ router.get(
     //#region ========== GETTING ALL USERS ==========
 
     //Getting all users
-    let usersOfGivenApp = await userDataReq.appInstance!.getAllUsers();
+    let usersOfGivenApp = await userDataReq.appInstance!.getAllUsersData();
 
     //#endregion ========== GETTING ALL USERS ==========
 
@@ -537,10 +536,7 @@ router.get(
     //Checking if user exists and have access to given plant
     if (
       userPayload == null ||
-      !MindSphereAppUsersManager.hasLocalAccessToPlant(
-        req.params.plantId,
-        userPayload
-      )
+      !MindSphereApp.hasLocalAccessToPlant(req.params.plantId, userPayload)
     )
       return res.status(404).send("User not found!");
 
@@ -591,8 +587,8 @@ router.post(
     //#region =========== CHECKING IF CREATED USER IS LOCAL NOT GLOBAL ===========
 
     if (
-      MindSphereAppUsersManager.hasGlobalAdminRole(req.body) ||
-      MindSphereAppUsersManager.hasGlobalUserRole(req.body)
+      MindSphereApp.hasGlobalAdminRole(req.body) ||
+      MindSphereApp.hasGlobalUserRole(req.body)
     )
       return res
         .status(400)
@@ -603,8 +599,7 @@ router.post(
     //#region =========== CHECKING IF CREATED USER ALREADY EXISTS IN MINDSPHERE ===========
 
     //Checking if user of given email exists and return if it already exists
-    let userExists = await userRequest.appInstance!.UsersManager.checkIfUserIsCreatedInMindSphere(
-      null,
+    let userExists = await userRequest.appInstance!.userExistsInTenant(
       userRequest.body.email
     );
 
@@ -618,7 +613,7 @@ router.post(
     //#region =========== CREATING USER ===========
 
     //Creating user in mindsphere and in storage
-    let createdUser = await userRequest.appInstance!.UsersManager.createUser(
+    let createdUser = await userRequest.appInstance!.createUser(
       userRequest.body
     );
 
@@ -667,7 +662,7 @@ router.delete(
     //Returning 404 if user not found or it is not assigned to given app
     if (
       userToDeleteStorageData == null ||
-      !MindSphereAppUsersManager.hasLocalAccessToPlant(
+      !MindSphereApp.hasLocalAccessToPlant(
         req.params.plantId,
         userToDeleteStorageData
       )
@@ -680,8 +675,8 @@ router.delete(
 
     //Checking if user to delete has global permissions
     if (
-      MindSphereAppUsersManager.hasGlobalAdminRole(userToDeleteStorageData) ||
-      MindSphereAppUsersManager.hasGlobalUserRole(userToDeleteStorageData)
+      MindSphereApp.hasGlobalAdminRole(userToDeleteStorageData) ||
+      MindSphereApp.hasGlobalUserRole(userToDeleteStorageData)
     )
       return res
         .status(400)
@@ -701,16 +696,14 @@ router.delete(
       delete payloadToEdit.data[req.params.plantId];
       delete payloadToEdit.permissions.plants[req.params.plantId];
 
-      await userRequest.appInstance!.UsersManager.updateUser(
+      await userRequest.appInstance!.updateUser(
         userRequest.params.userId,
         payloadToEdit
       );
     }
     //If user exists only for this plant - delete him
     else {
-      await userRequest.appInstance!.UsersManager.deleteUser(
-        userRequest.params.userId
-      );
+      await userRequest.appInstance!.deleteUser(userRequest.params.userId);
     }
 
     //#endregion ========== DELETING USER OR UPDATING HIM - REMOVING PLANT ID ==========
@@ -759,7 +752,7 @@ router.put(
     //Returning 404 if user not found or it is not assigned to given app
     if (
       userToEditStorageData == null ||
-      !MindSphereAppUsersManager.hasLocalAccessToPlant(
+      !MindSphereApp.hasLocalAccessToPlant(
         req.params.plantId,
         userToEditStorageData
       )
@@ -772,8 +765,8 @@ router.put(
 
     //Checking if user to edit has global permissions
     if (
-      MindSphereAppUsersManager.hasGlobalAdminRole(userToEditStorageData) ||
-      MindSphereAppUsersManager.hasGlobalUserRole(userToEditStorageData)
+      MindSphereApp.hasGlobalAdminRole(userToEditStorageData) ||
+      MindSphereApp.hasGlobalUserRole(userToEditStorageData)
     )
       return res
         .status(400)
@@ -814,7 +807,7 @@ router.put(
 
     //#region =========== EDITING USER ===========
 
-    let editedUser = await userRequest.appInstance!.UsersManager.updateUser(
+    let editedUser = await userRequest.appInstance!.updateUser(
       req.params.userId,
       userEditPayload
     );

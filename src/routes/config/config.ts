@@ -1,6 +1,7 @@
 import express from "express";
 import {
   AppStorageData,
+  MindSphereApp,
   PlanStorageData,
   UserStorageData,
 } from "../../classes/MindSphereApp/MindSphereApp";
@@ -9,7 +10,6 @@ import fetchUserAndAppData, {
   AppDataRequest,
 } from "../../middleware/appData/fetchUserAndAppData";
 import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 
 const router = express.Router();
 
@@ -74,19 +74,16 @@ router.get(
 
     //#region ========== GENERETING PLANTS PAYLOAD ==========
 
-    let allPlants = await appDataReq.appInstance!.getAllPlants();
+    let allPlants = await appDataReq.appInstance!.getAllPlantsData();
 
     for (let plantId of Object.keys(allPlants)) {
       let plantData = allPlants[plantId];
 
       //Adding plant to plant payload to return only if user is a global admin or global user or has local access to plant
       if (
-        MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) ||
-        MindSphereAppUsersManager.hasGlobalUserRole(appDataReq.userData!) ||
-        MindSphereAppUsersManager.hasLocalAccessToPlant(
-          plantId,
-          appDataReq.userData!
-        )
+        MindSphereApp.hasGlobalAdminRole(appDataReq.userData!) ||
+        MindSphereApp.hasGlobalUserRole(appDataReq.userData!) ||
+        MindSphereApp.hasLocalAccessToPlant(plantId, appDataReq.userData!)
       )
         plantPayload[plantId] = plantData;
     }

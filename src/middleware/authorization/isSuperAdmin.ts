@@ -1,5 +1,5 @@
 import express from "express";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
+import { MindSphereApp } from "../../classes/MindSphereApp/MindSphereApp";
 import { TokenRequest } from "../tokenData/fetchTokenData";
 
 export default async function(
@@ -9,7 +9,7 @@ export default async function(
 ) {
   let userDataRequest = req as TokenRequest;
 
-  let mindSphereScopeValid = MindSphereAppUsersManager.isSuperAdmin(
+  let mindSphereScopeValid = MindSphereApp.isSuperAdmin(
     userDataRequest.userTokenData
   );
 

@@ -1,6 +1,5 @@
 import express from "express";
-import { PlantPermissions } from "../../classes/MindSphereApp/MindSphereApp";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
+import { MindSphereApp } from "../../classes/MindSphereApp/MindSphereApp";
 import { AppDataRequest } from "../appData/fetchUserAndAppData";
 
 export default async function(
@@ -15,7 +14,7 @@ export default async function(
 
   //Checking if user is admin for plant
   if (
-    !MindSphereAppUsersManager.isLocalAdminOfPlant(
+    !MindSphereApp.isLocalAdminOfPlant(
       appDataRequest.params.plantId,
       appDataRequest.userData!
     )

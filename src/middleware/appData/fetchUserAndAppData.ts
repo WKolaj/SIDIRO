@@ -91,7 +91,7 @@ export default async function(
 
   //#region ========= GETTING USER ID ========
 
-  let userId = await appInstance.UsersManager.getUserIdIfExists(
+  let userId = await appInstance.getUserIdIfExists(
     appRequest.userTokenData.email
   );
 

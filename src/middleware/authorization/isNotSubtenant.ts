@@ -1,5 +1,4 @@
 import express from "express";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 import { TokenRequest } from "../tokenData/fetchTokenData";
 
 export default async function(

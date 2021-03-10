@@ -1,6 +1,9 @@
 import express from "express";
 import checkAppIdParam from "../../middleware/checkParams/checkAppIdParam";
-import { PlanStorageData } from "../../classes/MindSphereApp/MindSphereApp";
+import {
+  MindSphereApp,
+  PlanStorageData,
+} from "../../classes/MindSphereApp/MindSphereApp";
 import fetchTokenData from "../../middleware/tokenData/fetchTokenData";
 import fetchUserAndAppData, {
   AppDataRequest,
@@ -8,7 +11,6 @@ import fetchUserAndAppData, {
 import { applyJSONParsingToRoute } from "../../utilities/utilities";
 import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
 import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamUserOrAdmin";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
 import isGlobalAdmin from "../../middleware/authorization/isGlobalAdmin";
 import { joiValidator } from "../../middleware/validation/joiValidate";
 import { validatePlant } from "../../models/App/Plant/Plant";
@@ -75,8 +77,8 @@ router.get(
     //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
 
     if (
-      !MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) &&
-      !MindSphereAppUsersManager.isLocalAdminOfPlant(
+      !MindSphereApp.hasGlobalAdminRole(appDataReq.userData!) &&
+      !MindSphereApp.isLocalAdminOfPlant(
         req.params.plantId,
         appDataReq.userData!
       )!
@@ -126,8 +128,8 @@ router.put(
     //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
 
     if (
-      !MindSphereAppUsersManager.hasGlobalAdminRole(appDataReq.userData!) &&
-      !MindSphereAppUsersManager.isLocalAdminOfPlant(
+      !MindSphereApp.hasGlobalAdminRole(appDataReq.userData!) &&
+      !MindSphereApp.isLocalAdminOfPlant(
         req.params.plantId,
         appDataReq.userData!
       )!
@@ -197,7 +199,7 @@ router.get(
 
     //#region ========== GETTING ALL PLANTS DATA ==========
 
-    let allPlants = await appDataReq.appInstance!.getAllPlants();
+    let allPlants = await appDataReq.appInstance!.getAllPlantsData();
 
     return res
       .status(200)
@@ -399,7 +401,7 @@ router.get(
 
     //#region ========== GETTING ALL PLANTS DATA ==========
 
-    let allPlants = await appDataReq.appInstance!.getAllPlants();
+    let allPlants = await appDataReq.appInstance!.getAllPlantsData();
 
     //#endregion ========== GETTING ALL PLANTS DATA ==========
 
@@ -410,12 +412,7 @@ router.get(
     for (let plantId of Object.keys(allPlants)) {
       let plantData = allPlants[plantId];
 
-      if (
-        MindSphereAppUsersManager.hasLocalAccessToPlant(
-          plantId,
-          appDataReq.userData!
-        )
-      )
+      if (MindSphereApp.hasLocalAccessToPlant(plantId, appDataReq.userData!))
         plantsToReturn[plantId] = plantData;
     }
 

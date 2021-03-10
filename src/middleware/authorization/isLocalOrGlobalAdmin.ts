@@ -1,5 +1,5 @@
 import express from "express";
-import { MindSphereAppUsersManager } from "../../classes/MindSphereApp/MindSphereAppUsersManager";
+import { MindSphereApp } from "../../classes/MindSphereApp/MindSphereApp";
 import { AppDataRequest } from "../appData/fetchUserAndAppData";
 
 export default async function(
@@ -10,14 +10,12 @@ export default async function(
   let userDataRequest = req as AppDataRequest;
 
   let mindSphereScopeValid =
-    MindSphereAppUsersManager.hasGlobalAdminScope(
-      userDataRequest.userTokenData
-    ) ||
-    MindSphereAppUsersManager.hasLocalAdminScope(userDataRequest.userTokenData);
+    MindSphereApp.hasGlobalAdminScope(userDataRequest.userTokenData) ||
+    MindSphereApp.hasLocalAdminScope(userDataRequest.userTokenData);
 
   let userPermissionsValid =
-    MindSphereAppUsersManager.hasGlobalAdminRole(userDataRequest.userData!) ||
-    MindSphereAppUsersManager.hasLocalAdminRole(userDataRequest.userData!);
+    MindSphereApp.hasGlobalAdminRole(userDataRequest.userData!) ||
+    MindSphereApp.hasLocalAdminRole(userDataRequest.userData!);
 
   if (!mindSphereScopeValid || !userPermissionsValid)
     return res

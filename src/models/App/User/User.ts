@@ -1,9 +1,9 @@
 import Joi from "joi";
 import {
+  MindSphereApp,
   PlantPermissions,
   UserStorageData,
 } from "../../../classes/MindSphereApp/MindSphereApp";
-import { MindSphereAppUsersManager } from "../../../classes/MindSphereApp/MindSphereAppUsersManager";
 import { containsTheSameElements } from "../../../utilities/utilities";
 
 /**
@@ -22,8 +22,8 @@ function checkUserPlantPermissions(userStoragePayload: UserStorageData) {
 
   //If user should be an admin - check permissions
   return (
-    MindSphereAppUsersManager.hasGlobalAdminRole(userStoragePayload) ||
-    MindSphereAppUsersManager.hasLocalAdminRole(userStoragePayload)
+    MindSphereApp.hasGlobalAdminRole(userStoragePayload) ||
+    MindSphereApp.hasLocalAdminRole(userStoragePayload)
   );
 }
 
