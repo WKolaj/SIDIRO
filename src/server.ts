@@ -16,10 +16,13 @@ let exec = async () => {
   //   "mdsp:sidiop:sidiro.globaladmin"
   // );
 
-  await userGroupsService.deleteUserGroup(
+  let userIsAssingedToGroup = await userGroupsService.removeUserFromGroup(
     "sidivp",
-    "0c84b271-b9dd-4676-b499-74b7e02ba67c"
+    "53a1993b-daa3-4e41-9cc8-ea3e7107ac05",
+    "bf02447c-8bf6-4aa0-be95-ea2a9cb4acc3"
   );
+
+  console.log(userIsAssingedToGroup);
 };
 
 exec();

@@ -5948,5 +5948,1078 @@ describe("MindSphereUserService", () => {
     });
   });
 
-  //TODO - add tests for rest of methods associated with assigning user to group
+  describe("getGroupMembers", () => {
+    let tenantName: string;
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereUserGroupService: MindSphereUserGroupService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let userGroupId: string;
+
+    beforeEach(() => {
+      userGroupId = "testUserGroupId";
+      mockedReturnDataCollection = [["fakeUser1", "fakeUser2", "fakeUser3"]];
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      tenantName = "testTenantName";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereUserGroupService = MindSphereUserGroupService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereUserGroupService.getGroupMembers(
+        tenantName,
+        userGroupId
+      );
+    };
+
+    it("should Call MindSphere API and return users of given group", async () => {
+      let result = await exec();
+
+      let expectedResult = ["fakeUser1", "fakeUser2", "fakeUser3"];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return empty array - if call returns empty array", async () => {
+      mockedReturnDataCollection = [[]];
+
+      let result = await exec();
+
+      let expectedResult: any[] = [];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return empty array - if call returns null", async () => {
+      mockedReturnDataCollection = [null];
+
+      let result = await exec();
+
+      let expectedResult: any[] = [];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return empty array - if call returns response that is not an array", async () => {
+      mockedReturnDataCollection = [
+        {
+          fakeResponse: 1234,
+        },
+      ];
+
+      let result = await exec();
+
+      let expectedResult: any[] = [];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and then get all users using new token", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      let result = await exec();
+
+      let expectedResult = ["fakeUser1", "fakeUser2", "fakeUser3"];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and then get all users using new token", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      let result = await exec();
+
+      let expectedResult = ["fakeUser1", "fakeUser2", "fakeUser3"];
+
+      expect(result).toEqual(expectedResult);
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should reject - if call rejects", async () => {
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("checkIfUserIsAssignedToGroup", () => {
+    let tenantName: string;
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereUserGroupService: MindSphereUserGroupService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let userGroupId: string;
+    let userId: string;
+
+    beforeEach(() => {
+      userGroupId = "testUserGroupId";
+      userId = "testUserId2";
+      mockedReturnDataCollection = [
+        [
+          {
+            type: "USER",
+            value: "testUserId1",
+          },
+          {
+            type: "USER",
+            value: "testUserId2",
+          },
+          {
+            type: "USER",
+            value: "testUserId3",
+          },
+        ],
+      ];
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      tenantName = "testTenantName";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereUserGroupService = MindSphereUserGroupService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereUserGroupService.checkIfUserIsAssignedToGroup(
+        tenantName,
+        userGroupId,
+        userId
+      );
+    };
+
+    it("should Call MindSphere API and return true if user of given id exists in response", async () => {
+      let result = await exec();
+
+      expect(result).toEqual(true);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return false if user of given id does not exist in response", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            type: "USER",
+            value: "testUserId4",
+          },
+          {
+            type: "USER",
+            value: "testUserId5",
+          },
+          {
+            type: "USER",
+            value: "testUserId6",
+          },
+        ],
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return false if return response does not have value in payload", async () => {
+      mockedReturnDataCollection = [
+        [
+          {
+            type: "USER",
+          },
+          {
+            type: "USER",
+          },
+          {
+            type: "USER",
+          },
+        ],
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return false - if call returns empty array", async () => {
+      mockedReturnDataCollection = [[]];
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return empty array - if call returns null", async () => {
+      mockedReturnDataCollection = [null];
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should Call MindSphere API and return empty array - if call returns response that is not an array", async () => {
+      mockedReturnDataCollection = [
+        {
+          fakeResponse: 1234,
+        },
+      ];
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and then get all users using new token", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual(true);
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and then get all users using new token", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      let result = await exec();
+
+      expect(result).toEqual(true);
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "GET",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should reject - if call rejects", async () => {
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("addUserToGroup", () => {
+    let tenantName: string;
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereUserGroupService: MindSphereUserGroupService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let userGroupId: string;
+    let userId: string;
+
+    beforeEach(() => {
+      userGroupId = "testUserGroupId";
+      userId = "testUserId2";
+      mockedReturnDataCollection = [{}];
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      tenantName = "testTenantName";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereUserGroupService = MindSphereUserGroupService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereUserGroupService.addUserToGroup(
+        tenantName,
+        userGroupId,
+        userId
+      );
+    };
+
+    it("should Call MindSphere group members POST API", async () => {
+      let result = await exec();
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        data: {
+          type: "USER",
+          value: "testUserId2",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and then get all users using new token", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      await exec();
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        data: {
+          type: "USER",
+          value: "testUserId2",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and then get all users using new token", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      await exec();
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "POST",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        data: {
+          type: "USER",
+          value: "testUserId2",
+        },
+      });
+    });
+
+    it("should reject - if call rejects", async () => {
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("removeUserFromGroup", () => {
+    let tenantName: string;
+    let mockedMindSphereTokenManager: any;
+    let mockedReturnDataCollection: any[];
+    let mockedReturnStatusCollection: number[];
+    let mockedReturnHeadersCollection: any[];
+    let mindSphereUserGroupService: MindSphereUserGroupService;
+    let mockedAuthToken: string | null;
+    let mockedAuthTokenElapsedTime: number | null;
+    let mockedNow: number;
+    let userGroupId: string;
+    let userId: string;
+
+    beforeEach(() => {
+      userGroupId = "testUserGroupId";
+      userId = "testUserId";
+      mockedReturnDataCollection = [{}];
+      mockedReturnStatusCollection = [200];
+      mockedReturnHeadersCollection = [{}];
+      mockedAuthToken = "testAuthToken1234";
+      mockedAuthTokenElapsedTime = 1612184400000;
+      mockedNow = 1612098060000;
+      tenantName = "testTenantName";
+    });
+
+    let exec = async () => {
+      //Mocking Token Manager
+      mockedMindSphereTokenManager = MindSphereTokenManager.getInstance(
+        tenantName
+      ) as any;
+      mockedMindSphereTokenManager._token = mockedAuthToken;
+      mockedMindSphereTokenManager._tokenExpireUnixDate = mockedAuthTokenElapsedTime;
+
+      //Getting instance of service
+      mindSphereUserGroupService = MindSphereUserGroupService.getInstance();
+
+      //Mocking axios
+      mockedAxios.__setMockResponseDataCollection(
+        mockedReturnDataCollection,
+        mockedReturnStatusCollection,
+        mockedReturnHeadersCollection
+      );
+
+      MockDate.set(mockedNow);
+
+      return mindSphereUserGroupService.removeUserFromGroup(
+        tenantName,
+        userGroupId,
+        userId
+      );
+    };
+
+    it("should Call MindSphere group members DELETE API", async () => {
+      let result = await exec();
+
+      //Call three times - for every user group indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(1);
+
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members/testUserId`,
+        headers: {
+          Authorization: `Bearer ${mockedAuthToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has not been fetched before and then get all users using new token", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      //Setting token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+      mockedNow = 1612098000000;
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      await exec();
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members/testUserId`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should fetch token first - if token has expired and then get all users using new token", async () => {
+      mockedAuthTokenElapsedTime = null;
+
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //token elapsed time - "2021-01-31T12:58:00.000Z" 1612097880000
+      mockedNow = 1612098000000;
+      mockedAuthTokenElapsedTime = 1612097880000;
+
+      //Setting new token to return first time
+      //token timestamp - "2021-01-31T12:58:00.000Z" - 1612097880000
+      //now - "2021-01-31T13:00:00.000Z" - 1612098000000
+      //expires in "2021-01-31T13:31:18.766Z" 1612097880000 + 2000*1000-1234 = 1612099878766
+
+      //First axios call - fetch token, second get data
+      mockedReturnDataCollection = [
+        {
+          access_token: "testAccessToken2",
+          timestamp: 1612097880000,
+          expires_in: 2000,
+        },
+        ...mockedReturnDataCollection,
+      ];
+
+      mockedReturnStatusCollection = [200, ...mockedReturnStatusCollection];
+      mockedReturnHeadersCollection = [{}, ...mockedReturnHeadersCollection];
+
+      await exec();
+
+      //Call four times - for fetching token and for every user indexable request
+      expect(mockedAxios.request).toHaveBeenCalledTimes(2);
+
+      //First call - fetch token
+      let base64Key = encodeBase64(`testClientId:testClientSecret`);
+      expect(mockedAxios.request.mock.calls[0][0]).toEqual({
+        url: `https://gateway.eu1.mindsphere.io/api/technicaltokenmanager/v3/oauth/token`,
+        method: "POST",
+        data: {
+          appName: "testAppName",
+          appVersion: "testAppVersion",
+          hostTenant: "testHostTenant",
+          userTenant: "testTenantName",
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "X-SPACE-AUTH-KEY": `Basic ${base64Key}`,
+        },
+      });
+
+      expect(mockedAxios.request.mock.calls[1][0]).toEqual({
+        method: "DELETE",
+        url: `https://gateway.eu1.mindsphere.io/api/identitymanagement/v3/Groups/testUserGroupId/members/testUserId`,
+        headers: {
+          Authorization: `Bearer testAccessToken2`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+    });
+
+    it("should reject - if call rejects", async () => {
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+    });
+
+    it("should reject - if fetching token rejects", async () => {
+      mockedAuthToken = null;
+      mockedAuthTokenElapsedTime = null;
+
+      mockedAxios.__setMockError(new Error("test api call error"));
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test api call error",
+      });
+
+      //request called only once - while fetching token
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    });
+  });
 });
