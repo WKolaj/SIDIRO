@@ -186,8 +186,12 @@ export class MindSphereApp {
   //#region ========== AUTHENTICATION AND AUTHORIZATION METHODS ==========
 
   public static getSuperAdminUserIds() {
-    let usersString = config.userPermissions.superAdminUserIds! as string;
-    return usersString.split(" ");
+    if (
+      config.userPermissions.superAdminUserIds == null ||
+      config.userPermissions.superAdminUserIds.length === 0
+    )
+      return [];
+    return config.userPermissions.superAdminUserIds.split(" ");
   }
 
   /**
@@ -201,7 +205,7 @@ export class MindSphereApp {
     //Getting user from operator tenant to get his real id
     let users = await MindSphereUserService.getInstance().getAllUsers(
       user.ten,
-      user.subtenant,
+      user.subtenant ?? null,
       null,
       user.email.toLowerCase()
     );
@@ -215,19 +219,31 @@ export class MindSphereApp {
   }
 
   public static hasGlobalAdminScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.globalAdminScope);
+    return (
+      user.scope != null &&
+      user.scope.includes(config.userPermissions.globalAdminScope)
+    );
   }
 
   public static hasGlobalUserScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.globalUserScope);
+    return (
+      user.scope != null &&
+      user.scope.includes(config.userPermissions.globalUserScope)
+    );
   }
 
   public static hasLocalAdminScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.localAdminScope);
+    return (
+      user.scope != null &&
+      user.scope.includes(config.userPermissions.localAdminScope)
+    );
   }
 
   public static hasLocalUserScope(user: MindSphereUserJWTData) {
-    return user.scope.includes(config.userPermissions.localUserScope);
+    return (
+      user.scope != null &&
+      user.scope.includes(config.userPermissions.localUserScope)
+    );
   }
 
   public static hasGlobalAdminRole(user: UserStorageData) {
@@ -310,12 +326,8 @@ export class MindSphereApp {
     //Initializing user groups
     await this._initUserGroups();
 
-    //Initializing storages
-    await Promise.all([
-      this._appStorage.init(),
-      this._plantStorage.init(),
-      this._userStorage.init(),
-    ]);
+    //Initializing data storages
+    await this._initStorages();
 
     this._initialized = true;
   }
@@ -368,6 +380,18 @@ export class MindSphereApp {
     this._globalUserGroup = globalUserGroup;
     this._localAdminGroup = localAdminGroup;
     this._localUserGroup = localUserGroup;
+  }
+
+  /**
+   * @description Method for initializing data storages
+   */
+  protected async _initStorages() {
+    //Initializing storages
+    return Promise.all([
+      this._appStorage.init(),
+      this._plantStorage.init(),
+      this._userStorage.init(),
+    ]);
   }
 
   //#endregion ========== INITIALIZATION ==========
@@ -648,6 +672,10 @@ export class MindSphereApp {
 
   //#region ========== APP STORAGE DATA ==========
 
+  public async fetchAppData() {
+    await this._appStorage.fetchAllData();
+  }
+
   public async getAppData(): Promise<AppStorageData | null> {
     return this._appStorage.getData(mainAppStorageId);
   }
@@ -663,6 +691,10 @@ export class MindSphereApp {
   //#endregion ========== APP STORAGE DATA ==========
 
   //#region ========== USER STORAGE DATA ==========
+
+  public async fetchUserData() {
+    await this._userStorage.fetchAllData();
+  }
 
   public async getUserData(userId: string): Promise<UserStorageData | null> {
     return this._userStorage.getData(userId);
@@ -683,6 +715,10 @@ export class MindSphereApp {
   //#endregion ========== USER STORAGE DATA ==========
 
   //#region ========== PLANT STORAGE DATA ==========
+
+  public async fetchPlantData() {
+    await this._plantStorage.fetchAllData();
+  }
 
   public async getPlantData(plantId: string): Promise<PlanStorageData | null> {
     return this._plantStorage.getData(plantId);
