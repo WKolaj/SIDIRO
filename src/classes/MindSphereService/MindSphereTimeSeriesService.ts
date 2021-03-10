@@ -305,5 +305,3 @@ export class MindSphereTimeSeriesService extends MindSphereService {
     );
   }
 }
-
-//TODO - test and draw changes associated with tenant call in class diagram

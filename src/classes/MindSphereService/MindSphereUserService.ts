@@ -178,5 +178,3 @@ export class MindSphereUserService extends MindSphereService {
     await this._callAPI(tenant, "DELETE", this._getUserUrl(userId));
   }
 }
-
-//TODO - test this class

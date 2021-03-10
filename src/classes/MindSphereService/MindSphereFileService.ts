@@ -5,7 +5,7 @@ import { AxiosResponse } from "axios";
 const mindSphereFileSeriesApiUrl = `https://gateway.eu1.mindsphere.io/api/iotfile/v3/files`;
 const maxNumberOfFilesInOneQuery = 500;
 
-export type MindSphereTimeFileData = {
+export type MindSphereFileData = {
   name: string;
   path: string;
   size: number;
@@ -92,7 +92,7 @@ export class MindSphereFileService extends MindSphereService {
     fileName: string
   ) {
     //Calling api in order to get file properties
-    let result: { data: MindSphereTimeFileData[] } = await this._callAPI(
+    let result: { data: MindSphereFileData[] } = await this._callAPI(
       tenant,
       "GET",
       this._getFileToCheckUrl(assetId),
@@ -216,7 +216,7 @@ export class MindSphereFileService extends MindSphereService {
     tenant: string,
     assetId: string,
     offset: number
-  ): Promise<MindSphereTimeFileData[]> {
+  ): Promise<MindSphereFileData[]> {
     let result = await this._callAPI(
       tenant,
       "GET",
@@ -230,7 +230,7 @@ export class MindSphereFileService extends MindSphereService {
 
     if (result.data == null || !Array.isArray(result.data)) return [];
 
-    return result.data as MindSphereTimeFileData[];
+    return result.data as MindSphereFileData[];
   }
 
   /**
@@ -314,5 +314,3 @@ export class MindSphereFileService extends MindSphereService {
     return parseFloat(result.headers.count);
   }
 }
-
-//TODO - test and draw changes associated with tenant call in class diagram

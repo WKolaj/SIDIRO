@@ -313,5 +313,3 @@ export class MindSphereAssetService extends MindSphereService {
     return eTagNumber;
   }
 }
-
-//TODO - test and draw changes associated with tenant call in class diagram

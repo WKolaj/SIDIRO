@@ -4,7 +4,6 @@ import { CachedDataStorage } from "./CachedDataStorage";
 export class MindSphereDataStorage<T> extends CachedDataStorage<T> {
   private _fileService: MindSphereFileService = MindSphereFileService.getInstance();
 
-  //TODO - test and include changes associated with tenant call in class diagram
   private _tenant: string;
   private _assetId: string;
   private _extension: string;

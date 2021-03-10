@@ -183,5 +183,3 @@ export class MindSphereEventService extends MindSphereService {
     );
   }
 }
-
-//TODO - test and draw changes associated with tenant call in class diagram

@@ -249,4 +249,4 @@ export class MindSphereUserGroupService extends MindSphereService {
   }
 }
 
-//TODO - test this class
+//TODO - add comments for this class in class diagram
