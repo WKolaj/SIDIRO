@@ -248,5 +248,3 @@ export class MindSphereUserGroupService extends MindSphereService {
     );
   }
 }
-
-//TODO - add comments for this class in class diagram
