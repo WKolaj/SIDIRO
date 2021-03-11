@@ -1928,4 +1928,3049 @@ describe("MindSphereApp", () => {
   });
 
   //#endregion ===== CONTRUCTOR & INITIALIZATION =====
+
+  //#region ===== APP STORAGE DATA =====
+
+  describe("fetchAppData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let checkFileReturnsNull: boolean;
+    let throwWhileGettingFileContent: boolean;
+    let newAppData: AppStorageData | null;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+      throwWhileGettingFileContent = false;
+      checkFileReturnsNull = false;
+
+      newAppData = {
+        config: { newAppConfig: "newAppConfigValue" },
+        data: { newAppData: "newAppDataValue" },
+      };
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      if (newAppData)
+        assetFilesStorageContent["main.app.config.json"] = newAppData;
+
+      if (throwWhileGettingFileContent)
+        mindSphereFileService.getFileContent = jest.fn(async () => {
+          throw new Error("Test get file content error");
+        });
+
+      if (checkFileReturnsNull)
+        mindSphereFileService.checkIfFileExists = jest.fn(async () => {
+          return null;
+        });
+
+      return mindSphereApp.fetchAppData();
+    };
+
+    it("should fetch new data from main app file to app storage", async () => {
+      await exec();
+
+      //8 times during initialization, 9th time during fetching
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(9);
+
+      expect(mockedGetFileFunction.mock.calls[8]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "main.app.config.json",
+      ]);
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+    });
+
+    it("should throw and not fetch new data from main app file to app storage and clear storage from main app content - if get file method throws", async () => {
+      throwWhileGettingFileContent = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test get file content error",
+      });
+
+      //Cache data of storage should not have been refetched
+      expect(
+        (mindSphereApp as any)._appStorage._cacheData["main"]
+      ).not.toBeDefined();
+
+      //Main config should be accessible to fetch when trying to get and fetch data later
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      let data = await mindSphereApp.getAppData();
+
+      expect(data).toEqual(newAppData);
+
+      //Data should have been fetched
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+    });
+
+    it("should not throw but not fetch new data from main app file to app storage and clear storage from main app content - if check file returns null - no main file available", async () => {
+      checkFileReturnsNull = true;
+
+      await exec();
+
+      //Cache data of storage should not have been refetched
+      expect(
+        (mindSphereApp as any)._appStorage._cacheData["main"]
+      ).not.toBeDefined();
+
+      //Main config should be accessible to fetch when trying to get and fetch data later
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      let data = await mindSphereApp.getAppData();
+
+      expect(data).toEqual(newAppData);
+
+      //Data should have been fetched
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+    });
+
+    it("should throw and not fetch new data if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(mockedGetFileFunction).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._appStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("getAppData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let newAppData: AppStorageData | null;
+    let mainAppDataExistsInCache: boolean;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+      mainAppDataExistsInCache = true;
+
+      newAppData = {
+        config: { newAppConfig: "newAppConfigValue" },
+        data: { newAppData: "newAppDataValue" },
+      };
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      if (newAppData)
+        assetFilesStorageContent["main.app.config.json"] = newAppData;
+
+      if (!mainAppDataExistsInCache)
+        delete (mindSphereApp as any)._appStorage._cacheData["main"];
+
+      return mindSphereApp.getAppData();
+    };
+
+    it("should not fetch new data from main app file but return app data from cache", async () => {
+      let result = await exec();
+
+      expect(result).toEqual({
+        config: {
+          fakeAppConfig: "testFakeAppConfig",
+        },
+        data: {
+          fakeAppData: "testFakeAppData",
+        },
+      });
+
+      //8 times during initialization, 9th time during fetching was not called
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(8);
+      expect(mockedCheckFileFunction).toHaveBeenCalledTimes(8);
+
+      //Cache data should not be changed
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual({
+        config: {
+          fakeAppConfig: "testFakeAppConfig",
+        },
+        data: {
+          fakeAppData: "testFakeAppData",
+        },
+      });
+    });
+
+    it("should fetch new data from main app file and return app data from cache - if main app key does not exist in app data cache", async () => {
+      mainAppDataExistsInCache = false;
+
+      let result = await exec();
+
+      expect(result).toEqual(newAppData);
+
+      //8 times during initialization, 9th time during fetching
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(9);
+      expect(mockedCheckFileFunction).toHaveBeenCalledTimes(9);
+
+      //Cache data should not be changed
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+    });
+
+    it("should throw and not fetch new data if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._appStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("setAppData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let newAppData: AppStorageData;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedSetFileFunction = jest.fn(
+        async (
+          tenant: string,
+          asset: string,
+          filePath: string,
+          fileContent: any
+        ) => {
+          assetFilesStorageContent[filePath] = fileContent;
+        }
+      );
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+
+      newAppData = {
+        config: { newAppConfig: "newAppConfigValue" },
+        data: { newAppData: "newAppDataValue" },
+      };
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+
+      if (initApp) await mindSphereApp.init();
+
+      return mindSphereApp.setAppData(newAppData);
+    };
+
+    it("should set data in both FileService and in cache", async () => {
+      await exec();
+
+      //Set file should be called in order to set new app data
+      expect(mockedSetFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedSetFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "main.app.config.json",
+        newAppData,
+      ]);
+
+      //Cache data should be changed to new version
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+
+      //New data should be accessible via getAppData
+      let appData = await mindSphereApp.getAppData();
+      expect(appData).toEqual(newAppData);
+    });
+
+    it("should not set new data in cache and throw - if set file throws", async () => {
+      mockedSetFileFunction = jest.fn(async () => {
+        throw new Error("test set file error");
+      });
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test set file error",
+      });
+
+      let oldAppData = {
+        config: {
+          fakeAppConfig: "testFakeAppConfig",
+        },
+        data: {
+          fakeAppData: "testFakeAppData",
+        },
+      };
+
+      //Cache data should not have been changed
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        oldAppData
+      );
+
+      //Old data should be accessible via getAppData
+      let appData = await mindSphereApp.getAppData();
+      expect(appData).toEqual(oldAppData);
+    });
+
+    it("should throw and not set new data if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      //SetFile should not have been called
+      expect(mockedSetFileFunction).not.toHaveBeenCalled();
+
+      //Cache data should not have been changed - app not initialized so it is empty
+      expect((mindSphereApp as any)._appStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("removeAppData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedSetFileFunction = jest.fn(
+        async (
+          tenant: string,
+          asset: string,
+          filePath: string,
+          fileContent: any
+        ) => {
+          assetFilesStorageContent[filePath] = fileContent;
+        }
+      );
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedDeleteFileFunction = jest.fn(
+        async (
+          tenant: string,
+          asset: string,
+          filePath: string,
+          fileContent: any
+        ) => {
+          if (assetFilesStorageContent[filePath] == null)
+            throw new Error("File not found!");
+          delete assetFilesStorageContent[filePath];
+        }
+      );
+      mindSphereFileService.deleteFile = mockedDeleteFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+
+      if (initApp) await mindSphereApp.init();
+
+      return mindSphereApp.removeAppData();
+    };
+
+    it("should delete app data from cache and from storage", async () => {
+      await exec();
+
+      //Set file should be called in order to set new app data
+      expect(mockedDeleteFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedDeleteFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "main.app.config.json",
+      ]);
+
+      //Cache data should be deleted
+      expect(
+        (mindSphereApp as any)._appStorage._cacheData["main"]
+      ).not.toBeDefined();
+    });
+
+    it("should throw and not delete app data from cache - if delete file throws", async () => {
+      mindSphereFileService.deleteFile = jest.fn(async () => {
+        throw new Error("Test delete error");
+      });
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Test delete error`,
+      });
+
+      let oldAppData = {
+        config: {
+          fakeAppConfig: "testFakeAppConfig",
+        },
+        data: {
+          fakeAppData: "testFakeAppData",
+        },
+      };
+
+      //Cache data should not have be deleted
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        oldAppData
+      );
+
+      //Data should be accessible via get
+      let appData = await mindSphereApp.getAppData();
+      expect(appData).toEqual(oldAppData);
+    });
+
+    it("should throw and not delete app data if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      //SetFile should not have been called
+      expect(mockedDeleteFileFunction).not.toHaveBeenCalled();
+
+      //Cache data should not have been changed - app not initialized so it is empty
+      expect((mindSphereApp as any)._appStorage._cacheData).toEqual({});
+    });
+  });
+
+  //#endregion ===== APP STORAGE DATA =====
+
+  //#region ===== USER STORAGE DATA =====
+
+  describe("fetchUserData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let checkFileReturnsNull: boolean;
+    let throwWhileGettingFileContent: boolean;
+    let newUserData: {
+      [userId: string]: UserStorageData;
+    };
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+      throwWhileGettingFileContent = false;
+      checkFileReturnsNull = false;
+
+      newUserData = {
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "editedFakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakeUser5ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser5Email",
+        },
+        "fakeUser6ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser6ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser6ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "editedFakeUser6ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser6DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser6DataPlant2" },
+            fakePlant3: { fakeUserData: "editedFakeUser6DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "editedFakeUser6Email",
+        },
+      };
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      //Changing users storage content
+      delete assetFilesStorageContent["fakeUser1ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser2ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser3ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser4ID.user.config.json"];
+
+      assetFilesStorageContent = {
+        ...assetFilesStorageContent,
+        ...newUserData,
+      };
+
+      if (throwWhileGettingFileContent)
+        mindSphereFileService.getFileContent = jest.fn(async () => {
+          throw new Error("Test get file content error");
+        });
+
+      if (checkFileReturnsNull)
+        mindSphereFileService.checkIfFileExists = jest.fn(async () => {
+          return null;
+        });
+
+      return mindSphereApp.fetchUserData();
+    };
+
+    it("should fetch new data from users files to app storage", async () => {
+      await exec();
+
+      //3 time during initialization, 1 times during new fetching
+      expect(mockedGetAllFileNamesFunction).toHaveBeenCalledTimes(4);
+      expect(mockedGetAllFileNamesFunction.mock.calls[3]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "user.config.json",
+      ]);
+
+      //8 times during initialization, 4 times during new fetching (fetching only new users and )
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(12);
+
+      let laterMockCalls = [
+        mockedGetFileFunction.mock.calls[8],
+        mockedGetFileFunction.mock.calls[9],
+        mockedGetFileFunction.mock.calls[10],
+        mockedGetFileFunction.mock.calls[11],
+      ];
+
+      expect(laterMockCalls).toContainEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser3ID.user.config.json",
+      ]);
+      expect(laterMockCalls).toContainEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser4ID.user.config.json",
+      ]);
+      expect(laterMockCalls).toContainEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser5ID.user.config.json",
+      ]);
+      expect(laterMockCalls).toContainEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser6ID.user.config.json",
+      ]);
+
+      //Cache data of storage should be fetched
+      let expectedCache = {
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "editedFakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        fakeUser5ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser5Email",
+        },
+        fakeUser6ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser6ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser6ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "editedFakeUser6ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser6DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser6DataPlant2" },
+            fakePlant3: { fakeUserData: "editedFakeUser6DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "editedFakeUser6Email",
+        },
+      };
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch any data - return empty cache - if getFuke throws during getting new data", async () => {
+      throwWhileGettingFileContent = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test get file content error",
+      });
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual({});
+    });
+
+    it("should not throw but clear all cache data - if checkFile returns null", async () => {
+      checkFileReturnsNull = true;
+
+      await exec();
+
+      //8 times during initialization, 0 after - due to check file equal to null
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(8);
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual({});
+    });
+
+    it("should throw and not fetch new data if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(mockedGetFileFunction).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("getUserData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let newUserData: {
+      [userId: string]: UserStorageData;
+    };
+    let userId: string;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+
+      newUserData = {
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "editedFakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakeUser5ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser5Email",
+        },
+        "fakeUser6ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "editedFakeUser6ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "editedFakeUser6ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "editedFakeUser6ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "editedFakeUser6DataPlant1" },
+            fakePlant2: { fakeUserData: "editedFakeUser6DataPlant2" },
+            fakePlant3: { fakeUserData: "editedFakeUser6DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "editedFakeUser6Email",
+        },
+      };
+
+      userId = "fakeUser3ID";
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      //Changing users storage content
+      delete assetFilesStorageContent["fakeUser1ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser2ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser3ID.user.config.json"];
+      delete assetFilesStorageContent["fakeUser4ID.user.config.json"];
+
+      assetFilesStorageContent = {
+        ...assetFilesStorageContent,
+        ...newUserData,
+      };
+
+      return mindSphereApp.getUserData(userId);
+    };
+
+    it("should return new user from cache - if user of given id exists in cache", async () => {
+      let result = await exec();
+
+      let expectedResult = {
+        config: {
+          fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+          fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+        },
+        data: {
+          fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+          fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+        },
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            fakePlant1: PlantPermissions.User,
+            fakePlant2: PlantPermissions.Admin,
+          },
+        },
+        email: "fakeUser3Email",
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //8 times during initialization, 0 after
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(8);
+
+      //Cache should stay without changes
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should fetch and return new user from cache - if user of given id doesnt exist in cache", async () => {
+      userId = "fakeUser5ID";
+
+      let result = await exec();
+
+      let expectedResult = {
+        config: {
+          fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+          fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+        },
+        data: {
+          fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+          fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+        },
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            fakePlant2: PlantPermissions.User,
+            fakePlant3: PlantPermissions.User,
+          },
+        },
+        email: "fakeUser5Email",
+      };
+
+      expect(result).toEqual(expectedResult);
+
+      //8 times during initialization, 1 after
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(9);
+      expect(mockedGetFileFunction.mock.calls[8]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser5ID.user.config.json",
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        fakeUser5ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser5Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch new user from cache - if user does not exists in storage and get file throws", async () => {
+      userId = "fakeUser10ID";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "File not found",
+      });
+
+      //8 times during initialization, 1 after
+      expect(mockedGetFileFunction).toHaveBeenCalledTimes(9);
+      expect(mockedGetFileFunction.mock.calls[8]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser10ID.user.config.json",
+      ]);
+
+      //Cache should stay without changes
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch new user if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(mockedGetFileFunction).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("setUserData", () => {
+    let mindSphereApp: MindSphereApp;
+    let assetFilesStorageContent: {
+      [filePath: string]: AppStorageData | UserStorageData | PlanStorageData;
+    };
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let userId: string;
+    let newUserData: UserStorageData;
+
+    beforeEach(async () => {
+      assetFilesStorageContent = {
+        "main.app.config.json": {
+          config: {
+            fakeAppConfig: "testFakeAppConfig",
+          },
+          data: {
+            fakeAppData: "testFakeAppData",
+          },
+        },
+        "fakeUser1ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        "fakeUser2ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        "fakeUser3ID.user.config.json": {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        "fakeUser4ID.user.config.json": {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        "fakePlant1.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant1Config",
+          },
+          data: {
+            plantData: "fakePlant1Data",
+          },
+        },
+        "fakePlant2.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant2Config",
+          },
+          data: {
+            plantData: "fakePlant2Data",
+          },
+        },
+        "fakePlant3.plant.config.json": {
+          config: {
+            plantConfig: "fakePlant3Config",
+          },
+          data: {
+            plantData: "fakePlant3Data",
+          },
+        },
+      };
+
+      mockedGetAllFileNamesFunction = jest.fn(
+        async (tenant: string, asset: string, extension: string) => {
+          let dataToReturn = Object.keys(assetFilesStorageContent);
+          return dataToReturn.filter((filePath) =>
+            filePath.includes(extension)
+          );
+        }
+      );
+      mindSphereFileService.getAllFileNamesFromAsset = mockedGetAllFileNamesFunction;
+
+      mockedGetFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          let dataToReturn = assetFilesStorageContent[filePath];
+          if (dataToReturn == null) throw new Error("File not found");
+          return dataToReturn;
+        }
+      );
+      mindSphereFileService.getFileContent = mockedGetFileFunction;
+
+      mockedCheckFileFunction = jest.fn(
+        async (tenant: string, asset: string, filePath: string) => {
+          return assetFilesStorageContent[filePath] != null;
+        }
+      );
+      mindSphereFileService.checkIfFileExists = mockedCheckFileFunction;
+
+      mockedSetFileFunction = jest.fn(
+        async (
+          tenant: string,
+          asset: string,
+          filePath: string,
+          fileContent: any
+        ) => {
+          assetFilesStorageContent[filePath] = fileContent;
+        }
+      );
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      mockedGetAllUserGroupsResults.results = [
+        [
+          {
+            description: "testGlobalAdminDescription",
+            displayName: "testGlobalAdminGroup",
+            members: [],
+            id: "testGlobalAdminId",
+          },
+          {
+            description: "testGlobalUserDescription",
+            displayName: "testGlobalUserGroup",
+            members: [],
+            id: "testGlobalUserId",
+          },
+          {
+            description: "testLocalAdminDescription",
+            displayName: "testLocalAdminGroup",
+            members: [],
+            id: "testLocalAdminId",
+          },
+          {
+            description: "testLocalUserDescription",
+            displayName: "testLocalUserGroup",
+            members: [],
+            id: "testLocalUserId",
+          },
+          {
+            description: "testStandardUserDescription",
+            displayName: "testMsStandardUserGroup",
+            members: [],
+            id: "testStandardUserId",
+          },
+          {
+            description: "testSubtenantUserDescription",
+            displayName: "testMsSubtenantUserGroup",
+            members: [],
+            id: "testSubtenantUserId",
+          },
+        ],
+      ];
+
+      storageTenant = "testStorageTenant";
+      appId = "testAppId";
+      assetId = "testAssetId";
+      appTenant = "testAppTenant";
+      subtenantId = "testSubtenantId";
+
+      initApp = true;
+
+      userId = "fakeUser5ID";
+      newUserData = {
+        config: {
+          fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
+          fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
+        },
+        data: {
+          fakePlant2: { fakeUserData: "fakeUser5DataPlant2" },
+          fakePlant3: { fakeUserData: "fakeUser5DataPlant3" },
+        },
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            fakePlant2: PlantPermissions.User,
+            fakePlant3: PlantPermissions.User,
+          },
+        },
+        email: "fakeUser5Email",
+      };
+    });
+
+    let exec = async () => {
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      return mindSphereApp.setUserData(userId, newUserData);
+    };
+
+    it("should set new user data in cache and in storage - if there is no user of given id", async () => {
+      await exec();
+
+      //8 times during initialization, 0 after
+      expect(mockedSetFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedSetFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser5ID.user.config.json",
+        newUserData,
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+        [userId]: newUserData,
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+
+      //User should be accessible via getUser
+      let userData = await mindSphereApp.getUserData(userId);
+
+      expect(userData).toEqual(newUserData);
+    });
+
+    it("should set new user data in cache and in storage - if user of given id already exists", async () => {
+      userId = "fakeUser3ID";
+
+      await exec();
+
+      //8 times during initialization, 0 after
+      expect(mockedSetFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedSetFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser3ID.user.config.json",
+        newUserData,
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: newUserData,
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+
+      //User should be accessible via getUser
+      let userData = await mindSphereApp.getUserData(userId);
+
+      expect(userData).toEqual(newUserData);
+    });
+
+    it("should not set new user data in cache and throw - if set file throws, user does not exists in cache", async () => {
+      mockedSetFileFunction = jest.fn(async () => {
+        throw new Error("test set file error");
+      });
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test set file error",
+      });
+
+      //8 times during initialization, 0 after
+      expect(mockedSetFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedSetFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser5ID.user.config.json",
+        newUserData,
+      ]);
+
+      //Cache should not have changed
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should not set new user data in cache and throw - if set file throws, user exists in cache", async () => {
+      mockedSetFileFunction = jest.fn(async () => {
+        throw new Error("test set file error");
+      });
+      mindSphereFileService.setFileContent = mockedSetFileFunction;
+
+      userId = "fakeUser3ID";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test set file error",
+      });
+
+      //8 times during initialization, 0 after
+      expect(mockedSetFileFunction).toHaveBeenCalledTimes(1);
+      expect(mockedSetFileFunction.mock.calls[0]).toEqual([
+        "testStorageTenant",
+        "testAssetId",
+        "fakeUser3ID.user.config.json",
+        newUserData,
+      ]);
+
+      //Cache should not have changed
+      let expectedCache = {
+        fakeUser1ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser1ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser1ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser1ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser1DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser1DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser1DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.Admin,
+              fakePlant2: PlantPermissions.Admin,
+              fakePlant3: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser1Email",
+        },
+        fakeUser2ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser2ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser2ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser2ConfigPlant3" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser2DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser2DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser2DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.GlobalUser,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser2Email",
+        },
+        fakeUser3ID: {
+          config: {
+            fakePlant1: { fakeUserConfig: "fakeUser3ConfigPlant1" },
+            fakePlant2: { fakeUserConfig: "fakeUser3ConfigPlant2" },
+          },
+          data: {
+            fakePlant1: { fakeUserData: "fakeUser3DataPlant1" },
+            fakePlant2: { fakeUserData: "fakeUser3DataPlant2" },
+          },
+          permissions: {
+            role: UserRole.LocalAdmin,
+            plants: {
+              fakePlant1: PlantPermissions.User,
+              fakePlant2: PlantPermissions.Admin,
+            },
+          },
+          email: "fakeUser3Email",
+        },
+        fakeUser4ID: {
+          config: {
+            fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
+            fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
+          },
+          data: {
+            fakePlant2: { fakeUserData: "fakeUser4DataPlant2" },
+            fakePlant3: { fakeUserData: "fakeUser4DataPlant3" },
+          },
+          permissions: {
+            role: UserRole.LocalUser,
+            plants: {
+              fakePlant2: PlantPermissions.User,
+              fakePlant3: PlantPermissions.User,
+            },
+          },
+          email: "fakeUser4Email",
+        },
+      };
+
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not set new user if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      //SetFile should not have been called
+      expect(mockedSetFileFunction).not.toHaveBeenCalled();
+
+      //Cache data should not have been changed - app not initialized so it is empty
+      expect((mindSphereApp as any)._userStorage._cacheData).toEqual({});
+    });
+  });
+
+  //#endregion ===== USER STORAGE DATA =====
 });
