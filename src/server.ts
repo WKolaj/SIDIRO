@@ -4,6 +4,8 @@
 
 import { MindSphereUserService } from "./classes/MindSphereService/MindSphereUserService";
 import { MindSphereUserGroupService } from "./classes/MindSphereService/MindSphereUserGroupService";
+import { MindSphereAssetService } from "./classes/MindSphereService/MindSphereAssetService";
+import { writeFileAsync } from "./utilities/utilities";
 
 let userService = MindSphereUserService.getInstance();
 
@@ -16,13 +18,14 @@ let exec = async () => {
   //   "mdsp:sidiop:sidiro.globaladmin"
   // );
 
-  let userIsAssingedToGroup = await userGroupsService.removeUserFromGroup(
-    "sidivp",
-    "53a1993b-daa3-4e41-9cc8-ea3e7107ac05",
-    "bf02447c-8bf6-4aa0-be95-ea2a9cb4acc3"
+  let allAssets = await MindSphereAssetService.getInstance().getAssets(
+    "sidivp"
   );
 
-  console.log(userIsAssingedToGroup);
+  await writeFileAsync(
+    "test.json",
+    JSON.stringify(allAssets.map((asset) => asset.name))
+  );
 };
 
 exec();

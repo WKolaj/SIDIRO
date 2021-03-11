@@ -280,7 +280,7 @@ export class MindSphereApp {
   public getUserRoleBasedOnUserGroup(
     userGroup: MindSphereUserGroupData
   ): UserRole {
-    if (!this._initialized) throw new Error(`UserManager not initialized!`);
+    this._throwIfNotInitialized();
 
     switch (userGroup.displayName) {
       case this.GlobalAdminGroup!.displayName:
@@ -299,7 +299,7 @@ export class MindSphereApp {
   public getUserGroupBasedOnUserRole(
     userRole: UserRole
   ): MindSphereUserGroupData {
-    if (!this._initialized) throw new Error(`UserManager not initialized!`);
+    this._throwIfNotInitialized();
 
     switch (userRole) {
       case UserRole.GlobalAdmin:
@@ -394,6 +394,10 @@ export class MindSphereApp {
     ]);
   }
 
+  protected _throwIfNotInitialized() {
+    if (!this._initialized) throw new Error(`Application not initialized!`);
+  }
+
   //#endregion ========== INITIALIZATION ==========
 
   //#region ========== USER MANAGEMENT ==========
@@ -403,6 +407,8 @@ export class MindSphereApp {
    * @param userEmail Email to get id from
    */
   async getUserIdIfExists(userEmail: string): Promise<string | null> {
+    this._throwIfNotInitialized();
+
     let allPossibleUsers = await this._mindSphereUserService.getAllUsers(
       this.TenantName,
       this.SubtenantId,
@@ -421,6 +427,8 @@ export class MindSphereApp {
    * @param userEmail email to check
    */
   async userExistsInStorage(userEmail: string): Promise<boolean> {
+    this._throwIfNotInitialized();
+
     let usersObject = await this._userStorage.getAllData();
     let allUsers = Object.values(usersObject);
     return allUsers.find((user) => user.email === userEmail) != null;
@@ -431,6 +439,8 @@ export class MindSphereApp {
    * @param userEmail email to check
    */
   async userExistsInTenant(userEmail: string): Promise<boolean> {
+    this._throwIfNotInitialized();
+
     return this._mindSphereUserService.checkIfUserExists(
       this.TenantName,
       null,
@@ -443,6 +453,8 @@ export class MindSphereApp {
    * @param userEmail
    */
   async userExistsInTenantAndStorage(userEmail: string): Promise<boolean> {
+    this._throwIfNotInitialized();
+
     let userExistsInTenant = await this.userExistsInTenant(userEmail);
     if (!userExistsInTenant) return false;
     let userExistsInStorage = await this.userExistsInStorage(userEmail);
@@ -455,6 +467,8 @@ export class MindSphereApp {
    * @param userId User id to check
    */
   async userAssignedToApp(userId: string): Promise<boolean> {
+    this._throwIfNotInitialized();
+
     let userData = await this._userStorage.getData(userId);
     return userData != null;
   }
@@ -468,6 +482,8 @@ export class MindSphereApp {
     userId: string,
     userPayload: UserStorageData
   ) {
+    this._throwIfNotInitialized();
+
     let userMSData = await this._mindSphereUserService.getUser(
       this.TenantName,
       userId
@@ -556,6 +572,8 @@ export class MindSphereApp {
   public async getUser(
     userId: string
   ): Promise<{ msData: MindSphereUserData; storageData: UserStorageData }> {
+    this._throwIfNotInitialized();
+
     //Checking if edition is performed on the user associated with given app
     let userAssignedToApp = await this.userAssignedToApp(userId);
     if (!userAssignedToApp)
@@ -583,7 +601,7 @@ export class MindSphereApp {
   public async createUser(
     userStorageData: UserStorageData
   ): Promise<{ msData: MindSphereUserData; storageData: UserStorageData }> {
-    if (!this._initialized) throw new Error(`UserManager not initialized!`);
+    this._throwIfNotInitialized();
 
     let payloadToCreate: MindSphereUserData = {
       active: true,
@@ -624,6 +642,8 @@ export class MindSphereApp {
    * @param userId Id of user to delete
    */
   public async deleteUser(userId: string) {
+    this._throwIfNotInitialized();
+
     //Checking if deletion is performed on the user associated with given app
     let userAssignedToApp = await this.userAssignedToApp(userId);
     if (!userAssignedToApp)
@@ -645,6 +665,8 @@ export class MindSphereApp {
     userId: string,
     userPayload: UserStorageData
   ): Promise<{ msData: MindSphereUserData; storageData: UserStorageData }> {
+    this._throwIfNotInitialized();
+
     //Checking if edition is performed on the user associated with given app
     let userAssignedToApp = await this.userAssignedToApp(userId);
     if (!userAssignedToApp)
@@ -673,18 +695,26 @@ export class MindSphereApp {
   //#region ========== APP STORAGE DATA ==========
 
   public async fetchAppData() {
+    this._throwIfNotInitialized();
+
     await this._appStorage.fetchAllData();
   }
 
   public async getAppData(): Promise<AppStorageData | null> {
+    this._throwIfNotInitialized();
+
     return this._appStorage.getData(mainAppStorageId);
   }
 
   public async setAppData(appData: AppStorageData) {
+    this._throwIfNotInitialized();
+
     return this._appStorage.setData(mainAppStorageId, appData);
   }
 
   public async removeAppData() {
+    this._throwIfNotInitialized();
+
     return this._appStorage.deleteData(mainAppStorageId);
   }
 
@@ -693,22 +723,32 @@ export class MindSphereApp {
   //#region ========== USER STORAGE DATA ==========
 
   public async fetchUserData() {
+    this._throwIfNotInitialized();
+
     await this._userStorage.fetchAllData();
   }
 
   public async getUserData(userId: string): Promise<UserStorageData | null> {
+    this._throwIfNotInitialized();
+
     return this._userStorage.getData(userId);
   }
 
   public async setUserData(userId: string, userData: UserStorageData) {
+    this._throwIfNotInitialized();
+
     return this._userStorage.setData(userId, userData);
   }
 
   public async removeUserData(userId: string) {
+    this._throwIfNotInitialized();
+
     return this._userStorage.deleteData(userId);
   }
 
   public async getAllUsersData() {
+    this._throwIfNotInitialized();
+
     return this._userStorage.getAllData();
   }
 
@@ -717,22 +757,32 @@ export class MindSphereApp {
   //#region ========== PLANT STORAGE DATA ==========
 
   public async fetchPlantData() {
+    this._throwIfNotInitialized();
+
     await this._plantStorage.fetchAllData();
   }
 
   public async getPlantData(plantId: string): Promise<PlanStorageData | null> {
+    this._throwIfNotInitialized();
+
     return this._plantStorage.getData(plantId);
   }
 
   public async setPlantData(plantId: string, plantData: PlanStorageData) {
+    this._throwIfNotInitialized();
+
     return this._plantStorage.setData(plantId, plantData);
   }
 
   public async removePlantData(plantId: string) {
+    this._throwIfNotInitialized();
+
     return this._plantStorage.deleteData(plantId);
   }
 
   public async getAllPlantsData() {
+    this._throwIfNotInitialized();
+
     return this._plantStorage.getAllData();
   }
 
