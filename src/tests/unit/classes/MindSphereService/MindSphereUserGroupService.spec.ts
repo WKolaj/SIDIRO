@@ -4,7 +4,7 @@ import MockDate from "mockdate";
 import {
   setPrivateProperty,
   testPrivateProperty,
-} from "../../../testUtilities";
+} from "../../../utilities/utilities";
 import { encodeBase64 } from "../../../../utilities/utilities";
 import {
   MindSphereUserGroupData,

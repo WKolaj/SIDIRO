@@ -2,7 +2,7 @@ import { MindSphereTokenManager } from "../../../../classes/MindSphereService/Mi
 import axios from "axios";
 import { MindSphereAssetService } from "../../../../classes/MindSphereService/MindSphereAssetService";
 import MockDate from "mockdate";
-import { testPrivateProperty } from "../../../testUtilities";
+import { testPrivateProperty } from "../../../utilities/utilities";
 import { encodeBase64 } from "../../../../utilities/utilities";
 
 let mockedAxios = axios as any;

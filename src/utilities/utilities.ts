@@ -118,6 +118,30 @@ export function isNumeric(text: string) {
   return !isNaN(parseFloat(text));
 }
 
+/**
+ * @description method for generating random string based on length
+ * @param {Number} length Length of string to generate
+ */
+export function generateRandomString(length: number) {
+  let result = "";
+  let characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+
+  return result;
+}
+
+/**
+ * @description Method for cloning whole objects. NOTICE - Method uses JSON parsing and is very slow - use with caution!
+ * @param object Object to clone
+ */
+export function cloneObject(object: any) {
+  return JSON.parse(JSON.stringify(object));
+}
+
 //#endregion ========== COMMON =========
 
 //#region ========== EXPRESS ROUTES =========

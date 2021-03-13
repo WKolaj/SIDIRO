@@ -17,7 +17,7 @@ import { MindSphereUserJWTData } from "../../../../middleware/tokenData/fetchTok
 import {
   setPrivateProperty,
   testPrivateProperty,
-} from "../../../testUtilities";
+} from "../../../utilities/utilities";
 
 type mockFunctionResult = {
   results: any[];

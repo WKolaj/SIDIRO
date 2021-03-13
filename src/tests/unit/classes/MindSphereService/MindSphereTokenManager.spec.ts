@@ -1,5 +1,5 @@
 import { MindSphereTokenManager } from "../../../../classes/MindSphereService/MindSphereToken/MindSphereTokenManager";
-import { testPrivateProperty } from "../../../testUtilities";
+import { testPrivateProperty } from "../../../utilities/utilities";
 import axios from "axios";
 import MockDate from "mockdate";
 import { encodeBase64 } from "../../../../utilities/utilities";
