@@ -50,7 +50,7 @@ function checkUserPlantData(userStoragePayload: UserStorageData) {
 }
 
 export const schemaContent = {
-  email: Joi.string()
+  username: Joi.string()
     .email()
     .required(),
   data: Joi.object()

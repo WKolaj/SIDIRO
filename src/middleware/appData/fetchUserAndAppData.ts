@@ -92,7 +92,7 @@ export default async function(
   //#region ========= GETTING USER ID ========
 
   let userId = await appInstance.getUserIdIfExists(
-    appRequest.userTokenData.email
+    appRequest.userTokenData.user_name
   );
 
   //Checking if user exists for given app

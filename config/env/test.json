@@ -19,13 +19,13 @@
     "globalUserScope": "testGlobalUserScope",
     "localAdminScope": "testLocalAdminScope",
     "localUserScope": "testLocalUserScope",
-    "globalAdminGroup": "testGlobalAdminGroup",
-    "globalUserGroup": "testGlobalUserGroup",
-    "localAdminGroup": "testLocalAdminGroup",
-    "localUserGroup": "testLocalUserGroup",
-    "msStandardUserGroup": "testMsStandardUserGroup",
-    "msSubtenantUserGroup": "testMsSubtenantUserGroup",
-    "superAdminUserIds": "testSuperAdminId1 testSuperAdminId2 testSuperAdminId3"
+    "globalAdminGroup": "globalAdminGroupDisplayName",
+    "globalUserGroup": "globalUserGroupDisplayName",
+    "localAdminGroup": "localAdminGroupDisplayName",
+    "localUserGroup": "localUserGroupDisplayName",
+    "msStandardUserGroup": "standardUserGroupDisplayName",
+    "msSubtenantUserGroup": "subtenantUserGroupDisplayName",
+    "superAdminUserIds": "testSuperAdmin1 testSuperAdmin2 testSuperAdmin3 testSuperAdmin4"
   },
   "port": 5000
 }

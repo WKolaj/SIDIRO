@@ -174,11 +174,11 @@ router.put(
   ) {
     let appDataRequest = req as AppDataRequest<any, any, UserStorageData>;
 
-    //#region  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR EMAIL ==========
+    //#region  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR USER NAME ==========
 
-    //Checking email
-    if (appDataRequest.body.email !== appDataRequest.userData!.email)
-      return res.status(400).send(`Users email cannot be modified!`);
+    //Checking user name
+    if (appDataRequest.body.userName !== appDataRequest.userData!.userName)
+      return res.status(400).send(`Users name cannot be modified!`);
 
     //Checking permissions - role
     if (
@@ -200,7 +200,7 @@ router.put(
 
     //Users config and data do not have to be checked for plant keys - plant keys vs. plant permissions were checked by Joi, and plant permissions cannot be modified
 
-    //#endregion  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR EMAIL ==========
+    //#endregion  ========== CHECKING IF THERE IS ATTEMPT TO EDIT PERMISSIONS OR USER NAME ==========
 
     //#region  ========== UPDATING USERS STORAGE DATA ==========
 
@@ -308,23 +308,24 @@ router.post(
       UserStorageData
     >;
 
-    //#region  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
+    //#region  ========== CHECKING IF USER OF GIVEN USER NAME ALREADY EXISTS ==========
 
-    //Checking if user of given email exists and return if it already exists
+    //Checking if user of given user name exists and return if it already exists
     let userExists = await userRequest.appInstance!.userExistsInTenant(
-      userRequest.body.email
+      userRequest.body.userName
     );
 
     if (userExists)
       return res
         .status(400)
-        .send(`User of email: ${userRequest.body.email} - already exists!`);
+        .send(
+          `User of user name: ${userRequest.body.userName} - already exists!`
+        );
 
-    //#endregion  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
+    //#endregion  ========== CHECKING IF USER OF GIVEN USER NAME ALREADY EXISTS ==========
 
     //#region  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
 
-    //Checking if user of given email exists and return if it already exists
     let numberOfUsers = Object.keys(
       await userRequest.appInstance!.getAllUsersData()
     ).length;
@@ -439,12 +440,12 @@ router.put(
 
     //#endregion  ========== CHECKING IF USER EXISTS ==========
 
-    //#region  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S EMAIL ==========
+    //#region  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S NAME ==========
 
-    if (req.body.email !== userToUpdateStorageData.email)
-      return res.status(400).send(`Users email cannot be modified!`);
+    if (req.body.userName !== userToUpdateStorageData.userName)
+      return res.status(400).send(`Users name cannot be modified!`);
 
-    //#endregion  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S EMAIL ==========
+    //#endregion  ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE USER'S NAME ==========
 
     //#region  ========== UPDATING USER ==========
 
@@ -608,21 +609,20 @@ router.post(
 
     //#region =========== CHECKING IF CREATED USER ALREADY EXISTS IN MINDSPHERE ===========
 
-    //Checking if user of given email exists and return if it already exists
+    //Checking if user of given name exists and return if it already exists
     let userExists = await userRequest.appInstance!.userExistsInTenant(
-      userRequest.body.email
+      userRequest.body.userName
     );
 
     if (userExists)
       return res
         .status(400)
-        .send(`User of email: ${userRequest.body.email} - already exists!`);
+        .send(`User of name: ${userRequest.body.userName} - already exists!`);
 
     //#endregion =========== CHECKING IF CREATED USER ALREADY EXISTS IN MINDSPHERE ===========
 
     //#region  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
 
-    //Checking if user of given email exists and return if it already exists
     let numberOfUsers = Object.keys(
       await userRequest.appInstance!.getAllUsersData()
     ).length;
@@ -807,15 +807,15 @@ router.put(
 
     //#endregion =========== CHECKING IF USER EDIT PAYLOAD IS VALID LOCAL PAYLOAD (with only one plant's data) ===========
 
-    //#region =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR EMAIL ===========
+    //#region =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR NAME ===========
 
-    if (req.body.email !== userToEditStorageData.email)
-      return res.status(400).send(`Users email cannot be deleted!`);
+    if (req.body.userName !== userToEditStorageData.userName)
+      return res.status(400).send(`Users userName cannot be deleted!`);
 
     if (req.body.permissions.role !== userToEditStorageData.permissions.role)
       return res.status(400).send(`Users global role cannot be edited localy!`);
 
-    //#endregion =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR EMAIL ===========
+    //#endregion =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR NAME ===========
 
     //#region =========== GENERETING PAYLOAD TO UPDATE - EDITING ONLY VALUES ASSOCIATED WITH THIS PLANT ===========
 

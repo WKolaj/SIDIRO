@@ -23,7 +23,7 @@ export enum PlantPermissions {
 }
 
 export interface UserStorageData {
-  email: string;
+  userName: string;
   config: {
     [plantId: string]: object;
   };
@@ -208,7 +208,7 @@ export class MindSphereApp {
       user.ten,
       user.subtenant ?? null,
       null,
-      user.email.toLowerCase()
+      user.user_name
     );
 
     //User not found - return false
@@ -404,17 +404,17 @@ export class MindSphereApp {
   //#region ========== USER MANAGEMENT ==========
 
   /**
-   * @description Method for getting user id from app tenant based on user email. Method returns null if user of given email does not exist
-   * @param userEmail Email to get id from
+   * @description Method for getting user id from app tenant based on user name (email). Method returns null if user of given email does not exist
+   * @param userName Name (email) to get id from
    */
-  async getUserIdIfExists(userEmail: string): Promise<string | null> {
+  async getUserIdIfExists(userName: string): Promise<string | null> {
     this._throwIfNotInitialized();
 
     let allPossibleUsers = await this._mindSphereUserService.getAllUsers(
       this.TenantName,
       this.SubtenantId,
       null,
-      userEmail.toLowerCase()
+      userName
     );
 
     if (allPossibleUsers.length < 1 || allPossibleUsers[0].id == null)
@@ -424,41 +424,41 @@ export class MindSphereApp {
   }
 
   /**
-   * @description Method for checking whether user of given email exists in storage
-   * @param userEmail email to check
+   * @description Method for checking whether user of given name (email) exists in storage
+   * @param userName name (email) to check
    */
-  async userExistsInStorage(userEmail: string): Promise<boolean> {
+  async userExistsInStorage(userName: string): Promise<boolean> {
     this._throwIfNotInitialized();
 
     let usersObject = await this._userStorage.getAllData();
     let allUsers = Object.values(usersObject);
-    return allUsers.find((user) => user.email === userEmail) != null;
+    return allUsers.find((user) => user.userName === userName) != null;
   }
 
   /**
-   * @description Method for checking whether user of given email exists in tenant
-   * @param userEmail email to check
+   * @description Method for checking whether user of given name (email) exists in tenant
+   * @param userName name (email) to check
    */
-  async userExistsInTenant(userEmail: string): Promise<boolean> {
+  async userExistsInTenant(userName: string): Promise<boolean> {
     this._throwIfNotInitialized();
 
     return this._mindSphereUserService.checkIfUserExists(
       this.TenantName,
       null,
-      userEmail
+      userName
     );
   }
 
   /**
-   * @description Method for checking whether user of given email exists in both tenant and storage
-   * @param userEmail
+   * @description Method for checking whether user of given name (email) exists in both tenant and storage
+   * @param userName
    */
-  async userExistsInTenantAndStorage(userEmail: string): Promise<boolean> {
+  async userExistsInTenantAndStorage(userName: string): Promise<boolean> {
     this._throwIfNotInitialized();
 
-    let userExistsInTenant = await this.userExistsInTenant(userEmail);
+    let userExistsInTenant = await this.userExistsInTenant(userName);
     if (!userExistsInTenant) return false;
-    let userExistsInStorage = await this.userExistsInStorage(userEmail);
+    let userExistsInStorage = await this.userExistsInStorage(userName);
     if (!userExistsInStorage) return false;
     return true;
   }
@@ -607,7 +607,7 @@ export class MindSphereApp {
     let payloadToCreate: MindSphereUserData = {
       active: true,
       name: {},
-      userName: userStorageData.email,
+      userName: userStorageData.userName,
     };
 
     //Appending subtenant Id if app is assigned to subtenancy
