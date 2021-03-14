@@ -291,14 +291,12 @@ router.get(
   }
 );
 
-//Subtenants cannot access this route - they cannot create new users
 router.post(
   "/global/:appId",
   fetchTokenData,
   fetchUserAndAppData,
   checkAppIdParam,
   isGlobalAdmin,
-  isNotSubtenant,
   joiValidator(validateUser),
   async function(
     req: express.Request<{ appId: string }, any, UserStorageData>,
@@ -324,6 +322,22 @@ router.post(
 
     //#endregion  ========== CHECKING IF USER OF GIVEN EMAIL ALREADY EXISTS ==========
 
+    //#region  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
+
+    //Checking if user of given email exists and return if it already exists
+    let numberOfUsers = Object.keys(
+      await userRequest.appInstance!.getAllUsersData()
+    ).length;
+    let maxNumberOfUsers = await userRequest.appInstance!.getMaxNumberOfUsers();
+
+    //if max number of users is set to null - there is no user limitation
+    if (maxNumberOfUsers != null && numberOfUsers + 1 > maxNumberOfUsers)
+      return res
+        .status(400)
+        .send(`Max number of users: ${maxNumberOfUsers} reached`);
+
+    //#endregion  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
+
     //#region  ========== CREATING NEW USER ==========
 
     //Creating user in mindsphere and in storage
@@ -346,14 +360,12 @@ router.post(
   }
 );
 
-//Subtenants cannot access this route - they cannot delete users
 router.delete(
   "/global/:appId/:userId",
   fetchTokenData,
   fetchUserAndAppData,
   checkAppIdParam,
   isGlobalAdmin,
-  isNotSubtenant,
   async function(
     req: express.Request<{ appId: string; userId: string }>,
     res: express.Response
@@ -555,7 +567,6 @@ router.get(
   }
 );
 
-//Subtenants cannot access this route - they cannot create new users
 router.post(
   "/local/:appId/:plantId",
   fetchTokenData,
@@ -563,7 +574,6 @@ router.post(
   checkAppIdParam,
   isLocalOrGlobalAdmin,
   checkPlantIdParamAdmin,
-  isNotSubtenant,
   joiValidator(validateUser),
   async function(
     req: express.Request<{ appId: string; plantId: string }>,
@@ -610,6 +620,22 @@ router.post(
 
     //#endregion =========== CHECKING IF CREATED USER ALREADY EXISTS IN MINDSPHERE ===========
 
+    //#region  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
+
+    //Checking if user of given email exists and return if it already exists
+    let numberOfUsers = Object.keys(
+      await userRequest.appInstance!.getAllUsersData()
+    ).length;
+    let maxNumberOfUsers = await userRequest.appInstance!.getMaxNumberOfUsers();
+
+    //if max number of users is set to null - there is no user limitation
+    if (maxNumberOfUsers != null && numberOfUsers + 1 > maxNumberOfUsers)
+      return res
+        .status(400)
+        .send(`Max number of users: ${maxNumberOfUsers} reached`);
+
+    //#endregion  ========== CHECKING IF MAX NUMBER OF USERS WILL EXCEED LIMIT ==========
+
     //#region =========== CREATING USER ===========
 
     //Creating user in mindsphere and in storage
@@ -633,7 +659,6 @@ router.post(
   }
 );
 
-//Subtenants cannot access this route - they cannot delete users
 router.delete(
   "/local/:appId/:plantId/:userId",
   fetchTokenData,
@@ -641,7 +666,6 @@ router.delete(
   checkAppIdParam,
   isLocalOrGlobalAdmin,
   checkPlantIdParamAdmin,
-  isNotSubtenant,
   async function(
     req: express.Request<{ appId: string; userId: string; plantId: string }>,
     res: express.Response

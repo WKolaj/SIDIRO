@@ -59,6 +59,11 @@ router.put(
     if (appDataReq.appId !== appDataReq.body.appId)
       return res.status(400).send("App id cannot be changed!");
 
+    if (
+      appDataReq.appData!.maxNumberOfUsers !== appDataReq.body.maxNumberOfUsers
+    )
+      return res.status(400).send("Max number of app users cannot be changed!");
+
     //#region ========== CHECKING IF THERE IS ATTEMPT TO CHANGE APP ID ==========
 
     //#region ========== UPDATING APP DATA ==========
@@ -66,6 +71,7 @@ router.put(
     let payloadToUpdate: AppStorageData = {
       data: appDataReq.body.data,
       config: appDataReq.body.config,
+      maxNumberOfUsers: appDataReq.body.maxNumberOfUsers,
     };
 
     await appDataReq.appInstance!.setAppData(payloadToUpdate);

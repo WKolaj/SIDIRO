@@ -1,6 +1,9 @@
 import Joi from "joi";
 
 export const schemaContent = {
+  maxNumberOfUsers: Joi.number()
+    .allow(null)
+    .required(),
   data: Joi.object()
     .pattern(/.*/, Joi.any())
     .required(),

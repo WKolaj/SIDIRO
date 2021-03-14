@@ -42,6 +42,7 @@ export interface PlanStorageData {
 }
 
 export interface AppStorageData {
+  maxNumberOfUsers: number | null;
   config: object;
   data: object;
 }
@@ -688,6 +689,15 @@ export class MindSphereApp {
       msData: updatedUser,
       storageData: userPayload,
     };
+  }
+
+  /**
+   * @description Method for getting maximum number of users that can be created for the app
+   */
+  public async getMaxNumberOfUsers(): Promise<number | null> {
+    let appData = await this.getAppData();
+    if (appData == null) throw new Error("No application data found!");
+    return appData.maxNumberOfUsers;
   }
 
   //#endregion ========== USER MANAGEMENT ==========
