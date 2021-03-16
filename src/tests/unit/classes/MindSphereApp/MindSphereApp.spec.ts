@@ -5,7 +5,7 @@ import {
   UserRole,
   UserStorageData,
   AppStorageData,
-  PlanStorageData,
+  PlantStorageData,
 } from "../../../../classes/MindSphereApp/MindSphereApp";
 import { MindSphereFileService } from "../../../../classes/MindSphereService/MindSphereFileService";
 import {
@@ -4676,7 +4676,7 @@ describe("MindSphereApp", () => {
       );
     });
 
-    it("should throw and not change cache - if there is no such user in cache and get file content throws", async () => {
+    it("should throw and not change cache - if get file content throws", async () => {
       userId = "newFakeUser";
       getFileContentThrows = true;
 
@@ -5833,4 +5833,1320 @@ describe("MindSphereApp", () => {
   });
 
   //#endregion ===== USER STORAGE DATA =====
+
+  //#region ===== PLANT STORAGE DATA =====
+
+  describe("fetchPlantData", () => {
+    let mindSphereApp: MindSphereApp;
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let checkFileReturnsNull: boolean;
+    let getFileContentThrows: boolean;
+    let newPlantData: {
+      [plantId: string]: PlantStorageData;
+    };
+
+    beforeEach(async () => {
+      storageTenant = "hostTenant";
+      appId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2";
+      appTenant = "testTenant2";
+      subtenantId = "subtenant2";
+      initApp = true;
+      newPlantData = {
+        "testPlant5.plant.config.json": {
+          data: {
+            testPlant5Data: "testPlant5DataModifiedValue",
+          },
+          config: {
+            testPlant5Config: "testPlant5ConfigModifiedValue",
+          },
+        },
+        "testPlant6.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant6DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant6ConfigModifiedValue",
+          },
+        },
+        "testPlant7.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant7DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant7ConfigModifiedValue",
+          },
+        },
+        "testPlant8.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant8DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant8ConfigModifiedValue",
+          },
+        },
+      };
+      getFileContentThrows = false;
+      checkFileReturnsNull = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      if (newPlantData) {
+        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+          "main.app.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "main.app.config.json"
+            ],
+          "testGlobalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalAdmin22.user.config.json"
+            ],
+          "testGlobalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalUser22.user.config.json"
+            ],
+          "testLocalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalAdmin22.user.config.json"
+            ],
+          "testLocalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalUser22.user.config.json"
+            ],
+          ...newPlantData,
+        };
+
+        await mockMsFileService(fileServiceContent);
+      }
+
+      if (getFileContentThrows)
+        MindSphereFileService.getInstance().getFileContent = jest.fn(
+          async () => {
+            throw new Error("Test get file content error");
+          }
+        );
+
+      if (checkFileReturnsNull)
+        MindSphereFileService.getInstance().checkIfFileExists = jest.fn(
+          async () => null
+        );
+
+      return mindSphereApp.fetchPlantData();
+    };
+
+    it("should fetch new data from plant files to app storage", async () => {
+      await exec();
+
+      //3 time during initialization, 1 times during new fetching
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
+      expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "plant.config.json",
+      ]);
+
+      //8 times during initialization, 4 times during new fetching (fetching both - old and new plants )
+      expect(getFileContent).toHaveBeenCalledTimes(12);
+
+      let laterMockCalls = [
+        getFileContent.mock.calls[8],
+        getFileContent.mock.calls[9],
+        getFileContent.mock.calls[10],
+        getFileContent.mock.calls[11],
+      ];
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant5.plant.config.json",
+      ]);
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant6.plant.config.json",
+      ]);
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant7.plant.config.json",
+      ]);
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant8.plant.config.json",
+      ]);
+
+      //Cache data of storage should be fetched
+      let expectedCache = {
+        testPlant5: newPlantData["testPlant5.plant.config.json"],
+        testPlant6: newPlantData["testPlant6.plant.config.json"],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+        testPlant8: newPlantData["testPlant8.plant.config.json"],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch any data - return empty cache - if getFile throws during getting new data", async () => {
+      getFileContentThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test get file content error",
+      });
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+
+    it("should not throw but clear all cache data - if checkFile returns null", async () => {
+      checkFileReturnsNull = true;
+      await exec();
+
+      //8 times during initialization, 0 after - due to check file equal to null
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+
+    it("should throw and not fetch new data if app is not initialized", async () => {
+      initApp = false;
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("getPlantData", () => {
+    let mindSphereApp: MindSphereApp;
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let newPlantData: {
+      [userId: string]: PlantStorageData;
+    };
+    let plantId: string;
+    let getFileContentThrows: boolean;
+
+    beforeEach(async () => {
+      storageTenant = "hostTenant";
+      appId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2";
+      appTenant = "testTenant2";
+      subtenantId = "subtenant2";
+      initApp = true;
+      plantId = "testPlant6";
+      newPlantData = {
+        "testPlant5.plant.config.json": {
+          data: {
+            testPlant5Data: "testPlant5DataModifiedValue",
+          },
+          config: {
+            testPlant5Config: "testPlant5ConfigModifiedValue",
+          },
+        },
+        "testPlant6.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant6DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant6ConfigModifiedValue",
+          },
+        },
+        "testPlant7.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant7DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant7ConfigModifiedValue",
+          },
+        },
+        "testPlant8.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant8DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant8ConfigModifiedValue",
+          },
+        },
+      };
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+      if (initApp) await mindSphereApp.init();
+
+      if (newPlantData) {
+        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+          "main.app.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "main.app.config.json"
+            ],
+          "testGlobalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalAdmin22.user.config.json"
+            ],
+          "testGlobalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalUser22.user.config.json"
+            ],
+          "testLocalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalAdmin22.user.config.json"
+            ],
+          "testLocalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalUser22.user.config.json"
+            ],
+          ...newPlantData,
+        };
+
+        await mockMsFileService(fileServiceContent);
+      }
+
+      if (getFileContentThrows)
+        MindSphereFileService.getInstance().getFileContent = jest.fn(
+          async () => {
+            throw new Error("Test get file content error");
+          }
+        );
+
+      return mindSphereApp.getPlantData(plantId);
+    };
+
+    it("should return new plant from cache - if plant of given id exists in cache", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      let result = await exec();
+
+      let expectedResult =
+        oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+          "testPlant6.plant.config.json"
+        ];
+
+      expect(result).toEqual(expectedResult);
+
+      //8 times during initialization, 0 after
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should fetch and return new plant from cache - if plant of given id doesnt exist in cache", async () => {
+      plantId = "testPlant7";
+
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      let result = await exec();
+
+      let expectedResult = newPlantData["testPlant7.plant.config.json"];
+
+      expect(result).toEqual(expectedResult);
+
+      //8 times during initialization, 1 after
+      expect(getFileContent).toHaveBeenCalledTimes(9);
+      expect(getFileContent.mock.calls[8]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant7.plant.config.json",
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not change cache - if get file content throws", async () => {
+      plantId = "testPlant7";
+      getFileContentThrows = true;
+
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test get file content error",
+      });
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should not throw and return null - if plant does not exist in storage and in cache", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+      plantId = "invalidPlantId";
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      //8 times during initialization, 1 after - using check to check if file exists and dont call it
+      expect(checkIfFileExists).toHaveBeenCalledTimes(9);
+      expect(checkIfFileExists.mock.calls[8]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "invalidPlantId.plant.config.json",
+      ]);
+
+      //8 times during initialization, 0 after - using check to check if file exists and dont call it
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch new plant if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("setPlantData", () => {
+    let mindSphereApp: MindSphereApp;
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let plantId: string;
+    let newPlantData: PlantStorageData;
+    let setFileContentThrows: boolean;
+
+    beforeEach(async () => {
+      storageTenant = "hostTenant";
+      appId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2";
+      appTenant = "testTenant2";
+      subtenantId = "subtenant2";
+      initApp = true;
+      plantId = "testPlant7";
+      newPlantData = {
+        config: {
+          testPlant7Config: "testPlant7ConfigValue",
+        },
+        data: {
+          testPlant7Data: "testPlant7DataValue",
+        },
+      };
+      setFileContentThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+
+      if (initApp) await mindSphereApp.init();
+
+      if (setFileContentThrows)
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+
+      return mindSphereApp.setPlantData(plantId, newPlantData);
+    };
+
+    it("should set new plant data in cache and in storage - if there is no plant of given id", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await exec();
+
+      //8 times during initialization, 0 after
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant7.plant.config.json",
+        newPlantData,
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData,
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+
+      //Plant should be accessible via getPlant
+      let plantData = await mindSphereApp.getPlantData(plantId);
+      expect(plantData).toEqual(newPlantData);
+    });
+
+    it("should set new plant data in cache and in storage - if plant of given id already exists", async () => {
+      plantId = "testPlant5";
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await exec();
+
+      //8 times during initialization, 0 after
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant5.plant.config.json",
+        newPlantData,
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5: newPlantData,
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+
+      //Plant should be accessible via getUser
+      let plantData = await mindSphereApp.getPlantData(plantId);
+
+      expect(plantData).toEqual(newPlantData);
+    });
+
+    it("should not set new plant data in cache and throw - if set file throws, plant does not exist in cache", async () => {
+      plantId = "testPlant7";
+      setFileContentThrows = true;
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test set file content error",
+      });
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should not set new plant data in cache and throw - if set file throws, plant exists in cache", async () => {
+      plantId = "testPlant5";
+
+      setFileContentThrows = true;
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test set file content error",
+      });
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not set new plant if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      //SetFile should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //Cache data should not have been changed - app not initialized so it is empty
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("removePlantData", () => {
+    let mindSphereApp: MindSphereApp;
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let plantId: string;
+    let deleteFileThrows: boolean;
+
+    beforeEach(async () => {
+      storageTenant = "hostTenant";
+      appId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2";
+      appTenant = "testTenant2";
+      subtenantId = "subtenant2";
+      initApp = true;
+      plantId = "testPlant5";
+      deleteFileThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+
+      if (initApp) await mindSphereApp.init();
+
+      if (deleteFileThrows)
+        MindSphereFileService.getInstance().deleteFile = jest.fn(async () => {
+          throw new Error("Test delete file error");
+        });
+
+      return mindSphereApp.removePlantData(plantId);
+    };
+
+    it("should delete plant from cache and storage - if plant of given id exists in cache", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await exec();
+
+      expect(deleteFile).toHaveBeenCalledTimes(1);
+      expect(deleteFile.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant5.plant.config.json",
+      ]);
+
+      //Cache should have changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should not throw and not change cache - if there is no such plant in cache and storage", async () => {
+      plantId = "newFakePlant";
+
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await exec();
+
+      //Check file should have been called additional time, but not delete file - checking before deleting
+      expect(checkIfFileExists).toHaveBeenCalledTimes(9);
+      expect(checkIfFileExists.mock.calls[8]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "newFakePlant.plant.config.json",
+      ]);
+      expect(deleteFile).not.toHaveBeenCalled();
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not change cache - if plant of given id exists and delete file throws", async () => {
+      deleteFileThrows = true;
+
+      plantId = "testPlant5";
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test delete file error",
+      });
+
+      //Check file should have been called additional time, but not delete file - checking before deleting
+      expect(
+        MindSphereFileService.getInstance().deleteFile
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        (MindSphereFileService.getInstance().deleteFile as jest.Mock).mock
+          .calls[0]
+      ).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant5.plant.config.json",
+      ]);
+
+      //Cache should stay without changes
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not change cache or storage if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(deleteFile).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+  });
+
+  describe("getAllPlants", () => {
+    let mindSphereApp: MindSphereApp;
+    let storageTenant: string;
+    let appId: string;
+    let assetId: string;
+    let appTenant: string;
+    let subtenantId: string | null;
+    let initApp: boolean;
+    let newPlantData: {
+      [userId: string]: PlantStorageData;
+    };
+    let getAllFilesThrows: boolean;
+    let getFileContentThrows: boolean;
+    let checkFileReturnsNull: boolean;
+
+    beforeEach(async () => {
+      storageTenant = "hostTenant";
+      appId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2";
+      appTenant = "testTenant2";
+      subtenantId = "subtenant2";
+      initApp = true;
+      newPlantData = {
+        "testPlant5.plant.config.json": {
+          data: {
+            testPlant5Data: "testPlant5DataModifiedValue",
+          },
+          config: {
+            testPlant5Config: "testPlant5ConfigModifiedValue",
+          },
+        },
+        "testPlant6.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant6DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant6ConfigModifiedValue",
+          },
+        },
+        "testPlant7.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant7DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant7ConfigModifiedValue",
+          },
+        },
+        "testPlant8.plant.config.json": {
+          data: {
+            testPlant6Data: "testPlant8DataModifiedValue",
+          },
+          config: {
+            testPlant6Config: "testPlant8ConfigModifiedValue",
+          },
+        },
+      };
+      getAllFilesThrows = false;
+      getFileContentThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      mindSphereApp = new MindSphereApp(
+        storageTenant,
+        appId,
+        assetId,
+        appTenant,
+        subtenantId
+      );
+
+      if (initApp) await mindSphereApp.init();
+
+      if (newPlantData) {
+        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+          "main.app.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "main.app.config.json"
+            ],
+          "testGlobalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalAdmin22.user.config.json"
+            ],
+          "testGlobalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testGlobalUser22.user.config.json"
+            ],
+          "testLocalAdmin22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalAdmin22.user.config.json"
+            ],
+          "testLocalUser22.user.config.json":
+            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+              "testLocalUser22.user.config.json"
+            ],
+          ...newPlantData,
+        };
+
+        await mockMsFileService(fileServiceContent);
+      }
+
+      if (getAllFilesThrows)
+        MindSphereFileService.getInstance().getAllFileNamesFromAsset = jest.fn(
+          async () => {
+            throw new Error("Get all files test error");
+          }
+        );
+
+      if (getFileContentThrows)
+        MindSphereFileService.getInstance().getFileContent = jest.fn(
+          async () => {
+            throw new Error("Get file content test error");
+          }
+        );
+
+      if (checkFileReturnsNull)
+        MindSphereFileService.getInstance().checkIfFileExists = jest.fn(
+          async () => null
+        );
+
+      return mindSphereApp.getAllPlantsData();
+    };
+
+    it("should return all plants from - cache and storage, but fetch to cache only plants not present in cache", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      let result = await exec();
+
+      let expectedResults = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+        testPlant8: newPlantData["testPlant8.plant.config.json"],
+      };
+
+      expect(result).toEqual(expectedResults);
+
+      //Get all files should be invoked one additional time after initializiation (3x during initialization)
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
+      expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "plant.config.json",
+      ]);
+
+      //Get files should be invoked for every plant existing in storage but not in cache - additional 2x times, 8xtimes during initialization
+      expect(getFileContent).toHaveBeenCalledTimes(10);
+
+      let laterMockCalls = [
+        getFileContent.mock.calls[8],
+        getFileContent.mock.calls[9],
+      ];
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant7.plant.config.json",
+      ]);
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant8.plant.config.json",
+      ]);
+
+      //Cache data of plants not present before should be fetched
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+        testPlant8: newPlantData["testPlant8.plant.config.json"],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should return all plants from - cache and storage, but fetch to cache only plants not present in cache - if there are no same plants in cache and in storage", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+      delete newPlantData["testPlant5.plant.config.json"];
+      delete newPlantData["testPlant6.plant.config.json"];
+
+      let result = await exec();
+
+      let expectedResults = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+        testPlant8: newPlantData["testPlant8.plant.config.json"],
+      };
+
+      expect(result).toEqual(expectedResults);
+
+      //Get all files should be invoked one additional time after initializiation (3x during initialization)
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
+      expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "plant.config.json",
+      ]);
+
+      //Get files should be invoked for every plant existing in storage but not in cache - additional 2x times, 8xtimes during initialization
+      expect(getFileContent).toHaveBeenCalledTimes(10);
+
+      let laterMockCalls = [
+        getFileContent.mock.calls[8],
+        getFileContent.mock.calls[9],
+      ];
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant7.plant.config.json",
+      ]);
+
+      expect(laterMockCalls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testPlant8.plant.config.json",
+      ]);
+
+      //Cache data of plants not present before should be fetched
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+        testPlant7: newPlantData["testPlant7.plant.config.json"],
+        testPlant8: newPlantData["testPlant8.plant.config.json"],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should return all plants only from cache and not fetch to cache any plant - if there are only the same plants in cache and in storage", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      //Leaving only old plants in storage
+      delete newPlantData["testPlant7.plant.config.json"];
+      delete newPlantData["testPlant8.plant.config.json"];
+
+      let result = await exec();
+
+      let expectedResults = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect(result).toEqual(expectedResults);
+
+      //Get all files should be invoked one additional time after initializiation (3x during initialization)
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
+      expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "plant.config.json",
+      ]);
+
+      //Get files should not be invoked after initialization - 8x times during initialization
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+
+      //Cache data of users not present before should be fetched
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not update cache - if get all files throws", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+      getAllFilesThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Get all files test error",
+      });
+
+      //Get files should not be invoked after initialization - 8x times during initialization
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+
+      //Cache data should not have been changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not update cache - if get file throws", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+      getFileContentThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Get file content test error",
+      });
+
+      //Cache data should not have been changed
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should not throw but not fetch to cache any plant and not call getFile - if check file returns null", async () => {
+      let oldFileServiceContent = cloneObject(fileServiceContent);
+
+      checkFileReturnsNull = true;
+
+      let result = await exec();
+
+      let expectedResults = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+
+      expect(result).toEqual(expectedResults);
+
+      //Get all files should be invoked one additional time after initializiation (3x during initialization)
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
+      expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "plant.config.json",
+      ]);
+
+      //Get files should not be invoked after initialization - 8x times during initialization
+      expect(getFileContent).toHaveBeenCalledTimes(8);
+
+      //Cache data of users not present before should be fetched
+      let expectedCache = {
+        testPlant4:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant4.plant.config.json"
+          ],
+        testPlant5:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant5.plant.config.json"
+          ],
+        testPlant6:
+          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+            "testPlant6.plant.config.json"
+          ],
+      };
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
+        expectedCache
+      );
+    });
+
+    it("should throw and not fetch any data to cache if app is not initialized", async () => {
+      initApp = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `Application not initialized!`,
+      });
+
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //Cache data of storage should be fetched
+      expect((mindSphereApp as any)._plantStorage._cacheData).toEqual({});
+    });
+  });
+
+  //#endregion ===== PLANT STORAGE DATA =====
 });

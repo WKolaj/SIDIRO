@@ -2,7 +2,7 @@ import express from "express";
 import {
   AppStorageData,
   MindSphereApp,
-  PlanStorageData,
+  PlantStorageData,
   UserStorageData,
 } from "../../classes/MindSphereApp/MindSphereApp";
 import fetchTokenData from "../../middleware/tokenData/fetchTokenData";
@@ -16,7 +16,7 @@ const router = express.Router();
 const normalizeConfigPlantPayload = function(
   appId: string,
   plantId: string,
-  plantsData: PlanStorageData
+  plantsData: PlantStorageData
 ) {
   return {
     ...plantsData,
@@ -31,7 +31,7 @@ const normalizeConfigTotalPayload = function(
   userId: string,
   userData: UserStorageData,
   plantsData: {
-    [plantId: string]: PlanStorageData;
+    [plantId: string]: PlantStorageData;
   }
 ) {
   let payloadToReturn: any = {
@@ -69,7 +69,7 @@ router.get(
     let appDataReq = req as AppDataRequest;
 
     let plantPayload: {
-      [plantId: string]: PlanStorageData;
+      [plantId: string]: PlantStorageData;
     } = {};
 
     //#region ========== GENERETING PLANTS PAYLOAD ==========

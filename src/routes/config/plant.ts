@@ -2,7 +2,7 @@ import express from "express";
 import checkAppIdParam from "../../middleware/checkParams/checkAppIdParam";
 import {
   MindSphereApp,
-  PlanStorageData,
+  PlantStorageData,
 } from "../../classes/MindSphereApp/MindSphereApp";
 import fetchTokenData from "../../middleware/tokenData/fetchTokenData";
 import fetchUserAndAppData, {
@@ -20,7 +20,7 @@ import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAd
 
 const router = express.Router();
 
-export interface PlantPayload extends PlanStorageData {
+export interface PlantPayload extends PlantStorageData {
   plantId: string;
   appId: string;
 }
@@ -28,7 +28,7 @@ export interface PlantPayload extends PlanStorageData {
 const normalizePlantPayload = function(
   appId: string,
   plantId: string,
-  plantPayload: PlanStorageData
+  plantPayload: PlantStorageData
 ): PlantPayload {
   return {
     ...plantPayload,
@@ -39,7 +39,7 @@ const normalizePlantPayload = function(
 
 const normalizePlantsPayload = function(
   appId: string,
-  plantsPayload: { [plantId: string]: PlanStorageData }
+  plantsPayload: { [plantId: string]: PlantStorageData }
 ): { [plantId: string]: PlantPayload } {
   let payloadToReturn: { [plantId: string]: PlantPayload } = {};
 
@@ -157,7 +157,7 @@ router.put(
 
     //#region ========== UPDATING PLANT DATA ==========
 
-    let payloadToUpdate: PlanStorageData = {
+    let payloadToUpdate: PlantStorageData = {
       data: appDataReq.body.data,
       config: appDataReq.body.config,
     };
@@ -267,7 +267,7 @@ router.post(
 
     //#region ========== CREATING PLANT ==========
 
-    let payloadToCreate: PlanStorageData = {
+    let payloadToCreate: PlantStorageData = {
       data: appDataReq.body.data,
       config: appDataReq.body.config,
     };
@@ -363,7 +363,7 @@ router.put(
 
     //#region ========== UPDATING PLANT DATA ==========
 
-    let payloadToUpdate: PlanStorageData = {
+    let payloadToUpdate: PlantStorageData = {
       data: appDataReq.body.data,
       config: appDataReq.body.config,
     };
@@ -407,7 +407,7 @@ router.get(
 
     //#region ========== FILTERING PLANTS DATA - ONLY PLANTS ACCESSIBLE FOR CURRENT USER ==========
 
-    let plantsToReturn: { [plantId: string]: PlanStorageData } = {};
+    let plantsToReturn: { [plantId: string]: PlantStorageData } = {};
 
     for (let plantId of Object.keys(allPlants)) {
       let plantData = allPlants[plantId];
@@ -485,7 +485,7 @@ router.put(
 
     //#region ========== UPDATING PLANT DATA ==========
 
-    let payloadToUpdate: PlanStorageData = {
+    let payloadToUpdate: PlantStorageData = {
       data: appDataReq.body.data,
       config: appDataReq.body.config,
     };

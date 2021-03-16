@@ -36,7 +36,7 @@ export interface UserStorageData {
   };
 }
 
-export interface PlanStorageData {
+export interface PlantStorageData {
   config: object;
   data: object;
 }
@@ -57,7 +57,7 @@ export class MindSphereApp {
 
   protected _initialized: boolean = false;
   protected _appStorage: MindSphereDataStorage<AppStorageData>;
-  protected _plantStorage: MindSphereDataStorage<PlanStorageData>;
+  protected _plantStorage: MindSphereDataStorage<PlantStorageData>;
   protected _userStorage: MindSphereDataStorage<UserStorageData>;
   protected _mindSphereUserService: MindSphereUserService;
   protected _mindSphereUserGroupService: MindSphereUserGroupService;
@@ -772,13 +772,13 @@ export class MindSphereApp {
     await this._plantStorage.fetchAllData();
   }
 
-  public async getPlantData(plantId: string): Promise<PlanStorageData | null> {
+  public async getPlantData(plantId: string): Promise<PlantStorageData | null> {
     this._throwIfNotInitialized();
 
     return this._plantStorage.getData(plantId);
   }
 
-  public async setPlantData(plantId: string, plantData: PlanStorageData) {
+  public async setPlantData(plantId: string, plantData: PlantStorageData) {
     this._throwIfNotInitialized();
 
     return this._plantStorage.setData(plantId, plantData);
