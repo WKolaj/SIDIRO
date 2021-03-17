@@ -436,7 +436,7 @@ export class MindSphereApp {
   }
 
   /**
-   * @description Method for checking whether user of given name (email) exists in tenant
+   * @description Method for checking whether user of given name (email) exists in tenant. NOTICE - METHOD DOES NOT CHECK SUBTENANT IN ORDER TO ENSURE THAT USER EXISTS ON TENANT (EG. TO BLOCK CREATION OF USER WITH THE SAME USER NAME)
    * @param userName name (email) to check
    */
   async userExistsInTenant(userName: string): Promise<boolean> {
@@ -580,6 +580,7 @@ export class MindSphereApp {
     if (!userAssignedToApp)
       throw Error("Cannot get user that is not assigned to the app!");
 
+    //Double-check here - storage data of course exists due to the fact, that userAssignedToApp check its existance
     let storageData = await this._userStorage.getData(userId);
     if (!storageData) throw Error("User does not exist in storage!");
 
@@ -696,7 +697,10 @@ export class MindSphereApp {
    */
   public async getMaxNumberOfUsers(): Promise<number | null> {
     let appData = await this.getAppData();
-    if (appData == null) throw new Error("No application data found!");
+    if (appData == null || appData.maxNumberOfUsers === undefined)
+      throw new Error(
+        "No application data found or max number of users not found!"
+      );
     return appData.maxNumberOfUsers;
   }
 

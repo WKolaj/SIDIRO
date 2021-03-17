@@ -82,7 +82,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin11ExternalId",
-          id: "testGlobalAdmin11ID",
+          id: "testGlobalAdmin11",
         },
         testLocalAdmin11: {
           active: true,
@@ -98,7 +98,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin11ExternalId",
-          id: "testLocalAdmin11ID",
+          id: "testLocalAdmin11",
         },
         testGlobalUser11: {
           active: true,
@@ -114,7 +114,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser11ExternalId",
-          id: "testGlobalUser11ID",
+          id: "testGlobalUser11",
         },
         testLocalUser11: {
           active: true,
@@ -130,7 +130,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser11ExternalId",
-          id: "testLocalUser11ID",
+          id: "testLocalUser11",
         },
         testGlobalAdmin12: {
           active: true,
@@ -146,7 +146,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin12ExternalId",
-          id: "testGlobalAdmin12ID",
+          id: "testGlobalAdmin12",
           subtenants: [
             {
               id: "subtenant1",
@@ -167,7 +167,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin12ExternalId",
-          id: "testLocalAdmin12ID",
+          id: "testLocalAdmin12",
           subtenants: [
             {
               id: "subtenant1",
@@ -188,7 +188,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser12ExternalId",
-          id: "testGlobalUser12ID",
+          id: "testGlobalUser12",
           subtenants: [
             {
               id: "subtenant1",
@@ -209,7 +209,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser12ExternalId",
-          id: "testLocalUser12ID",
+          id: "testLocalUser12",
           subtenants: [
             {
               id: "subtenant1",
@@ -232,7 +232,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin21ExternalId",
-          id: "testGlobalAdmin21ID",
+          id: "testGlobalAdmin21",
         },
         testLocalAdmin21: {
           active: true,
@@ -248,7 +248,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin21ExternalId",
-          id: "testLocalAdmin21ID",
+          id: "testLocalAdmin21",
         },
         testGlobalUser21: {
           active: true,
@@ -264,7 +264,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser21ExternalId",
-          id: "testGlobalUser21ID",
+          id: "testGlobalUser21",
         },
         testLocalUser21: {
           active: true,
@@ -280,7 +280,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser21ExternalId",
-          id: "testLocalUser21ID",
+          id: "testLocalUser21",
         },
         testGlobalAdmin22: {
           active: true,
@@ -296,7 +296,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin22ExternalId",
-          id: "testGlobalAdmin22ID",
+          id: "testGlobalAdmin22",
           subtenants: [
             {
               id: "subtenant2",
@@ -317,7 +317,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin22ExternalId",
-          id: "testLocalAdmin22ID",
+          id: "testLocalAdmin22",
           subtenants: [
             {
               id: "subtenant2",
@@ -338,7 +338,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser22ExternalId",
-          id: "testGlobalUser22ID",
+          id: "testGlobalUser22",
           subtenants: [
             {
               id: "subtenant2",
@@ -359,7 +359,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser22ExternalId",
-          id: "testLocalUser22ID",
+          id: "testLocalUser22",
           subtenants: [
             {
               id: "subtenant2",
@@ -382,7 +382,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin31ExternalId",
-          id: "testGlobalAdmin31ID",
+          id: "testGlobalAdmin31",
         },
         testLocalAdmin31: {
           active: true,
@@ -398,7 +398,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin31ExternalId",
-          id: "testLocalAdmin31ID",
+          id: "testLocalAdmin31",
         },
         testGlobalUser31: {
           active: true,
@@ -414,7 +414,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser31ExternalId",
-          id: "testGlobalUser31ID",
+          id: "testGlobalUser31",
         },
         testLocalUser31: {
           active: true,
@@ -430,7 +430,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser31ExternalId",
-          id: "testLocalUser31ID",
+          id: "testLocalUser31",
         },
         testGlobalAdmin32: {
           active: true,
@@ -446,7 +446,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalAdmin32ExternalId",
-          id: "testGlobalAdmin32ID",
+          id: "testGlobalAdmin32",
           subtenants: [
             {
               id: "subtenant3",
@@ -467,7 +467,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalAdmin32ExternalId",
-          id: "testLocalAdmin32ID",
+          id: "testLocalAdmin32",
           subtenants: [
             {
               id: "subtenant3",
@@ -488,7 +488,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testGlobalUser32ExternalId",
-          id: "testGlobalUser32ID",
+          id: "testGlobalUser32",
           subtenants: [
             {
               id: "subtenant3",
@@ -509,7 +509,7 @@ describe("MindSphereApp", () => {
           ],
           groups: [],
           externalId: "testLocalUser32ExternalId",
-          id: "testLocalUser32ID",
+          id: "testLocalUser32",
           subtenants: [
             {
               id: "subtenant3",
@@ -1991,7 +1991,7 @@ describe("MindSphereApp", () => {
 
     beforeEach(() => {
       superAdminUserIdEnvVar =
-        "testSuperAdmin1ID testSuperAdmin2ID testSuperAdmin3ID";
+        "testSuperAdmin1 testSuperAdmin2 testSuperAdmin3";
     });
 
     let exec = async () => {
@@ -2003,16 +2003,16 @@ describe("MindSphereApp", () => {
     it("should return collection of super admin users id - if there are several ids", async () => {
       let result = await exec();
       expect(result).toEqual([
-        "testSuperAdmin1ID",
-        "testSuperAdmin2ID",
-        "testSuperAdmin3ID",
+        "testSuperAdmin1",
+        "testSuperAdmin2",
+        "testSuperAdmin3",
       ]);
     });
 
     it("should return collection of super admin users id - if there is only one super admin id", async () => {
-      superAdminUserIdEnvVar = "testSuperAdmin1ID";
+      superAdminUserIdEnvVar = "testSuperAdmin1";
       let result = await exec();
-      expect(result).toEqual(["testSuperAdmin1ID"]);
+      expect(result).toEqual(["testSuperAdmin1"]);
     });
 
     it("should return empty array if there is no super admin id", async () => {
@@ -4207,7 +4207,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "fakeUser3ID.user.config.json": {
+        "fakeUser3.user.config.json": {
           config: {
             fakePlant1: { fakeUserConfig: "editedFakeUser3ConfigPlant1" },
             fakePlant2: { fakeUserConfig: "editedFakeUser3ConfigPlant2" },
@@ -4225,7 +4225,7 @@ describe("MindSphereApp", () => {
           },
           userName: "editedFakeUser3Email",
         },
-        "fakeUser4ID.user.config.json": {
+        "fakeUser4.user.config.json": {
           config: {
             fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
             fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
@@ -4243,7 +4243,7 @@ describe("MindSphereApp", () => {
           },
           userName: "fakeUser4Email",
         },
-        "fakeUser5ID.user.config.json": {
+        "fakeUser5.user.config.json": {
           config: {
             fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
             fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
@@ -4261,7 +4261,7 @@ describe("MindSphereApp", () => {
           },
           userName: "fakeUser5Email",
         },
-        "fakeUser6ID.user.config.json": {
+        "fakeUser6.user.config.json": {
           config: {
             fakePlant1: { fakeUserConfig: "editedFakeUser6ConfigPlant1" },
             fakePlant2: { fakeUserConfig: "editedFakeUser6ConfigPlant2" },
@@ -4363,25 +4363,25 @@ describe("MindSphereApp", () => {
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser3ID.user.config.json",
+        "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser4ID.user.config.json",
+        "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser5ID.user.config.json",
+        "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser6ID.user.config.json",
+        "fakeUser6.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
@@ -4400,10 +4400,10 @@ describe("MindSphereApp", () => {
       let expectedCache = {
         testGlobalAdmin22: newUserData["testGlobalAdmin22.user.config.json"],
         testGlobalUser22: newUserData["testGlobalUser22.user.config.json"],
-        fakeUser3ID: newUserData["fakeUser3ID.user.config.json"],
-        fakeUser4ID: newUserData["fakeUser4ID.user.config.json"],
-        fakeUser5ID: newUserData["fakeUser5ID.user.config.json"],
-        fakeUser6ID: newUserData["fakeUser6ID.user.config.json"],
+        fakeUser3: newUserData["fakeUser3.user.config.json"],
+        fakeUser4: newUserData["fakeUser4.user.config.json"],
+        fakeUser5: newUserData["fakeUser5.user.config.json"],
+        fakeUser6: newUserData["fakeUser6.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -4626,6 +4626,7 @@ describe("MindSphereApp", () => {
             "testLocalUser22.user.config.json"
           ],
       };
+
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
       );
@@ -4785,7 +4786,7 @@ describe("MindSphereApp", () => {
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
-      userId = "fakeUser5ID";
+      userId = "fakeUser5";
       newUserData = {
         config: {
           fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
@@ -4840,7 +4841,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser5ID.user.config.json",
+        "fakeUser5.user.config.json",
         newUserData,
       ]);
 
@@ -5278,7 +5279,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "fakeUser3ID.user.config.json": {
+        "fakeUser3.user.config.json": {
           config: {
             fakePlant1: { fakeUserConfig: "editedFakeUser3ConfigPlant1" },
             fakePlant2: { fakeUserConfig: "editedFakeUser3ConfigPlant2" },
@@ -5296,7 +5297,7 @@ describe("MindSphereApp", () => {
           },
           userName: "editedFakeUser3Email",
         },
-        "fakeUser4ID.user.config.json": {
+        "fakeUser4.user.config.json": {
           config: {
             fakePlant2: { fakeUserConfig: "fakeUser4ConfigPlant2" },
             fakePlant3: { fakeUserConfig: "fakeUser4ConfigPlant3" },
@@ -5314,7 +5315,7 @@ describe("MindSphereApp", () => {
           },
           userName: "fakeUser4Email",
         },
-        "fakeUser5ID.user.config.json": {
+        "fakeUser5.user.config.json": {
           config: {
             fakePlant2: { fakeUserConfig: "fakeUser5ConfigPlant2" },
             fakePlant3: { fakeUserConfig: "fakeUser5ConfigPlant3" },
@@ -5332,7 +5333,7 @@ describe("MindSphereApp", () => {
           },
           userName: "fakeUser5Email",
         },
-        "fakeUser6ID.user.config.json": {
+        "fakeUser6.user.config.json": {
           config: {
             fakePlant1: { fakeUserConfig: "editedFakeUser6ConfigPlant1" },
             fakePlant2: { fakeUserConfig: "editedFakeUser6ConfigPlant2" },
@@ -5354,6 +5355,7 @@ describe("MindSphereApp", () => {
           userName: "editedFakeUser6Email",
         },
       };
+      checkFileReturnsNull = false;
       getAllFilesThrows = false;
       getFileContentThrows = false;
     });
@@ -5439,10 +5441,10 @@ describe("MindSphereApp", () => {
           oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
             "testGlobalUser22.user.config.json"
           ],
-        fakeUser3ID: newUserData["fakeUser3ID.user.config.json"],
-        fakeUser4ID: newUserData["fakeUser4ID.user.config.json"],
-        fakeUser5ID: newUserData["fakeUser5ID.user.config.json"],
-        fakeUser6ID: newUserData["fakeUser6ID.user.config.json"],
+        fakeUser3: newUserData["fakeUser3.user.config.json"],
+        fakeUser4: newUserData["fakeUser4.user.config.json"],
+        fakeUser5: newUserData["fakeUser5.user.config.json"],
+        fakeUser6: newUserData["fakeUser6.user.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -5468,25 +5470,25 @@ describe("MindSphereApp", () => {
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser3ID.user.config.json",
+        "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser4ID.user.config.json",
+        "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser5ID.user.config.json",
+        "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser6ID.user.config.json",
+        "fakeUser6.user.config.json",
       ]);
 
       //Cache data of users not present before should be fetched
@@ -5507,10 +5509,10 @@ describe("MindSphereApp", () => {
           oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
             "testGlobalUser22.user.config.json"
           ],
-        fakeUser3ID: newUserData["fakeUser3ID.user.config.json"],
-        fakeUser4ID: newUserData["fakeUser4ID.user.config.json"],
-        fakeUser5ID: newUserData["fakeUser5ID.user.config.json"],
-        fakeUser6ID: newUserData["fakeUser6ID.user.config.json"],
+        fakeUser3: newUserData["fakeUser3.user.config.json"],
+        fakeUser4: newUserData["fakeUser4.user.config.json"],
+        fakeUser5: newUserData["fakeUser5.user.config.json"],
+        fakeUser6: newUserData["fakeUser6.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -5541,10 +5543,10 @@ describe("MindSphereApp", () => {
           oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
             "testGlobalUser22.user.config.json"
           ],
-        fakeUser3ID: newUserData["fakeUser3ID.user.config.json"],
-        fakeUser4ID: newUserData["fakeUser4ID.user.config.json"],
-        fakeUser5ID: newUserData["fakeUser5ID.user.config.json"],
-        fakeUser6ID: newUserData["fakeUser6ID.user.config.json"],
+        fakeUser3: newUserData["fakeUser3.user.config.json"],
+        fakeUser4: newUserData["fakeUser4.user.config.json"],
+        fakeUser5: newUserData["fakeUser5.user.config.json"],
+        fakeUser6: newUserData["fakeUser6.user.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -5570,25 +5572,25 @@ describe("MindSphereApp", () => {
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser3ID.user.config.json",
+        "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser4ID.user.config.json",
+        "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser5ID.user.config.json",
+        "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
         "ten-testTenant2-sub-subtenant2",
-        "fakeUser6ID.user.config.json",
+        "fakeUser6.user.config.json",
       ]);
 
       //Cache data of users not present before should be fetched
@@ -5610,10 +5612,10 @@ describe("MindSphereApp", () => {
             "testGlobalUser22.user.config.json"
           ],
 
-        fakeUser3ID: newUserData["fakeUser3ID.user.config.json"],
-        fakeUser4ID: newUserData["fakeUser4ID.user.config.json"],
-        fakeUser5ID: newUserData["fakeUser5ID.user.config.json"],
-        fakeUser6ID: newUserData["fakeUser6ID.user.config.json"],
+        fakeUser3: newUserData["fakeUser3.user.config.json"],
+        fakeUser4: newUserData["fakeUser4.user.config.json"],
+        fakeUser5: newUserData["fakeUser5.user.config.json"],
+        fakeUser6: newUserData["fakeUser6.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -5624,10 +5626,10 @@ describe("MindSphereApp", () => {
       let oldFileServiceContent = cloneObject(fileServiceContent);
 
       //Leaving only old users in storage
-      delete newUserData["fakeUser3ID.user.config.json"];
-      delete newUserData["fakeUser4ID.user.config.json"];
-      delete newUserData["fakeUser5ID.user.config.json"];
-      delete newUserData["fakeUser6ID.user.config.json"];
+      delete newUserData["fakeUser3.user.config.json"];
+      delete newUserData["fakeUser4.user.config.json"];
+      delete newUserData["fakeUser5.user.config.json"];
+      delete newUserData["fakeUser6.user.config.json"];
 
       let result = await exec();
 
