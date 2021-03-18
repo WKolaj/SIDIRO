@@ -3959,6 +3959,35 @@ describe("MindSphereApp", () => {
       expect(appData).toEqual(newAppData);
     });
 
+    it("should set data if main data have not exited before", async () => {
+      //CRUCIAL FEATURE! - NEW, REGISTERED APP DOES NOT HAVE APP SETTINGS FILE!
+
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ]["main.app.config.json"];
+
+      await exec();
+
+      //Set file should be called in order to set new app data
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-id",
+        "main.app.config.json",
+        newAppData,
+      ]);
+
+      //Cache data should be changed to new version
+      expect((mindSphereApp as any)._appStorage._cacheData["main"]).toEqual(
+        newAppData
+      );
+
+      //New data should be accessible via getAppData
+      let appData = await mindSphereApp.getAppData();
+
+      expect(appData).toEqual(newAppData);
+    });
+
     it("should not set new data in cache and throw - if set file throws", async () => {
       setFileContentThrows = true;
 

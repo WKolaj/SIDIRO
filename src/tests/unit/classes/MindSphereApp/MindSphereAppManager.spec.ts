@@ -60,7 +60,10 @@ import {
   setPrivateProperty,
   testPrivateProperty,
 } from "../../../utilities/utilities";
-import { MindSphereAssetService } from "../../../../classes/MindSphereService/MindSphereAssetService";
+import {
+  MindSphereAsset,
+  MindSphereAssetService,
+} from "../../../../classes/MindSphereService/MindSphereAssetService";
 import { MindSphereAppsManager } from "../../../../classes/MindSphereApp/MindSphereAppsManager";
 
 describe("MindSphereApp", () => {
@@ -2234,21 +2237,1587 @@ describe("MindSphereApp", () => {
   describe("getAppAssetIdIfExists", () => {
     let mindSphereAppsManager: MindSphereAppsManager;
     let appId: string;
+    let fetchAppBefore: boolean;
+    let getAssetsThrows: boolean;
 
     beforeEach(async () => {
       appId = "ten-testTenant2-sub-subtenant2";
+      fetchAppBefore = false;
+      getAssetsThrows = false;
     });
 
     let exec = async () => {
       await beforeExec();
       mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        let newApp = new MindSphereApp(
+          "hostTenant",
+          appId,
+          "ten-testTenant2-sub-subtenant2-id",
+          "testTenant2",
+          "subtenant2"
+        );
+        await newApp.init();
+        setPrivateProperty(mindSphereAppsManager, "_apps", {
+          [appId]: newApp,
+        });
+      }
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("get assets test error");
+        });
+      }
+
       return mindSphereAppsManager.getAppAssetIdIfExists(appId);
     };
 
-    it("should return app asset id if it exists", async () => {
+    it("should call MindSphereAssetService and return app asset id if it exists, and has not been fetched before", async () => {
       let result = await exec();
 
       expect(result).toEqual("ten-testTenant2-sub-subtenant2-id");
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should not call MindSphereAssetService but return app asset id if it exists, and has been fetched before", async () => {
+      fetchAppBefore = true;
+      let result = await exec();
+
+      expect(result).toEqual("ten-testTenant2-sub-subtenant2-id");
+
+      expect(getAssets).not.toHaveBeenCalled();
+    });
+
+    it("should return null if app asset does not exist - wrong name", async () => {
+      appId = "fakeAppId";
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "fakeAppId",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return null if app asset does not exist - wrong asset type", async () => {
+      assetServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ].typeId = "fakeTypeId";
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return null if app asset does not exist - wrong parent id", async () => {
+      assetServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ].parentId = "fakeParentId";
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return null if app asset does not exist - no assets", async () => {
+      assetServiceContent = {
+        hostTenant: {
+          testAppContainerAssetId: {
+            name: "testAppContainerName",
+            parentId: "hostTenantAssetId",
+            typeId: "testAppContainerAssetType",
+            assetId: "testAppContainerAssetId",
+            etag: 0,
+            tenantId: "hostTenant",
+          },
+        },
+      };
+
+      let result = await exec();
+
+      expect(result).toEqual(null);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should throw if getAssets throws", async () => {
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "get assets test error",
+      });
+    });
+  });
+
+  describe("checkIfAppExists", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let appId: string;
+    let fetchAppBefore: boolean;
+    let getAssetsThrows: boolean;
+
+    beforeEach(async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      fetchAppBefore = false;
+      getAssetsThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        let newApp = new MindSphereApp(
+          "hostTenant",
+          appId,
+          "ten-testTenant2-sub-subtenant2-id",
+          "testTenant2",
+          "subtenant2"
+        );
+        await newApp.init();
+        setPrivateProperty(mindSphereAppsManager, "_apps", {
+          [appId]: newApp,
+        });
+      }
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("get assets test error");
+        });
+      }
+
+      return mindSphereAppsManager.checkIfAppExists(appId);
+    };
+
+    it("should call MindSphereAssetService and return true if it exists, and has not been fetched before", async () => {
+      let result = await exec();
+
+      expect(result).toEqual(true);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should not call MindSphereAssetService but return true if it exists, and has been fetched before", async () => {
+      fetchAppBefore = true;
+      let result = await exec();
+
+      expect(result).toEqual(true);
+
+      expect(getAssets).not.toHaveBeenCalled();
+    });
+
+    it("should return false if app asset does not exist - wrong name", async () => {
+      appId = "fakeAppId";
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "fakeAppId",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return false if app asset does not exist - wrong asset type", async () => {
+      assetServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ].typeId = "fakeTypeId";
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return false if app asset does not exist - wrong parent id", async () => {
+      assetServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ].parentId = "fakeParentId";
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should return null if app asset does not exist - no assets", async () => {
+      assetServiceContent = {
+        hostTenant: {
+          testAppContainerAssetId: {
+            name: "testAppContainerName",
+            parentId: "hostTenantAssetId",
+            typeId: "testAppContainerAssetType",
+            assetId: "testAppContainerAssetId",
+            etag: 0,
+            tenantId: "hostTenant",
+          },
+        },
+      };
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should throw if getAssets throws", async () => {
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "get assets test error",
+      });
+    });
+  });
+
+  /**
+   * @description Method for checking if app has been fetched correctly - created, initialized, and assigned to the apps of manager
+   * @param appId
+   * @param appAssetId
+   * @param appTenantName
+   * @param appSubtenantId
+   */
+  const testIfAppWasFetchedProperly = async (
+    appId: string,
+    appAssetId: string,
+    appTenantName: string,
+    appSubtenantId: string | null
+  ) => {
+    let mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+    //Getting the app
+    let app = mindSphereAppsManager.Apps[appId];
+    expect(app).toBeDefined();
+
+    //Checking apps properties
+    expect(app.AssetId).toEqual(appAssetId);
+    expect(app.AppId).toEqual(appId);
+    expect(app.TenantName).toEqual(appTenantName);
+    expect(app.SubtenantId).toEqual(appSubtenantId);
+    expect(app.StorageTenant).toEqual("hostTenant");
+    testPrivateProperty(app, "_initialized", true);
+
+    //Checking apps user groups
+    let standardUserGroupPayload =
+      userGroupServiceContent[appTenantName]["standardUserGroup"];
+    expect(app.StandardUserGroup).toEqual(standardUserGroupPayload);
+
+    let subtenantUserGroupPayload =
+      userGroupServiceContent[appTenantName]["subtenantUserGroup"];
+    expect(app.SubtenantUserGroup).toEqual(subtenantUserGroupPayload);
+
+    let globalAdminGroupPayload =
+      userGroupServiceContent[appTenantName]["globalAdminGroup"];
+    expect(app.GlobalAdminGroup).toEqual(globalAdminGroupPayload);
+
+    let globalUserGroupPayload =
+      userGroupServiceContent[appTenantName]["globalUserGroup"];
+    expect(app.GlobalUserGroup).toEqual(globalUserGroupPayload);
+
+    let localAdminGroupPayload =
+      userGroupServiceContent[appTenantName]["localAdminGroup"];
+    expect(app.LocalAdminGroup).toEqual(localAdminGroupPayload);
+
+    let localUserGroupPayload =
+      userGroupServiceContent[appTenantName]["localUserGroup"];
+    expect(app.LocalUserGroup).toEqual(localUserGroupPayload);
+
+    //Checking calls for getting file names for every storage - at least 3 times
+    expect(getAllFileNamesFromAsset.mock.calls.length).toBeGreaterThanOrEqual(
+      3
+    );
+    expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+      "hostTenant",
+      appAssetId,
+      "app.config.json",
+    ]);
+    expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+      "hostTenant",
+      appAssetId,
+      "plant.config.json",
+    ]);
+    expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+      "hostTenant",
+      appAssetId,
+      "user.config.json",
+    ]);
+
+    //Checking calls for getting files
+    let allAppFilePaths = Object.keys(
+      fileServiceContent["hostTenant"][appAssetId]
+    );
+
+    let mainFilePaths = allAppFilePaths.filter((filePath) =>
+      filePath.includes(".app.config.json")
+    );
+    let userFilePaths = allAppFilePaths.filter((filePath) =>
+      filePath.includes(".user.config.json")
+    );
+    let plantFilePaths = allAppFilePaths.filter((filePath) =>
+      filePath.includes(".plant.config.json")
+    );
+
+    //Every file should have been fetched
+    expect(getFileContent.mock.calls.length).toBeGreaterThanOrEqual(
+      mainFilePaths.length + userFilePaths.length + plantFilePaths.length
+    );
+
+    //Checking main files
+    for (let filePath of mainFilePaths) {
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        appAssetId,
+        filePath,
+      ]);
+    }
+
+    //Checking user files
+    for (let filePath of userFilePaths) {
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        appAssetId,
+        filePath,
+      ]);
+    }
+
+    //Checking plant files
+    for (let filePath of plantFilePaths) {
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        appAssetId,
+        filePath,
+      ]);
+    }
+
+    //Checking app storage data
+    let expectedAppStorageContent: any = {};
+    for (let filePath of mainFilePaths) {
+      let fileContent = fileServiceContent["hostTenant"][appAssetId][filePath];
+      let fileId = filePath.replace(".app.config.json", "");
+      expectedAppStorageContent[fileId] = fileContent;
+    }
+    expect((app as any)._appStorage._cacheData).toEqual(
+      expectedAppStorageContent
+    );
+
+    //Checking user storage data
+    let expectedUserStorageContent: any = {};
+    for (let filePath of userFilePaths) {
+      let fileContent = fileServiceContent["hostTenant"][appAssetId][filePath];
+      let fileId = filePath.replace(".user.config.json", "");
+      expectedUserStorageContent[fileId] = fileContent;
+    }
+    expect((app as any)._userStorage._cacheData).toEqual(
+      expectedUserStorageContent
+    );
+
+    //Checking plant storage data
+    let expectedPlantStorageContent: any = {};
+    for (let filePath of plantFilePaths) {
+      let fileContent = fileServiceContent["hostTenant"][appAssetId][filePath];
+      let fileId = filePath.replace(".plant.config.json", "");
+      expectedPlantStorageContent[fileId] = fileContent;
+    }
+    expect((app as any)._plantStorage._cacheData).toEqual(
+      expectedPlantStorageContent
+    );
+  };
+
+  describe("fetchApp", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let appId: string;
+    let appAssetId: string;
+    let getAllFilesThrows: boolean;
+    let fetchAppBefore: boolean;
+
+    beforeEach(async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      appAssetId = "ten-testTenant2-sub-subtenant2-id";
+      getAllFilesThrows = false;
+      fetchAppBefore = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        let assetId = await mindSphereAppsManager.getAppAssetIdIfExists(appId);
+        await mindSphereAppsManager.fetchApp(appId, assetId!);
+      }
+
+      if (getAllFilesThrows) {
+        MindSphereFileService.getInstance().getAllFileNamesFromAsset = jest.fn(
+          async () => {
+            throw new Error("test get all files error");
+          }
+        );
+      }
+
+      return mindSphereAppsManager.fetchApp(appId, appAssetId);
+    };
+
+    it("should fetch app - create it, initialize it, assign it to the apps and then return it - if app id contains subtenant", async () => {
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        appAssetId,
+        "testTenant2",
+        "subtenant2"
+      );
+    });
+
+    it("should fetch app - create it, initialize it, assign it to the apps and then return it - if app is not a subtenant app", async () => {
+      appId = "ten-testTenant2";
+      appAssetId = "ten-testTenant2-id";
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(appId, appAssetId, "testTenant2", null);
+    });
+
+    it("should throw and not assigned app - if initialziation of the app throws", async () => {
+      getAllFilesThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get all files error",
+      });
+
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no tenant id in app id", async () => {
+      appId = "testTenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "No tenant found!",
+      });
+
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no asset of given id", async () => {
+      appAssetId = "ten-testTenant2-id-fake";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Asset id not found in given tenant",
+      });
+
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should refetch app - create it, initialize it, assign it to the apps and then return it - if app is a subtenant app and already exists", async () => {
+      fetchAppBefore = true;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        appAssetId,
+        "testTenant2",
+        "subtenant2"
+      );
+
+      //App should have been fetched twice
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(6);
+      expect(getFileContent).toHaveBeenCalledTimes(16);
+    });
+
+    it("should refetch app - create it, initialize it, assign it to the apps and then return it - if app is a not subtenant app and already exists", async () => {
+      fetchAppBefore = true;
+      appId = "ten-testTenant2";
+      appAssetId = "ten-testTenant2-id";
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(appId, appAssetId, "testTenant2", null);
+
+      //App should have been fetched twice
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(6);
+      expect(getFileContent).toHaveBeenCalledTimes(16);
+    });
+  });
+
+  describe("fetchAppFromAsset", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let assetData: MindSphereAsset;
+    let getAllFilesThrows: boolean;
+    let fetchAppBefore: boolean;
+
+    beforeEach(async () => {
+      assetData = {
+        name: "ten-testTenant2-sub-subtenant2",
+        parentId: "testAppContainerAssetId",
+        typeId: "testAppAssetType",
+        assetId: "ten-testTenant2-sub-subtenant2-id",
+      };
+      getAllFilesThrows = false;
+      fetchAppBefore = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        await mindSphereAppsManager.fetchApp(
+          assetData.name,
+          assetData.assetId!
+        );
+      }
+
+      if (getAllFilesThrows) {
+        MindSphereFileService.getInstance().getAllFileNamesFromAsset = jest.fn(
+          async () => {
+            throw new Error("test get all files error");
+          }
+        );
+      }
+
+      return mindSphereAppsManager.fetchAppFromAsset(assetData);
+    };
+
+    it("should fetch app - create it, initialize it, assign it to the apps and then return it - if app id contains subtenant", async () => {
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[assetData.name!]);
+
+      await testIfAppWasFetchedProperly(
+        assetData.name,
+        assetData.assetId!,
+        "testTenant2",
+        "subtenant2"
+      );
+    });
+
+    it("should fetch app - create it, initialize it, assign it to the apps and then return it - if app is not a subtenant app", async () => {
+      assetData.name = "ten-testTenant2";
+      assetData.assetId = "ten-testTenant2-id";
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[assetData.name!]);
+
+      await testIfAppWasFetchedProperly(
+        assetData.name,
+        assetData.assetId!,
+        "testTenant2",
+        null
+      );
+    });
+
+    it("should throw and not assigned app - if initialziation of the app throws", async () => {
+      getAllFilesThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get all files error",
+      });
+
+      expect(mindSphereAppsManager.Apps[assetData.name!]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no tenant id in app id", async () => {
+      assetData.name! = "testTenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "No tenant found!",
+      });
+
+      expect(mindSphereAppsManager.Apps[assetData.name!]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no asset of given id", async () => {
+      assetData.assetId! = "ten-testTenant2-id-fake";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Asset id not found in given tenant",
+      });
+
+      expect(mindSphereAppsManager.Apps[assetData.name!]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no asset id in assets payload", async () => {
+      delete assetData.assetId;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "assets id not defined!",
+      });
+
+      expect(mindSphereAppsManager.Apps[assetData.name!]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned app - if there is no asset name in assets payload", async () => {
+      delete (assetData as any).name;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "assets name not defined!",
+      });
+    });
+
+    it("should refetch app - create it, initialize it, assign it to the apps and then return it - if app is a subtenant app and already exists", async () => {
+      fetchAppBefore = true;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[assetData.name]);
+
+      await testIfAppWasFetchedProperly(
+        assetData.name,
+        assetData.assetId!,
+        "testTenant2",
+        "subtenant2"
+      );
+
+      //App should have been fetched twice
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(6);
+      expect(getFileContent).toHaveBeenCalledTimes(16);
+    });
+
+    it("should refetch app - create it, initialize it, assign it to the apps and then return it - if app is a not subtenant app and already exists", async () => {
+      fetchAppBefore = true;
+      assetData.name = "ten-testTenant2";
+      assetData.assetId = "ten-testTenant2-id";
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[assetData.name]);
+
+      await testIfAppWasFetchedProperly(
+        assetData.name,
+        assetData.assetId!,
+        "testTenant2",
+        null
+      );
+
+      //App should have been fetched twice
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(6);
+      expect(getFileContent).toHaveBeenCalledTimes(16);
+    });
+  });
+
+  describe("getApp", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let fetchAppBefore: boolean;
+    let appId: string;
+    let getAllFilesThrows: boolean;
+    let getAssetsThrows: boolean;
+
+    beforeEach(async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      fetchAppBefore = false;
+      getAllFilesThrows = false;
+      getAssetsThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+      if (fetchAppBefore) {
+        let assetId = await mindSphereAppsManager.getAppAssetIdIfExists(appId);
+        await mindSphereAppsManager.fetchApp(appId, assetId!);
+      }
+
+      if (getAllFilesThrows) {
+        MindSphereFileService.getInstance().getAllFileNamesFromAsset = jest.fn(
+          async () => {
+            throw new Error("test get all files error");
+          }
+        );
+      }
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("test get assets error");
+        });
+      }
+
+      return mindSphereAppsManager.getApp(appId);
+    };
+
+    it("should get apps asset id to fetch it first - if app is a subtenant app", async () => {
+      await exec();
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should get apps asset id to fetch it first - if app is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      await exec();
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should throw and not fetch the app - if app does not exist - if app is a subtenant app", async () => {
+      delete assetServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-id"
+      ];
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2-sub-subtenant2 does not exist!",
+      });
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Any mindsphere API should not have been called except getAssets
+      expect(getAllFileNamesFromAsset).not.toHaveBeenCalled();
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //App should not exist in manager
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not fetch the app - if app does not exist - if app is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      delete assetServiceContent["hostTenant"]["ten-testTenant2-id"];
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2 does not exist!",
+      });
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Any mindsphere API should not have been called except getAssets
+      expect(getAllFileNamesFromAsset).not.toHaveBeenCalled();
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //App should not exist in manager
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should fetch the app, and return it - if it has not been fetched before - if app is a subtenant app", async () => {
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        result.AssetId,
+        "testTenant2",
+        "subtenant2"
+      );
+    });
+
+    it("should fetch the app, and return it - if it has not been fetched before - if app is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        result.AssetId,
+        "testTenant2",
+        null
+      );
+    });
+
+    it("should not fetch the app again, but only return it - if it has already been fetched", async () => {
+      fetchAppBefore = true;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        result.AssetId,
+        "testTenant2",
+        "subtenant2"
+      );
+
+      //App should have been fetched only one time
+      //Checking calls for getting file names for every storage - exactly three times, for one app and three storages - app, user and plants
+      expect(getAllFileNamesFromAsset.mock.calls.length).toEqual(3);
+    });
+
+    it("should not fetch the app again, but only return it - if it has already been fetched, app is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      fetchAppBefore = true;
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+
+      await testIfAppWasFetchedProperly(
+        appId,
+        result.AssetId,
+        "testTenant2",
+        null
+      );
+
+      //App should have been fetched only one time
+      //Checking calls for getting file names for every storage - exactly three times, for one app and three storages - app, user and plants
+      expect(getAllFileNamesFromAsset.mock.calls.length).toEqual(3);
+    });
+
+    it("should throw and not assigned the app - if get assets throws", async () => {
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get assets error",
+      });
+
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+
+      //Any mindsphere API should not have been called except getAssets
+      expect(getAllFileNamesFromAsset).not.toHaveBeenCalled();
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //App should not exist in manager
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not assigned the app - if initialziation of the app throws", async () => {
+      getAllFilesThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get all files error",
+      });
+
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+  });
+
+  describe("getAllAppAssets", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let fetchAppBefore: boolean;
+    let getAssetsThrows: boolean;
+
+    beforeEach(async () => {
+      fetchAppBefore = false;
+      getAssetsThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("test get assets error");
+        });
+      }
+
+      return mindSphereAppsManager.getAllAppAssets();
+    };
+
+    it("should get and return all apps assets", async () => {
+      let result = await exec();
+
+      //All assets with proper type and proper parent id should have been returned
+      let expectedResult = Object.values(
+        assetServiceContent["hostTenant"]
+      ).filter(
+        (asset) =>
+          asset.typeId === "testAppAssetType" &&
+          asset.parentId === "testAppContainerAssetId"
+      );
+      expect(result).toEqual(expectedResult);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should get and return all apps assets - if there are more assets with different parentId or different asset type", async () => {
+      let result = await exec();
+
+      //Asset with invalid parent id
+      assetServiceContent["hostTenant"]["fakeAsset1Id"] = {
+        name: "fakeAsset1",
+        parentId: "fakeParentId",
+        typeId: "testAppAssetType",
+        assetId: "fakeAsset1Id",
+      };
+
+      //Asset with invalid type id
+      assetServiceContent["hostTenant"]["fakeAsset2Id"] = {
+        name: "fakeAsset2",
+        parentId: "testAppContainerAssetId",
+        typeId: "fakeAppAssetType",
+        assetId: "fakeAsset2Id",
+      };
+
+      //Asset with invalid type id and parent id
+      assetServiceContent["hostTenant"]["fakeAsset3Id"] = {
+        name: "fakeAsset3",
+        parentId: "fakeParentId",
+        typeId: "fakeAppAssetType",
+        assetId: "fakeAsset3Id",
+      };
+
+      //All assets with proper type and proper parent id should have been returned
+      let expectedResult = Object.values(
+        assetServiceContent["hostTenant"]
+      ).filter(
+        (asset) =>
+          asset.typeId === "testAppAssetType" &&
+          asset.parentId === "testAppContainerAssetId"
+      );
+      expect(result).toEqual(expectedResult);
+
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+    });
+
+    it("should not fetch any app", async () => {
+      await exec();
+
+      expect(mindSphereAppsManager.Apps).toEqual({});
+    });
+
+    it("should throw if getAssets throws", async () => {
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get assets error",
+      });
+
+      expect(mindSphereAppsManager.Apps).toEqual({});
+    });
+  });
+
+  describe("deregisterApp", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let fetchAppBefore: boolean;
+    let appId: string;
+    let deleteAssetThrows: boolean;
+    let getAssetsThrows: boolean;
+
+    beforeEach(async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      fetchAppBefore = true;
+      deleteAssetThrows = false;
+      getAssetsThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        let assetId = await mindSphereAppsManager.getAppAssetIdIfExists(appId);
+        await mindSphereAppsManager.fetchApp(appId, assetId!);
+      }
+
+      if (deleteAssetThrows) {
+        MindSphereAssetService.getInstance().deleteAsset = jest.fn(async () => {
+          throw new Error("test delete asset error");
+        });
+      }
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("test get assets error");
+        });
+      }
+
+      return mindSphereAppsManager.deregisterApp(appId);
+    };
+
+    it("should delete app - if app has been fetched before and is a subtenant app", async () => {
+      await exec();
+
+      //First - there should be a check if asset exists
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Second - asset should have been deleted
+      expect(deleteAsset).toHaveBeenCalledTimes(1);
+      expect(deleteAsset.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-id",
+      ]);
+
+      //Application should not be present in manager
+      expect(
+        mindSphereAppsManager.Apps["ten-testTenant2-sub-subtenant2"]
+      ).not.toBeDefined();
+    });
+
+    it("should delete app - if app has not been fetched before and is a subtenant app", async () => {
+      fetchAppBefore = false;
+
+      await exec();
+
+      //First - there should be a check if asset exists
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Second - asset should have been deleted
+      expect(deleteAsset).toHaveBeenCalledTimes(1);
+      expect(deleteAsset.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-id",
+      ]);
+
+      //Application should not be present in manager
+      expect(
+        mindSphereAppsManager.Apps["ten-testTenant2-sub-subtenant2"]
+      ).not.toBeDefined();
+    });
+
+    it("should delete app - if app has been fetched before and is a tenant app", async () => {
+      appId = "ten-testTenant2";
+
+      await exec();
+
+      //First - there should be a check if asset exists
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Second - asset should have been deleted
+      expect(deleteAsset).toHaveBeenCalledTimes(1);
+      expect(deleteAsset.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-id",
+      ]);
+
+      //Application should not be present in manager
+      expect(mindSphereAppsManager.Apps["ten-testTenant2"]).not.toBeDefined();
+    });
+
+    it("should delete app - if app has not been fetched before and is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      fetchAppBefore = false;
+
+      await exec();
+
+      //First - there should be a check if asset exists
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Second - asset should have been deleted
+      expect(deleteAsset).toHaveBeenCalledTimes(1);
+      expect(deleteAsset.mock.calls[0]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-id",
+      ]);
+
+      //Application should not be present in manager
+      expect(mindSphereAppsManager.Apps["ten-testTenant2"]).not.toBeDefined();
+    });
+
+    it("should throw and not delete the app - if get assets throws", async () => {
+      //app cannot be fetched - becouse the the AppExists will return true if it exists in payload
+      fetchAppBefore = false;
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get assets error",
+      });
+
+      //Second - asset should have not have been called
+      expect(deleteAsset).not.toHaveBeenCalled();
+    });
+
+    it("should throw and not delete the app - if delete asset throws", async () => {
+      deleteAssetThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test delete asset error",
+      });
+
+      //Application should be present in manager
+      expect(
+        mindSphereAppsManager.Apps["ten-testTenant2-sub-subtenant2"]
+      ).toBeDefined();
+      expect(
+        mindSphereAppsManager.Apps["ten-testTenant2-sub-subtenant2"].AppId
+      ).toEqual(appId);
+    });
+
+    it("should throw and not delete the app - if app does not exist", async () => {
+      appId = "ten-testTenant2-sub-subtenant3";
+      //Cannot fetch app that is not present - with invalid appId
+      fetchAppBefore = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: `App ten-testTenant2-sub-subtenant3 does not exist!`,
+      });
+
+      //Second - asset should have not have been called
+      expect(deleteAsset).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("registerApp", () => {
+    let mindSphereAppsManager: MindSphereAppsManager;
+    let appId: string;
+    let createAssetThrows: boolean;
+    let getAssetsThrows: boolean;
+    let fetchAppBefore: boolean;
+    let appInstanceBefore: MindSphereApp;
+    let getAllFilesThrows: boolean;
+
+    beforeEach(async () => {
+      appId = "ten-testTenant2-sub-subtenant3";
+      createAssetThrows = false;
+      getAssetsThrows = false;
+      fetchAppBefore = false;
+      getAllFilesThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+      mindSphereAppsManager = MindSphereAppsManager.getInstance();
+
+      if (fetchAppBefore) {
+        let assetId = await mindSphereAppsManager.getAppAssetIdIfExists(appId);
+        appInstanceBefore = await mindSphereAppsManager.fetchApp(
+          appId,
+          assetId!
+        );
+      }
+
+      if (createAssetThrows) {
+        MindSphereAssetService.getInstance().createAsset = jest.fn(async () => {
+          throw new Error("test create asset error");
+        });
+      }
+
+      if (getAssetsThrows) {
+        MindSphereAssetService.getInstance().getAssets = jest.fn(async () => {
+          throw new Error("test get assets error");
+        });
+      }
+
+      if (getAllFilesThrows) {
+        MindSphereFileService.getInstance().getAllFileNamesFromAsset = jest.fn(
+          async () => {
+            throw new Error("test get all files error");
+          }
+        );
+      }
+
+      return mindSphereAppsManager.registerNewApp(appId);
+    };
+
+    it("should create, register and return new app - if it is a subtenant app", async () => {
+      //It is not neccessary to create new user groups for app - tenant already exists with valid user groups
+      let result = await exec();
+
+      //CHECKING RESULT
+
+      //Checking apps properties
+      expect(result.AssetId).toBeDefined();
+      expect(result.AppId).toEqual(appId);
+      expect(result.TenantName).toEqual("testTenant2");
+      expect(result.SubtenantId).toEqual("subtenant3");
+      expect(result.StorageTenant).toEqual("hostTenant");
+      testPrivateProperty(result, "_initialized", true);
+
+      //Checking apps user groups
+      let standardUserGroupPayload =
+        userGroupServiceContent["testTenant2"]["standardUserGroup"];
+      expect(result.StandardUserGroup).toEqual(standardUserGroupPayload);
+
+      let subtenantUserGroupPayload =
+        userGroupServiceContent["testTenant2"]["subtenantUserGroup"];
+      expect(result.SubtenantUserGroup).toEqual(subtenantUserGroupPayload);
+
+      let globalAdminGroupPayload =
+        userGroupServiceContent["testTenant2"]["globalAdminGroup"];
+      expect(result.GlobalAdminGroup).toEqual(globalAdminGroupPayload);
+
+      let globalUserGroupPayload =
+        userGroupServiceContent["testTenant2"]["globalUserGroup"];
+      expect(result.GlobalUserGroup).toEqual(globalUserGroupPayload);
+
+      let localAdminGroupPayload =
+        userGroupServiceContent["testTenant2"]["localAdminGroup"];
+      expect(result.LocalAdminGroup).toEqual(localAdminGroupPayload);
+
+      let localUserGroupPayload =
+        userGroupServiceContent["testTenant2"]["localUserGroup"];
+      expect(result.LocalUserGroup).toEqual(localUserGroupPayload);
+
+      //Checking calls for getting file names for every storage - at least 3 times
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(3);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "app.config.json",
+      ]);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "plant.config.json",
+      ]);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "user.config.json",
+      ]);
+
+      //Asset is empty - get file content should not have been called
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //Checking app storage data
+      expect((result as any)._appStorage._cacheData).toEqual({});
+
+      //Checking user storage data
+      expect((result as any)._userStorage._cacheData).toEqual({});
+
+      //Checking plant storage data
+      expect((result as any)._plantStorage._cacheData).toEqual({});
+
+      //CHECKING APP MANAGER
+
+      //Application should be present in manager
+      expect(mindSphereAppsManager.Apps[appId]).toBeDefined();
+
+      //Result should be equal to the app in mindSphereAppsManager
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+    });
+
+    it("should create, register and return new app - if it is a tenant app", async () => {
+      //Tenant has not existed before so it must contain app users groups - creating it in userGroupsContent
+
+      userGroupServiceContent["testTenant4"] = {
+        globalAdminGroup: {
+          id: "globalAdminGroup",
+          description: "globalAdminGroupDescription",
+          displayName: "globalAdminGroupDisplayName",
+          members: [],
+        },
+        globalUserGroup: {
+          id: "globalUserGroup",
+          description: "globalUserGroupDescription",
+          displayName: "globalUserGroupDisplayName",
+          members: [],
+        },
+        localUserGroup: {
+          id: "localUserGroup",
+          description: "localUserGroupDescription",
+          displayName: "localUserGroupDisplayName",
+          members: [],
+        },
+        localAdminGroup: {
+          id: "localAdminGroup",
+          description: "localAdminGroupDescription",
+          displayName: "localAdminGroupDisplayName",
+          members: [],
+        },
+        standardUserGroup: {
+          id: "standardUserGroup",
+          description: "standardUserGroupDescription",
+          displayName: "standardUserGroupDisplayName",
+          members: [],
+        },
+        subtenantUserGroup: {
+          id: "subtenantUserGroup",
+          description: "subtenantUserGroupDescription",
+          displayName: "subtenantUserGroupDisplayName",
+          members: [],
+        },
+      };
+
+      appId = "ten-testTenant4";
+
+      let result = await exec();
+
+      //CHECKING RESULT
+
+      //Checking apps properties
+      expect(result.AssetId).toBeDefined();
+      expect(result.AppId).toEqual(appId);
+      expect(result.TenantName).toEqual("testTenant4");
+      expect(result.SubtenantId).toEqual(null);
+      expect(result.StorageTenant).toEqual("hostTenant");
+      testPrivateProperty(result, "_initialized", true);
+
+      //Checking apps user groups
+      let standardUserGroupPayload =
+        userGroupServiceContent["testTenant4"]["standardUserGroup"];
+      expect(result.StandardUserGroup).toEqual(standardUserGroupPayload);
+
+      let subtenantUserGroupPayload =
+        userGroupServiceContent["testTenant4"]["subtenantUserGroup"];
+      expect(result.SubtenantUserGroup).toEqual(subtenantUserGroupPayload);
+
+      let globalAdminGroupPayload =
+        userGroupServiceContent["testTenant4"]["globalAdminGroup"];
+      expect(result.GlobalAdminGroup).toEqual(globalAdminGroupPayload);
+
+      let globalUserGroupPayload =
+        userGroupServiceContent["testTenant4"]["globalUserGroup"];
+      expect(result.GlobalUserGroup).toEqual(globalUserGroupPayload);
+
+      let localAdminGroupPayload =
+        userGroupServiceContent["testTenant4"]["localAdminGroup"];
+      expect(result.LocalAdminGroup).toEqual(localAdminGroupPayload);
+
+      let localUserGroupPayload =
+        userGroupServiceContent["testTenant4"]["localUserGroup"];
+      expect(result.LocalUserGroup).toEqual(localUserGroupPayload);
+
+      //Checking calls for getting file names for every storage - at least 3 times
+      expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(3);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "app.config.json",
+      ]);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "plant.config.json",
+      ]);
+      expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
+        "hostTenant",
+        result.AssetId,
+        "user.config.json",
+      ]);
+
+      //Asset is empty - get file content should not have been called
+      expect(getFileContent).not.toHaveBeenCalled();
+
+      //Checking app storage data
+      expect((result as any)._appStorage._cacheData).toEqual({});
+
+      //Checking user storage data
+      expect((result as any)._userStorage._cacheData).toEqual({});
+
+      //Checking plant storage data
+      expect((result as any)._plantStorage._cacheData).toEqual({});
+
+      //CHECKING APP MANAGER
+
+      //Application should be present in manager
+      expect(mindSphereAppsManager.Apps[appId]).toBeDefined();
+
+      //Result should be equal to the app in mindSphereAppsManager
+      expect(result).toEqual(mindSphereAppsManager.Apps[appId]);
+    });
+
+    it("should throw and not create new asset - if app already exists but is not fetched - if it is a subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2-sub-subtenant2 already exists!",
+      });
+
+      expect(createAsset).not.toHaveBeenCalled();
+
+      //Application should not have been fetched or created
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not create new asset - if app already exists but is not fetched - if it is a tenant app", async () => {
+      appId = "ten-testTenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2 already exists!",
+      });
+
+      expect(createAsset).not.toHaveBeenCalled();
+
+      //Application should not have been fetched or created
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not create new asset - if app already exists but is not fetched - if it is a subtenant app", async () => {
+      fetchAppBefore = true;
+      appId = "ten-testTenant2-sub-subtenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2-sub-subtenant2 already exists!",
+      });
+
+      expect(createAsset).not.toHaveBeenCalled();
+
+      //Checking if app instance was not modified
+      expect(mindSphereAppsManager.Apps[appId] === appInstanceBefore).toEqual(
+        true
+      );
+    });
+
+    it("should throw and not create new asset - if app already exists but is not fetched - if it is a tenant app", async () => {
+      fetchAppBefore = true;
+      appId = "ten-testTenant2";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "App ten-testTenant2 already exists!",
+      });
+
+      expect(createAsset).not.toHaveBeenCalled();
+
+      //Checking if app instance was not modified
+      expect(mindSphereAppsManager.Apps[appId] === appInstanceBefore).toEqual(
+        true
+      );
+    });
+
+    it("should throw and not create new app - if create asset throws", async () => {
+      createAssetThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test create asset error",
+      });
+
+      //Application should not have been fetched or created
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not create new app - if getAssetsThrows throws", async () => {
+      getAssetsThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get assets error",
+      });
+
+      //Application should not have been fetched or created
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
+    });
+
+    it("should throw and not create new app - if app throws during initialziation", async () => {
+      getAllFilesThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "test get all files error",
+      });
+
+      //Application should not have been fetched or created
+      expect(mindSphereAppsManager.Apps[appId]).not.toBeDefined();
     });
   });
 });

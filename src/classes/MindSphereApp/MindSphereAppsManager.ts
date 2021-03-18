@@ -100,7 +100,12 @@ export class MindSphereAppsManager {
   }
 
   public async getApp(appId: string): Promise<MindSphereApp> {
-    if (this._apps[appId] == null) await this.fetchApp(appId);
+    if (this._apps[appId] == null) {
+      let appAssetId = await this.getAppAssetIdIfExists(appId);
+      if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
+
+      await this.fetchApp(appId, appAssetId);
+    }
     return this._apps[appId];
   }
 
@@ -124,7 +129,7 @@ export class MindSphereAppsManager {
     return assetId != null;
   }
 
-  public async createNewApp(appId: string): Promise<MindSphereApp> {
+  public async registerNewApp(appId: string): Promise<MindSphereApp> {
     let appExists = await this.checkIfAppExists(appId);
     if (appExists) throw new Error(`App ${appId} already exists!`);
 
@@ -154,7 +159,7 @@ export class MindSphereAppsManager {
     return newApp;
   }
 
-  public async deleteApp(appId: string) {
+  public async deregisterApp(appId: string) {
     let appAssetId = await this.getAppAssetIdIfExists(appId);
     if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
 
@@ -162,12 +167,14 @@ export class MindSphereAppsManager {
       this._storageTenant,
       appAssetId!
     );
+
+    if (this._apps[appId] != null) delete this._apps[appId];
   }
 
-  public async fetchApp(appId: string): Promise<MindSphereApp> {
-    let appAssetId = await this.getAppAssetIdIfExists(appId);
-    if (appAssetId == null) throw new Error(`App ${appId} does not exist!`);
-
+  public async fetchApp(
+    appId: string,
+    appAssetId: string
+  ): Promise<MindSphereApp> {
     let appTenants = MindSphereAppsManager.splitAppId(appId);
 
     let newApp = new MindSphereApp(
@@ -186,19 +193,10 @@ export class MindSphereAppsManager {
   public async fetchAppFromAsset(
     asset: MindSphereAsset
   ): Promise<MindSphereApp> {
-    let appTenants = MindSphereAppsManager.splitAppId(asset.name);
+    if (asset.assetId == null) throw new Error("assets id not defined!");
+    if (asset.name == null) throw new Error("assets name not defined!");
 
-    let newApp = new MindSphereApp(
-      this._storageTenant,
-      asset.name,
-      asset.assetId!,
-      appTenants.tenantName,
-      appTenants.subtenantId
-    );
-    await newApp.init();
-    this._apps[asset.name] = newApp;
-
-    return newApp;
+    return this.fetchApp(asset.name, asset.assetId);
   }
 
   public async getAllAppAssets(): Promise<MindSphereAsset[]> {

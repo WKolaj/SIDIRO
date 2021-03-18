@@ -12,6 +12,21 @@ export type MockedFileServiceContent = {
 let mindSphereContent: MockedFileServiceContent = {};
 let serviceAvailable: boolean = true;
 
+/**
+ * @description Special method for adding assets to service - eg. for mocked asset service
+ */
+export function __addEmptyAsset(tenantName: string, assetId: string) {
+  //Avoiding throwing when mock filed service is not used
+  if (mindSphereContent == null || mindSphereContent[tenantName] == null)
+    return;
+
+  //Not adding new empty asset if it already exists
+  if (mindSphereContent[tenantName][assetId] != null) return;
+
+  //Adding new asset
+  mindSphereContent[tenantName][assetId] = {};
+}
+
 export function setFileServiceAvailable(available: boolean) {
   serviceAvailable = available;
 }
@@ -50,8 +65,9 @@ export const getAllFileNamesFromAsset = jest.fn(
     if (!serviceAvailable) throw new Error("Service not available!");
     if (mindSphereContent[tenantName] == null)
       throw new Error("Tenant of given name not found");
-    if (mindSphereContent[tenantName][assetId] == null)
+    if (mindSphereContent[tenantName][assetId] == null) {
       throw new Error("Asset id not found in given tenant");
+    }
 
     let allFileNames = Object.keys(mindSphereContent[tenantName][assetId]);
     let filteredNames = allFileNames;

@@ -3,6 +3,7 @@ import {
   MindSphereAssetService,
 } from "../../classes/MindSphereService/MindSphereAssetService";
 import { cloneObject, generateRandomString } from "../../utilities/utilities";
+import { __addEmptyAsset } from "./mockMsFileService";
 
 export type MockedAssetServiceContent = {
   [tenantName: string]: {
@@ -94,6 +95,8 @@ export const createAsset = jest.fn(
     payloadToSet.assetId = generateRandomString(16);
 
     mindSphereContent[tenantName][payloadToSet.assetId] = payloadToSet;
+
+    __addEmptyAsset(tenantName, payloadToSet.assetId!);
 
     return cloneObject(payloadToSet) as MindSphereAsset;
   }
