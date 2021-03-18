@@ -9,7 +9,7 @@
     "hostTenant": "testHostTenant"
   },
   "appSettings": {
-    "appContainerTenant": "testAppContainerTenant",
+    "appContainerTenant": "hostTenant",
     "appContainerAssetId": "testAppContainerAssetId",
     "appContainerAssetType": "testAppContainerAssetType",
     "appAssetType": "testAppAssetType"

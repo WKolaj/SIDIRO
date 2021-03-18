@@ -12,7 +12,7 @@ export type MockedFileServiceContent = {
 let mindSphereContent: MockedFileServiceContent = {};
 let serviceAvailable: boolean = true;
 
-export function setServiceAvailable(available: boolean) {
+export function setFileServiceAvailable(available: boolean) {
   serviceAvailable = available;
 }
 

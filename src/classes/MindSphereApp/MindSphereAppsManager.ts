@@ -35,6 +35,7 @@ export class MindSphereAppsManager {
 
     let idToReturn = `ten-${tenantId}`;
     if (subtenantId != null) {
+      if (subtenantId.length < 1) return null;
       idToReturn += `-sub-${subtenantId}`;
     }
     return idToReturn;
@@ -44,8 +45,10 @@ export class MindSphereAppsManager {
     appId: string
   ): {
     tenantName: string;
-    subtenantName: string | null;
+    subtenantId: string | null;
   } {
+    if (!appId.includes("ten-")) throw new Error("No tenant found!");
+
     if (appId.includes("-sub-")) {
       //Version with subtenant
 
@@ -54,19 +57,24 @@ export class MindSphereAppsManager {
         throw new Error(`Invalid appId format: ${appId}`);
 
       let tenantName = splittedApp[0].replace("ten-", "");
-      let subtenantName = splittedApp[1];
+      if (tenantName.length < 1) throw new Error(`invalid tenant name`);
+
+      let subtenantId: string | null = splittedApp[1];
+
+      if (subtenantId.length < 1) subtenantId = null;
 
       return {
         tenantName: tenantName,
-        subtenantName: subtenantName,
+        subtenantId: subtenantId,
       };
     } else {
       //Version without subtenant
       let tenantName = appId.replace("ten-", "");
 
+      if (tenantName.length < 1) throw new Error(`invalid tenant name`);
       return {
         tenantName: tenantName,
-        subtenantName: null,
+        subtenantId: null,
       };
     }
   }
@@ -136,7 +144,7 @@ export class MindSphereAppsManager {
       appId,
       assetForApp.assetId!,
       appTenants.tenantName,
-      appTenants.subtenantName
+      appTenants.subtenantId
     );
 
     await newApp.init();
@@ -167,7 +175,7 @@ export class MindSphereAppsManager {
       appId,
       appAssetId,
       appTenants.tenantName,
-      appTenants.subtenantName
+      appTenants.subtenantId
     );
     await newApp.init();
     this._apps[appId] = newApp;
@@ -185,7 +193,7 @@ export class MindSphereAppsManager {
       asset.name,
       asset.assetId!,
       appTenants.tenantName,
-      appTenants.subtenantName
+      appTenants.subtenantId
     );
     await newApp.init();
     this._apps[asset.name] = newApp;

@@ -24,7 +24,7 @@ import {
   getAllFileNamesFromAsset,
   getFileContent,
   setFileContent,
-  setServiceAvailable,
+  setFileServiceAvailable,
 } from "../../../utilities/mockMsFileService";
 import {
   MockedUserGroupServiceContent,
@@ -925,7 +925,7 @@ describe("MindSphereApp", () => {
 
     fileServiceContent = {
       hostTenant: {
-        "ten-testTenant1": {
+        "ten-testTenant1-id": {
           "main.app.config.json": {
             data: {
               testApp1Data: "testApp1DataValue",
@@ -1098,7 +1098,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "ten-testTenant1-sub-subtenant1": {
+        "ten-testTenant1-sub-subtenant1-id": {
           "main.app.config.json": {
             data: {
               testApp2Data: "testApp2DataValue",
@@ -1271,7 +1271,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "ten-testTenant2": {
+        "ten-testTenant2-id": {
           "main.app.config.json": {
             data: {
               testApp3Data: "testApp3DataValue",
@@ -1444,7 +1444,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "ten-testTenant2-sub-subtenant2": {
+        "ten-testTenant2-sub-subtenant2-id": {
           "main.app.config.json": {
             data: {
               testApp4Data: "testApp4DataValue",
@@ -1617,7 +1617,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "ten-testTenant3": {
+        "ten-testTenant3-id": {
           "main.app.config.json": {
             data: {
               testApp5Data: "testApp5DataValue",
@@ -1790,7 +1790,7 @@ describe("MindSphereApp", () => {
             },
           },
         },
-        "ten-testTenant3-sub-subtenant3": {
+        "ten-testTenant3-sub-subtenant3-id": {
           "main.app.config.json": {
             data: {
               testApp6Data: "testApp6DataValue",
@@ -3089,7 +3089,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
 
@@ -3268,19 +3268,19 @@ describe("MindSphereApp", () => {
 
       expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "app.config.json",
       ]);
 
       expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
       expect(getAllFileNamesFromAsset.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -3289,42 +3289,42 @@ describe("MindSphereApp", () => {
 
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "main.app.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalAdmin22.user.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalUser22.user.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testLocalAdmin22.user.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testLocalUser22.user.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant4.plant.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant5.plant.config.json",
       ]);
       expect(getFileContent.mock.calls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant6.plant.config.json",
       ]);
 
@@ -3657,7 +3657,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -3683,7 +3683,7 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newAppData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2-id"][
           "main.app.config.json"
         ] = newAppData;
         await mockMsFileService(fileServiceContent);
@@ -3711,7 +3711,7 @@ describe("MindSphereApp", () => {
       expect(getFileContent).toHaveBeenCalledTimes(9);
       expect(getFileContent.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "main.app.config.json",
       ]);
 
@@ -3794,7 +3794,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -3819,7 +3819,7 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newAppData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
+        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2-id"][
           "main.app.config.json"
         ] = newAppData;
         await mockMsFileService(fileServiceContent);
@@ -3901,7 +3901,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -3943,7 +3943,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent).toHaveBeenCalledTimes(1);
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "main.app.config.json",
         newAppData,
       ]);
@@ -4014,7 +4014,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -4051,7 +4051,7 @@ describe("MindSphereApp", () => {
       expect(deleteFile).toHaveBeenCalledTimes(1);
       expect(deleteFile.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "main.app.config.json",
       ]);
 
@@ -4124,7 +4124,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -4300,23 +4300,25 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newUserData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testPlant4.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant4.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant4.plant.config.json"],
           "testPlant5.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant5.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant5.plant.config.json"],
           "testPlant6.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant6.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant6.plant.config.json"],
           ...newUserData,
         };
         await mockMsFileService(fileServiceContent);
@@ -4344,7 +4346,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -4362,37 +4364,37 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser6.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalAdmin22.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalUser22.user.config.json",
       ]);
 
@@ -4460,7 +4462,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -4560,23 +4562,25 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newUserData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testPlant4.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant4.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant4.plant.config.json"],
           "testPlant5.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant5.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant5.plant.config.json"],
           "testPlant6.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant6.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant6.plant.config.json"],
           ...newUserData,
         };
         await mockMsFileService(fileServiceContent);
@@ -4598,9 +4602,9 @@ describe("MindSphereApp", () => {
       let result = await exec();
 
       let expectedResult =
-        oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-          "testGlobalUser22.user.config.json"
-        ];
+        oldFileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ]["testGlobalUser22.user.config.json"];
 
       expect(result).toEqual(expectedResult);
 
@@ -4610,21 +4614,21 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -4647,28 +4651,28 @@ describe("MindSphereApp", () => {
       expect(getFileContent).toHaveBeenCalledTimes(9);
       expect(getFileContent.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "newFakeUser.user.config.json",
       ]);
 
       //Cache should have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         newFakeUser: newUserData["newFakeUser.user.config.json"],
       };
 
@@ -4690,21 +4694,21 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -4723,7 +4727,7 @@ describe("MindSphereApp", () => {
       expect(checkIfFileExists).toHaveBeenCalledTimes(9);
       expect(checkIfFileExists.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "invalidFakeUser.user.config.json",
       ]);
       //8 times during initialization, 0 after - using check to check if file exists and dont call it
@@ -4732,21 +4736,21 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -4782,7 +4786,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -4840,7 +4844,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent).toHaveBeenCalledTimes(1);
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser5.user.config.json",
         newUserData,
       ]);
@@ -4848,21 +4852,21 @@ describe("MindSphereApp", () => {
       //Cache should have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         [userId]: newUserData,
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -4884,7 +4888,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent).toHaveBeenCalledTimes(1);
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalUser22.user.config.json",
         newUserData,
       ]);
@@ -4892,18 +4896,18 @@ describe("MindSphereApp", () => {
       //Cache should have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22: newUserData,
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -4927,21 +4931,21 @@ describe("MindSphereApp", () => {
       //Cache should not have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -4962,21 +4966,21 @@ describe("MindSphereApp", () => {
       //Cache should not have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5013,7 +5017,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -5050,24 +5054,24 @@ describe("MindSphereApp", () => {
       expect(deleteFile).toHaveBeenCalledTimes(1);
       expect(deleteFile.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalUser22.user.config.json",
       ]);
 
       //Cache should have changed
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5086,7 +5090,7 @@ describe("MindSphereApp", () => {
       expect(checkIfFileExists).toHaveBeenCalledTimes(9);
       expect(checkIfFileExists.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "newFakeUser.user.config.json",
       ]);
       expect(deleteFile).not.toHaveBeenCalled();
@@ -5094,21 +5098,21 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5135,28 +5139,28 @@ describe("MindSphereApp", () => {
           .calls[0]
       ).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testGlobalUser22.user.config.json",
       ]);
 
       //Cache should stay without changes
       let expectedCache = {
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5196,7 +5200,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -5374,23 +5378,25 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newUserData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testPlant4.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant4.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant4.plant.config.json"],
           "testPlant5.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant5.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant5.plant.config.json"],
           "testPlant6.plant.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testPlant6.plant.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testPlant6.plant.config.json"],
           ...newUserData,
         };
 
@@ -5426,21 +5432,21 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         fakeUser3: newUserData["fakeUser3.user.config.json"],
         fakeUser4: newUserData["fakeUser4.user.config.json"],
         fakeUser5: newUserData["fakeUser5.user.config.json"],
@@ -5453,7 +5459,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -5469,46 +5475,46 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser6.user.config.json",
       ]);
 
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         fakeUser3: newUserData["fakeUser3.user.config.json"],
         fakeUser4: newUserData["fakeUser4.user.config.json"],
         fakeUser5: newUserData["fakeUser5.user.config.json"],
@@ -5528,21 +5534,21 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
         fakeUser3: newUserData["fakeUser3.user.config.json"],
         fakeUser4: newUserData["fakeUser4.user.config.json"],
         fakeUser5: newUserData["fakeUser5.user.config.json"],
@@ -5555,7 +5561,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -5571,46 +5577,46 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser3.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser4.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser5.user.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "fakeUser6.user.config.json",
       ]);
 
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
 
         fakeUser3: newUserData["fakeUser3.user.config.json"],
         fakeUser4: newUserData["fakeUser4.user.config.json"],
@@ -5635,21 +5641,21 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -5658,7 +5664,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -5668,21 +5674,21 @@ describe("MindSphereApp", () => {
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -5703,21 +5709,21 @@ describe("MindSphereApp", () => {
       //Cache data should not have been changed
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5736,21 +5742,21 @@ describe("MindSphereApp", () => {
       //Cache data should not have been changed
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
 
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
@@ -5767,21 +5773,21 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -5790,7 +5796,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "user.config.json",
       ]);
 
@@ -5800,21 +5806,21 @@ describe("MindSphereApp", () => {
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testLocalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalUser22.user.config.json"],
         testLocalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testLocalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testLocalAdmin22.user.config.json"],
         testGlobalAdmin22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalAdmin22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalAdmin22.user.config.json"],
         testGlobalUser22:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testGlobalUser22.user.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testGlobalUser22.user.config.json"],
       };
       expect((mindSphereApp as any)._userStorage._cacheData).toEqual(
         expectedCache
@@ -5855,7 +5861,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -5910,27 +5916,29 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newPlantData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testGlobalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalAdmin22.user.config.json"],
           "testGlobalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalUser22.user.config.json"],
           "testLocalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalAdmin22.user.config.json"],
           "testLocalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalUser22.user.config.json"],
           ...newPlantData,
         };
 
@@ -5959,7 +5967,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
@@ -5975,25 +5983,25 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant5.plant.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant6.plant.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant7.plant.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant8.plant.config.json",
       ]);
 
@@ -6059,7 +6067,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -6113,27 +6121,29 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newPlantData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testGlobalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalAdmin22.user.config.json"],
           "testGlobalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalUser22.user.config.json"],
           "testLocalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalAdmin22.user.config.json"],
           "testLocalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalUser22.user.config.json"],
           ...newPlantData,
         };
 
@@ -6156,9 +6166,9 @@ describe("MindSphereApp", () => {
       let result = await exec();
 
       let expectedResult =
-        oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-          "testPlant6.plant.config.json"
-        ];
+        oldFileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ]["testPlant6.plant.config.json"];
 
       expect(result).toEqual(expectedResult);
 
@@ -6168,17 +6178,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6201,24 +6211,24 @@ describe("MindSphereApp", () => {
       expect(getFileContent).toHaveBeenCalledTimes(9);
       expect(getFileContent.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant7.plant.config.json",
       ]);
 
       //Cache should have changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData["testPlant7.plant.config.json"],
       };
 
@@ -6240,17 +6250,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6270,7 +6280,7 @@ describe("MindSphereApp", () => {
       expect(checkIfFileExists).toHaveBeenCalledTimes(9);
       expect(checkIfFileExists.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "invalidPlantId.plant.config.json",
       ]);
 
@@ -6280,17 +6290,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6327,7 +6337,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -6375,7 +6385,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent).toHaveBeenCalledTimes(1);
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant7.plant.config.json",
         newPlantData,
       ]);
@@ -6383,17 +6393,17 @@ describe("MindSphereApp", () => {
       //Cache should have changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData,
       };
 
@@ -6416,7 +6426,7 @@ describe("MindSphereApp", () => {
       expect(setFileContent).toHaveBeenCalledTimes(1);
       expect(setFileContent.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant5.plant.config.json",
         newPlantData,
       ]);
@@ -6424,14 +6434,14 @@ describe("MindSphereApp", () => {
       //Cache should have changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5: newPlantData,
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6456,17 +6466,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6487,17 +6497,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6534,7 +6544,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -6571,20 +6581,20 @@ describe("MindSphereApp", () => {
       expect(deleteFile).toHaveBeenCalledTimes(1);
       expect(deleteFile.mock.calls[0]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant5.plant.config.json",
       ]);
 
       //Cache should have changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6603,7 +6613,7 @@ describe("MindSphereApp", () => {
       expect(checkIfFileExists).toHaveBeenCalledTimes(9);
       expect(checkIfFileExists.mock.calls[8]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "newFakePlant.plant.config.json",
       ]);
       expect(deleteFile).not.toHaveBeenCalled();
@@ -6611,17 +6621,17 @@ describe("MindSphereApp", () => {
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6648,24 +6658,24 @@ describe("MindSphereApp", () => {
           .calls[0]
       ).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant5.plant.config.json",
       ]);
 
       //Cache should stay without changes
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -6705,7 +6715,7 @@ describe("MindSphereApp", () => {
     beforeEach(async () => {
       storageTenant = "hostTenant";
       appId = "ten-testTenant2-sub-subtenant2";
-      assetId = "ten-testTenant2-sub-subtenant2";
+      assetId = "ten-testTenant2-sub-subtenant2-id";
       appTenant = "testTenant2";
       subtenantId = "subtenant2";
       initApp = true;
@@ -6761,27 +6771,29 @@ describe("MindSphereApp", () => {
       if (initApp) await mindSphereApp.init();
 
       if (newPlantData) {
-        fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"] = {
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-id"
+        ] = {
           "main.app.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "main.app.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["main.app.config.json"],
           "testGlobalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalAdmin22.user.config.json"],
           "testGlobalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testGlobalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testGlobalUser22.user.config.json"],
           "testLocalAdmin22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalAdmin22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalAdmin22.user.config.json"],
           "testLocalUser22.user.config.json":
-            fileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-              "testLocalUser22.user.config.json"
-            ],
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-id"
+            ]["testLocalUser22.user.config.json"],
           ...newPlantData,
         };
 
@@ -6817,17 +6829,17 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData["testPlant7.plant.config.json"],
         testPlant8: newPlantData["testPlant8.plant.config.json"],
       };
@@ -6838,7 +6850,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
@@ -6852,30 +6864,30 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant7.plant.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant8.plant.config.json",
       ]);
 
       //Cache data of plants not present before should be fetched
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData["testPlant7.plant.config.json"],
         testPlant8: newPlantData["testPlant8.plant.config.json"],
       };
@@ -6894,17 +6906,17 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData["testPlant7.plant.config.json"],
         testPlant8: newPlantData["testPlant8.plant.config.json"],
       };
@@ -6915,7 +6927,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
@@ -6929,30 +6941,30 @@ describe("MindSphereApp", () => {
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant7.plant.config.json",
       ]);
 
       expect(laterMockCalls).toContainEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "testPlant8.plant.config.json",
       ]);
 
       //Cache data of plants not present before should be fetched
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
         testPlant7: newPlantData["testPlant7.plant.config.json"],
         testPlant8: newPlantData["testPlant8.plant.config.json"],
       };
@@ -6973,17 +6985,17 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -6992,7 +7004,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
@@ -7002,17 +7014,17 @@ describe("MindSphereApp", () => {
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -7034,17 +7046,17 @@ describe("MindSphereApp", () => {
       //Cache data should not have been changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -7063,17 +7075,17 @@ describe("MindSphereApp", () => {
       //Cache data should not have been changed
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
@@ -7090,17 +7102,17 @@ describe("MindSphereApp", () => {
 
       let expectedResults = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
 
       expect(result).toEqual(expectedResults);
@@ -7109,7 +7121,7 @@ describe("MindSphereApp", () => {
       expect(getAllFileNamesFromAsset).toHaveBeenCalledTimes(4);
       expect(getAllFileNamesFromAsset.mock.calls[3]).toEqual([
         "hostTenant",
-        "ten-testTenant2-sub-subtenant2",
+        "ten-testTenant2-sub-subtenant2-id",
         "plant.config.json",
       ]);
 
@@ -7119,17 +7131,17 @@ describe("MindSphereApp", () => {
       //Cache data of users not present before should be fetched
       let expectedCache = {
         testPlant4:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant4.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant4.plant.config.json"],
         testPlant5:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant5.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant5.plant.config.json"],
         testPlant6:
-          oldFileServiceContent["hostTenant"]["ten-testTenant2-sub-subtenant2"][
-            "testPlant6.plant.config.json"
-          ],
+          oldFileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-id"
+          ]["testPlant6.plant.config.json"],
       };
       expect((mindSphereApp as any)._plantStorage._cacheData).toEqual(
         expectedCache
