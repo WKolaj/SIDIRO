@@ -196,6 +196,19 @@ export class MindSphereApp {
   }
 
   /**
+   * @description Method for checking if user has access to the app based on scope
+   * @param user user jwt data to check
+   */
+  public static async hasAccessToApplication(user: MindSphereUserJWTData) {
+    return (
+      this.hasGlobalAdminScope(user) ||
+      this.hasGlobalUserScope(user) ||
+      this.hasLocalAdminScope(user) ||
+      this.hasLocalUserScope(user)
+    );
+  }
+
+  /**
    * @description Method for checking if user is a super admin
    * @param user user jwt data to check
    */

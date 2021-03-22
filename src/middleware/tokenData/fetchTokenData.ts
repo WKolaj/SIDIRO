@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { ParamsDictionary, Query } from "express-serve-static-core";
 import express, { Request } from "express";
+import { MindSphereApp } from "../../classes/MindSphereApp/MindSphereApp";
 
 /**
  * @description Type representing data of user after decoding the token
@@ -32,7 +33,8 @@ const decodeUserFromRequest = function(
 ): MindSphereUserJWTData | null {
   const authorizationHeader = req.get("authorization");
 
-  if (authorizationHeader == null) return null;
+  if (authorizationHeader == null || !authorizationHeader.includes("Bearer "))
+    return null;
 
   let token = authorizationHeader.replace("Bearer ", "");
 
@@ -50,7 +52,7 @@ const decodeUserFromRequest = function(
   return userToReturn;
 };
 
-export default function(
+export default async function(
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
@@ -64,6 +66,13 @@ export default function(
       .send(
         "Access denied. No token provided to fetch the user or token is invalid!"
       );
+
+  //Checking if user has role to access the app
+  let hasAccess = await MindSphereApp.hasAccessToApplication(userData);
+  if (!hasAccess)
+    return res
+      .status(403)
+      .send("Forbidden access. No scope found to access the app!");
 
   let userRequest = req as TokenRequest;
   userRequest.userTokenData = userData;

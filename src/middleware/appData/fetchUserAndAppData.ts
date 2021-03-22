@@ -97,9 +97,7 @@ export default async function(
 
   //Checking if user exists for given app
   if (userId == null)
-    return res
-      .status(403)
-      .send("Access denied. User id not found for given application!");
+    return res.status(403).send("Access denied. User of given name not found!");
 
   appRequest.userId = userId;
 
