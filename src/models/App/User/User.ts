@@ -50,7 +50,7 @@ function checkUserPlantData(userStoragePayload: UserStorageData) {
 }
 
 export const schemaContent = {
-  username: Joi.string()
+  userName: Joi.string()
     .email()
     .required(),
   data: Joi.object()
@@ -64,7 +64,7 @@ export const schemaContent = {
     plants: Joi.object()
       .pattern(/.*/, Joi.number().valid(0, 1))
       .required(),
-  }),
+  }).required(),
 };
 
 export const joiSchema = Joi.object(schemaContent);

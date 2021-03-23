@@ -1,12 +1,7 @@
-import { config } from "node-config-ts";
 import request from "supertest";
 import {
-  MindSphereApp,
   PlantPermissions,
   UserRole,
-  UserStorageData,
-  AppStorageData,
-  PlantStorageData,
 } from "../../../../../classes/MindSphereApp/MindSphereApp";
 import { MindSphereFileService } from "../../../../../classes/MindSphereService/MindSphereFileService";
 import { MindSphereUserService } from "../../../../../classes/MindSphereService/MindSphereUserService";
@@ -57,25 +52,20 @@ import {
   updateUserGroup,
 } from "../../../../utilities/mockMsUserService";
 import { MindSphereUserGroupService } from "../../../../../classes/MindSphereService/MindSphereUserGroupService";
-import {
-  setPrivateProperty,
-  testPrivateProperty,
-} from "../../../../utilities/utilities";
-import {
-  MindSphereAsset,
-  MindSphereAssetService,
-} from "../../../../../classes/MindSphereService/MindSphereAssetService";
+import { MindSphereAssetService } from "../../../../../classes/MindSphereService/MindSphereAssetService";
 import { MindSphereAppsManager } from "../../../../../classes/MindSphereApp/MindSphereAppsManager";
 import appStart from "../../../../../startup/app";
 import { Server } from "http";
 import jwt from "jsonwebtoken";
 import { MindSphereUserJWTData } from "../../../../../middleware/tokenData/fetchTokenData";
+import logger from "../../../../../logger/logger";
 
 describe("config user route", () => {
   let userServiceContent: MockedUserServiceContent;
   let userGroupServiceContent: MockedUserGroupServiceContent;
   let fileServiceContent: MockedFileServiceContent;
   let assetServiceContent: MockedAssetServiceContent;
+  let logErrorMockFunc: jest.Mock;
   let server: Server;
 
   beforeEach(async () => {
@@ -96,7 +86,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin11FamilyName",
             givenName: "testGlobalAdmin11GivenName",
           },
-          userName: "test_global_admin_11_user_name",
+          userName: "test_global_admin_11@user.name",
           emails: [
             {
               value: "testGlobalAdmin11Email",
@@ -112,7 +102,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin11FamilyName",
             givenName: "testLocalAdmin11GivenName",
           },
-          userName: "test_local_admin_11_user_name",
+          userName: "test_local_admin_11@user.name",
           emails: [
             {
               value: "testLocalAdmin11Email",
@@ -128,7 +118,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser11FamilyName",
             givenName: "testGlobalUser11GivenName",
           },
-          userName: "test_global_user_11_user_name",
+          userName: "test_global_user_11@user.name",
           emails: [
             {
               value: "testGlobalUser11Email",
@@ -144,7 +134,7 @@ describe("config user route", () => {
             familyName: "testLocalUser11FamilyName",
             givenName: "testLocalUser11GivenName",
           },
-          userName: "test_local_user_11_user_name",
+          userName: "test_local_user_11@user.name",
           emails: [
             {
               value: "testLocalUser11Email",
@@ -160,7 +150,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin12FamilyName",
             givenName: "testGlobalAdmin12GivenName",
           },
-          userName: "test_global_admin_12_user_name",
+          userName: "test_global_admin_12@user.name",
           emails: [
             {
               value: "testGlobalAdmin12Email",
@@ -181,7 +171,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin12FamilyName",
             givenName: "testLocalAdmin12GivenName",
           },
-          userName: "test_local_admin_12_user_name",
+          userName: "test_local_admin_12@user.name",
           emails: [
             {
               value: "testLocalAdmin12Email",
@@ -202,7 +192,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser12FamilyName",
             givenName: "testGlobalUser12GivenName",
           },
-          userName: "test_global_user_12_user_name",
+          userName: "test_global_user_12@user.name",
           emails: [
             {
               value: "testGlobalUser12Email",
@@ -223,7 +213,7 @@ describe("config user route", () => {
             familyName: "testLocalUser12FamilyName",
             givenName: "testLocalUser12GivenName",
           },
-          userName: "test_local_user_12_user_name",
+          userName: "test_local_user_12@user.name",
           emails: [
             {
               value: "testLocalUser12Email",
@@ -246,7 +236,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin21FamilyName",
             givenName: "testGlobalAdmin21GivenName",
           },
-          userName: "test_global_admin_21_user_name",
+          userName: "test_global_admin_21@user.name",
           emails: [
             {
               value: "testGlobalAdmin21Email",
@@ -262,7 +252,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin21FamilyName",
             givenName: "testLocalAdmin21GivenName",
           },
-          userName: "test_local_admin_21_user_name",
+          userName: "test_local_admin_21@user.name",
           emails: [
             {
               value: "testLocalAdmin21Email",
@@ -278,7 +268,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser21FamilyName",
             givenName: "testGlobalUser21GivenName",
           },
-          userName: "test_global_user_21_user_name",
+          userName: "test_global_user_21@user.name",
           emails: [
             {
               value: "testGlobalUser21Email",
@@ -294,7 +284,7 @@ describe("config user route", () => {
             familyName: "testLocalUser21FamilyName",
             givenName: "testLocalUser21GivenName",
           },
-          userName: "test_local_user_21_user_name",
+          userName: "test_local_user_21@user.name",
           emails: [
             {
               value: "testLocalUser21Email",
@@ -310,7 +300,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin22FamilyName",
             givenName: "testGlobalAdmin22GivenName",
           },
-          userName: "test_global_admin_22_user_name",
+          userName: "test_global_admin_22@user.name",
           emails: [
             {
               value: "testGlobalAdmin22Email",
@@ -331,7 +321,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin22FamilyName",
             givenName: "testLocalAdmin22GivenName",
           },
-          userName: "test_local_admin_22_user_name",
+          userName: "test_local_admin_22@user.name",
           emails: [
             {
               value: "testLocalAdmin22Email",
@@ -352,7 +342,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser22FamilyName",
             givenName: "testGlobalUser22GivenName",
           },
-          userName: "test_global_user_22_user_name",
+          userName: "test_global_user_22@user.name",
           emails: [
             {
               value: "testGlobalUser22Email",
@@ -373,7 +363,7 @@ describe("config user route", () => {
             familyName: "testLocalUser22FamilyName",
             givenName: "testLocalUser22GivenName",
           },
-          userName: "test_local_user_22_user_name",
+          userName: "test_local_user_22@user.name",
           emails: [
             {
               value: "testLocalUser22Email",
@@ -396,7 +386,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin31FamilyName",
             givenName: "testGlobalAdmin31GivenName",
           },
-          userName: "test_global_admin_31_user_name",
+          userName: "test_global_admin_31@user.name",
           emails: [
             {
               value: "testGlobalAdmin31Email",
@@ -412,7 +402,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin31FamilyName",
             givenName: "testLocalAdmin31GivenName",
           },
-          userName: "test_local_admin_31_user_name",
+          userName: "test_local_admin_31@user.name",
           emails: [
             {
               value: "testLocalAdmin31Email",
@@ -428,7 +418,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser31FamilyName",
             givenName: "testGlobalUser31GivenName",
           },
-          userName: "test_global_user_31_user_name",
+          userName: "test_global_user_31@user.name",
           emails: [
             {
               value: "testGlobalUser31Email",
@@ -444,7 +434,7 @@ describe("config user route", () => {
             familyName: "testLocalUser31FamilyName",
             givenName: "testLocalUser31GivenName",
           },
-          userName: "test_local_user_31_user_name",
+          userName: "test_local_user_31@user.name",
           emails: [
             {
               value: "testLocalUser31Email",
@@ -460,7 +450,7 @@ describe("config user route", () => {
             familyName: "testGlobalAdmin32FamilyName",
             givenName: "testGlobalAdmin32GivenName",
           },
-          userName: "test_global_admin_32_user_name",
+          userName: "test_global_admin_32@user.name",
           emails: [
             {
               value: "testGlobalAdmin32Email",
@@ -481,7 +471,7 @@ describe("config user route", () => {
             familyName: "testLocalAdmin32FamilyName",
             givenName: "testLocalAdmin32GivenName",
           },
-          userName: "test_local_admin_32_user_name",
+          userName: "test_local_admin_32@user.name",
           emails: [
             {
               value: "testLocalAdmin32Email",
@@ -502,7 +492,7 @@ describe("config user route", () => {
             familyName: "testGlobalUser32FamilyName",
             givenName: "testGlobalUser32GivenName",
           },
-          userName: "test_global_user_32_user_name",
+          userName: "test_global_user_32@user.name",
           emails: [
             {
               value: "testGlobalUser32Email",
@@ -523,7 +513,7 @@ describe("config user route", () => {
             familyName: "testLocalUser32FamilyName",
             givenName: "testLocalUser32GivenName",
           },
-          userName: "test_local_user_32_user_name",
+          userName: "test_local_user_32@user.name",
           emails: [
             {
               value: "testLocalUser32Email",
@@ -546,7 +536,7 @@ describe("config user route", () => {
             familyName: "testSuperAdmin1FamilyName",
             givenName: "testSuperAdmin1GivenName",
           },
-          userName: "test_super_admin_1_user_name",
+          userName: "test_super_admin_1@user.name",
           emails: [
             {
               value: "testSuperAdmin1Email",
@@ -562,7 +552,7 @@ describe("config user route", () => {
             familyName: "testSuperAdmin2FamilyName",
             givenName: "testSuperAdmin2GivenName",
           },
-          userName: "test_super_admin_2_user_name",
+          userName: "test_super_admin_2@user.name",
           emails: [
             {
               value: "testSuperAdmin2Email",
@@ -578,7 +568,7 @@ describe("config user route", () => {
             familyName: "testSuperAdmin3FamilyName",
             givenName: "testSuperAdmin3GivenName",
           },
-          userName: "test_super_admin_3_user_name",
+          userName: "test_super_admin_3@user.name",
           emails: [
             {
               value: "testSuperAdmin3Email",
@@ -599,7 +589,7 @@ describe("config user route", () => {
             familyName: "testSuperAdmin4FamilyName",
             givenName: "testSuperAdmin4GivenName",
           },
-          userName: "test_super_admin_4_user_name",
+          userName: "test_super_admin_4@user.name",
           emails: [
             {
               value: "testSuperAdmin4Email",
@@ -1010,10 +1000,10 @@ describe("config user route", () => {
                   "testGlobalAdmin11TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_11_user_name",
+            userName: "test_global_admin_11@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
-              permissions: {
+              plants: {
                 testPlant1: PlantPermissions.Admin,
                 testPlant2: PlantPermissions.Admin,
                 testPlant3: PlantPermissions.Admin,
@@ -1049,10 +1039,10 @@ describe("config user route", () => {
                   "testGlobalUser11TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_11_user_name",
+            userName: "test_global_user_11@user.name",
             permissions: {
               role: UserRole.GlobalUser,
-              permissions: {
+              plants: {
                 testPlant1: PlantPermissions.User,
                 testPlant2: PlantPermissions.User,
                 testPlant3: PlantPermissions.User,
@@ -1080,10 +1070,10 @@ describe("config user route", () => {
                   "testLocalAdmin11TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_11_user_name",
+            userName: "test_local_admin_11@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
-              permissions: {
+              plants: {
                 testPlant1: PlantPermissions.User,
                 testPlant2: PlantPermissions.Admin,
               },
@@ -1091,29 +1081,29 @@ describe("config user route", () => {
           },
           "testLocalUser11.user.config.json": {
             data: {
-              testPlant1: {
-                testLocalUser11TestPlant1Data:
-                  "testLocalUser11TestPlant1DataValue",
-              },
               testPlant2: {
                 testLocalUser11TestPlant2Data:
                   "testLocalUser11TestPlant2DataValue",
               },
+              testPlant3: {
+                testLocalUser11TestPlant3Data:
+                  "testLocalUser11TestPlant3DataValue",
+              },
             },
             config: {
-              testPlant1: {
-                testLocalUser11TestPlant1Config:
-                  "testLocalUser11TestPlant1ConfigValue",
-              },
               testPlant2: {
                 testLocalUser11TestPlant2Config:
                   "testLocalUser11TestPlant2ConfigValue",
               },
+              testPlant3: {
+                testLocalUser11TestPlant3Config:
+                  "testLocalUser11TestPlant3ConfigValue",
+              },
             },
-            userName: "test_local_user_11_user_name",
+            userName: "test_local_user_11@user.name",
             permissions: {
               role: UserRole.LocalUser,
-              permissions: {
+              plants: {
                 testPlant2: PlantPermissions.User,
                 testPlant3: PlantPermissions.User,
               },
@@ -1183,7 +1173,7 @@ describe("config user route", () => {
                   "testGlobalAdmin12TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_12_user_name",
+            userName: "test_global_admin_12@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1222,7 +1212,7 @@ describe("config user route", () => {
                   "testGlobalUser12TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_12_user_name",
+            userName: "test_global_user_12@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1253,7 +1243,7 @@ describe("config user route", () => {
                   "testLocalAdmin12TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_12_user_name",
+            userName: "test_local_admin_12@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1264,26 +1254,26 @@ describe("config user route", () => {
           },
           "testLocalUser12.user.config.json": {
             data: {
-              testPlant4: {
-                testLocalUser12TestPlant4Data:
-                  "testLocalUser12TestPlant4DataValue",
-              },
               testPlant5: {
                 testLocalUser12TestPlant5Data:
                   "testLocalUser12TestPlant5DataValue",
               },
+              testPlant6: {
+                testLocalUser12TestPlant6Data:
+                  "testLocalUser12TestPlant6DataValue",
+              },
             },
             config: {
-              testPlant4: {
-                testLocalUser12TestPlant4Config:
-                  "testLocalUser12TestPlant4ConfigValue",
-              },
               testPlant5: {
                 testLocalUser12TestPlant5Config:
                   "testLocalUser12TestPlant5ConfigValue",
               },
+              testPlant6: {
+                testLocalUser12TestPlant6Config:
+                  "testLocalUser12TestPlant6ConfigValue",
+              },
             },
-            userName: "test_local_user_12_user_name",
+            userName: "test_local_user_12@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1356,7 +1346,7 @@ describe("config user route", () => {
                   "testGlobalAdmin21TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_21_user_name",
+            userName: "test_global_admin_21@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1395,7 +1385,7 @@ describe("config user route", () => {
                   "testGlobalUser21TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_21_user_name",
+            userName: "test_global_user_21@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1426,7 +1416,7 @@ describe("config user route", () => {
                   "testLocalAdmin21TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_21_user_name",
+            userName: "test_local_admin_21@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1437,26 +1427,26 @@ describe("config user route", () => {
           },
           "testLocalUser21.user.config.json": {
             data: {
-              testPlant1: {
-                testLocalUser21TestPlant1Data:
-                  "testLocalUser21TestPlant1DataValue",
-              },
               testPlant2: {
                 testLocalUser21TestPlant2Data:
                   "testLocalUser21TestPlant2DataValue",
               },
+              testPlant3: {
+                testLocalUser21TestPlant3Data:
+                  "testLocalUser21TestPlant3DataValue",
+              },
             },
             config: {
-              testPlant1: {
-                testLocalUser21TestPlant1Config:
-                  "testLocalUser21TestPlant1ConfigValue",
-              },
               testPlant2: {
                 testLocalUser21TestPlant2Config:
-                  "testLocalUser21TestPlant2ConfigValue",
+                  "testLocalUser21TestPlant2onfigValue",
+              },
+              testPlant3: {
+                testLocalUser21TestPlant3Config:
+                  "testLocalUser21TestPlant3ConfigValue",
               },
             },
-            userName: "test_local_user_21_user_name",
+            userName: "test_local_user_21@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1529,7 +1519,7 @@ describe("config user route", () => {
                   "testGlobalAdmin22TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_22_user_name",
+            userName: "test_global_admin_22@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1568,7 +1558,7 @@ describe("config user route", () => {
                   "testGlobalUser22TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_22_user_name",
+            userName: "test_global_user_22@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1599,7 +1589,7 @@ describe("config user route", () => {
                   "testLocalAdmin22TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_22_user_name",
+            userName: "test_local_admin_22@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1610,26 +1600,26 @@ describe("config user route", () => {
           },
           "testLocalUser22.user.config.json": {
             data: {
-              testPlant4: {
-                testLocalUser22TestPlant4Data:
-                  "testLocalUser22TestPlant4DataValue",
-              },
               testPlant5: {
                 testLocalUser22TestPlant5Data:
                   "testLocalUser22TestPlant5DataValue",
               },
+              testPlant6: {
+                testLocalUser22TestPlant6Data:
+                  "testLocalUser22TestPlant6DataValue",
+              },
             },
             config: {
-              testPlant4: {
-                testLocalUser22TestPlant4Config:
-                  "testLocalUser22TestPlant4ConfigValue",
-              },
               testPlant5: {
                 testLocalUser22TestPlant5Config:
                   "testLocalUser22TestPlant5ConfigValue",
               },
+              testPlant6: {
+                testLocalUser22TestPlant6Config:
+                  "testLocalUser22TestPlant6ConfigValue",
+              },
             },
-            userName: "test_local_user_22_user_name",
+            userName: "test_local_user_22@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1702,7 +1692,7 @@ describe("config user route", () => {
                   "testGlobalAdmin31TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_31_user_name",
+            userName: "test_global_admin_31@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1741,7 +1731,7 @@ describe("config user route", () => {
                   "testGlobalUser31TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_31_user_name",
+            userName: "test_global_user_31@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1772,7 +1762,7 @@ describe("config user route", () => {
                   "testLocalAdmin31TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_31_user_name",
+            userName: "test_local_admin_31@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1783,26 +1773,26 @@ describe("config user route", () => {
           },
           "testLocalUser31.user.config.json": {
             data: {
-              testPlant1: {
-                testLocalUser31TestPlant1Data:
-                  "testLocalUser31TestPlant1DataValue",
-              },
               testPlant2: {
                 testLocalUser31TestPlant2Data:
                   "testLocalUser31TestPlant2DataValue",
               },
+              testPlant3: {
+                testLocalUser31TestPlant3Data:
+                  "testLocalUser31TestPlant3DataValue",
+              },
             },
             config: {
-              testPlant1: {
-                testLocalUser31TestPlant1Config:
-                  "testLocalUser31TestPlant1ConfigValue",
-              },
               testPlant2: {
                 testLocalUser31TestPlant2Config:
                   "testLocalUser31TestPlant2ConfigValue",
               },
+              testPlant3: {
+                testLocalUser31TestPlant3Config:
+                  "testLocalUser31TestPlant3ConfigValue",
+              },
             },
-            userName: "test_local_user_31_user_name",
+            userName: "test_local_user_31@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1875,10 +1865,10 @@ describe("config user route", () => {
                   "testGlobalAdmin32TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_32_user_name",
+            userName: "test_global_admin_32@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
-              permissions: {
+              plants: {
                 testPlant4: PlantPermissions.Admin,
                 testPlant5: PlantPermissions.Admin,
                 testPlant6: PlantPermissions.Admin,
@@ -1914,10 +1904,10 @@ describe("config user route", () => {
                   "testGlobalUser32TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_32_user_name",
+            userName: "test_global_user_32@user.name",
             permissions: {
               role: UserRole.GlobalUser,
-              permissions: {
+              plants: {
                 testPlant4: PlantPermissions.User,
                 testPlant5: PlantPermissions.User,
                 testPlant6: PlantPermissions.User,
@@ -1945,10 +1935,10 @@ describe("config user route", () => {
                   "testLocalAdmin32TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_32_user_name",
+            userName: "test_local_admin_32@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
-              permissions: {
+              plants: {
                 testPlant4: PlantPermissions.User,
                 testPlant5: PlantPermissions.Admin,
               },
@@ -1956,29 +1946,29 @@ describe("config user route", () => {
           },
           "testLocalUser32.user.config.json": {
             data: {
-              testPlant4: {
-                testLocalUser32TestPlant4Data:
-                  "testLocalUser32TestPlant4DataValue",
-              },
               testPlant5: {
                 testLocalUser32TestPlant5Data:
                   "testLocalUser32TestPlant5DataValue",
               },
+              testPlant6: {
+                testLocalUser32TestPlant6Data:
+                  "testLocalUser32TestPlant6DataValue",
+              },
             },
             config: {
-              testPlant4: {
-                testLocalUser32TestPlant4Config:
-                  "testLocalUser32TestPlant4ConfigValue",
-              },
               testPlant5: {
                 testLocalUser32TestPlant5Config:
                   "testLocalUser32TestPlant5ConfigValue",
               },
+              testPlant6: {
+                testLocalUser32TestPlant6Config:
+                  "testLocalUser32TestPlant6ConfigValue",
+              },
             },
-            userName: "test_local_user_32_user_name",
+            userName: "test_local_user_32@user.name",
             permissions: {
               role: UserRole.LocalUser,
-              permissions: {
+              plants: {
                 testPlant5: PlantPermissions.User,
                 testPlant6: PlantPermissions.User,
               },
@@ -2050,6 +2040,10 @@ describe("config user route", () => {
     };
 
     jest.clearAllMocks();
+
+    logErrorMockFunc = jest.fn();
+
+    logger.error = logErrorMockFunc;
   });
 
   afterEach(async () => {
@@ -2079,34 +2073,40 @@ describe("config user route", () => {
   };
 
   describe("GET /me", () => {
-    let requestPayload: any;
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
+    let getAllUsersThrows: boolean;
 
     beforeEach(() => {
       requestHeaders = {};
-      requestPayload = {};
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
         scope: ["testGlobalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_22_user_name",
+        user_name: "test_global_admin_22@user.name",
         subtenant: "subtenant2",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
         "testPrivateKey"
       )}`;
+      getAllUsersThrows = false;
     });
 
     let exec = async () => {
       await beforeExec();
 
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
       return request(server)
         .get("/customApi/config/user/me")
         .set(requestHeaders)
-        .send(requestPayload);
+        .send();
     };
 
     it("should return 200 and payload of the user - if user is a subtenant user and global admin", async () => {
@@ -2135,7 +2135,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_global_admin_22_user_name",
+        "test_global_admin_22@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2164,7 +2164,7 @@ describe("config user route", () => {
         email: "testGlobalUserEmail",
         scope: ["testGlobalUserScope"],
         ten: "testTenant2",
-        user_name: "test_global_user_22_user_name",
+        user_name: "test_global_user_22@user.name",
         subtenant: "subtenant2",
       };
 
@@ -2198,7 +2198,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_global_user_22_user_name",
+        "test_global_user_22@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2227,7 +2227,7 @@ describe("config user route", () => {
         email: "testLocalAdminEmail",
         scope: ["testLocalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_local_admin_22_user_name",
+        user_name: "test_local_admin_22@user.name",
         subtenant: "subtenant2",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
@@ -2260,7 +2260,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_local_admin_22_user_name",
+        "test_local_admin_22@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2289,7 +2289,7 @@ describe("config user route", () => {
         email: "testLocalUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_local_user_22_user_name",
+        user_name: "test_local_user_22@user.name",
         subtenant: "subtenant2",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
@@ -2322,7 +2322,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_local_user_22_user_name",
+        "test_local_user_22@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2351,7 +2351,7 @@ describe("config user route", () => {
         email: "testGlobalAdminEmail",
         scope: ["testGlobalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_21_user_name",
+        user_name: "test_global_admin_21@user.name",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
@@ -2383,7 +2383,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_global_admin_21_user_name",
+        "test_global_admin_21@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2412,7 +2412,7 @@ describe("config user route", () => {
         email: "testGlobalUserEmail",
         scope: ["testGlobalUserScope"],
         ten: "testTenant2",
-        user_name: "test_global_user_21_user_name",
+        user_name: "test_global_user_21@user.name",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
@@ -2444,7 +2444,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_global_user_21_user_name",
+        "test_global_user_21@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2473,7 +2473,7 @@ describe("config user route", () => {
         email: "testLocalAdminEmail",
         scope: ["testLocalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_local_admin_21_user_name",
+        user_name: "test_local_admin_21@user.name",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
@@ -2505,7 +2505,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_local_admin_21_user_name",
+        "test_local_admin_21@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2534,7 +2534,7 @@ describe("config user route", () => {
         email: "testLocalUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_local_user_21_user_name",
+        user_name: "test_local_user_21@user.name",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
@@ -2566,7 +2566,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_local_user_21_user_name",
+        "test_local_user_21@user.name",
       ]);
 
       //Checking if app exists - should be invoked only one time during initalization
@@ -2723,7 +2723,7 @@ describe("config user route", () => {
             familyName: "testFakeUser23FamilyName",
             givenName: "testFakeUser23GivenName",
           },
-          userName: "test_fake_user_23_user_name",
+          userName: "test_fake_user_23@user.name",
           emails: [
             {
               value: "testFakeUser23Email",
@@ -2755,7 +2755,7 @@ describe("config user route", () => {
         email: "testFakeUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_fake_user_23_user_name",
+        user_name: "test_fake_user_23@user.name",
         subtenant: "subtenant2",
       };
 
@@ -2792,7 +2792,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_fake_user_23_user_name",
+        "test_fake_user_23@user.name",
       ]);
 
       //Check file data should be additonally invoked but not getFileContent- 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 + 1 fake user
@@ -2830,7 +2830,7 @@ describe("config user route", () => {
               "testFakeUser23TestPlant5ConfigValue",
           },
         },
-        userName: "test_fake_user_23_user_name",
+        userName: "test_fake_user_23@user.name",
         permissions: {
           role: UserRole.LocalUser,
           plants: {
@@ -2846,7 +2846,7 @@ describe("config user route", () => {
         email: "testFakeUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_fake_user_23_user_name",
+        user_name: "test_fake_user_23@user.name",
         subtenant: "subtenant2",
       };
 
@@ -2883,7 +2883,7 @@ describe("config user route", () => {
         "testTenant2",
         "subtenant2",
         null,
-        "test_fake_user_23_user_name",
+        "test_fake_user_23@user.name",
       ]);
 
       //Check file data and get file data should be called only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 + 1 fake user data
@@ -2899,7 +2899,7 @@ describe("config user route", () => {
         email: "testGlobalAdminEmail",
         scope: ["fakeScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_22_user_name",
+        user_name: "test_global_admin_22@user.name",
         subtenant: "subtenant2",
       };
 
@@ -2925,7 +2925,7 @@ describe("config user route", () => {
         email: "testGlobalAdminEmail",
         scope: ["testGlobalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_21_user_name",
+        user_name: "test_global_admin_21@user.name",
       };
 
       userPayload.ten = "fakeTenant";
@@ -2973,7 +2973,7 @@ describe("config user route", () => {
         email: "testGlobalAdminEmail",
         scope: ["testGlobalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_21_user_name",
+        user_name: "test_global_admin_21@user.name",
       };
 
       //Assinging jwt to header
@@ -3033,7 +3033,7 @@ describe("config user route", () => {
             familyName: "testFakeUser23FamilyName",
             givenName: "testFakeUser23GivenName",
           },
-          userName: "test_fake_user_23_user_name",
+          userName: "test_fake_user_23@user.name",
           emails: [
             {
               value: "testFakeUser23Email",
@@ -3060,7 +3060,7 @@ describe("config user route", () => {
         email: "testFakeUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_fake_user_23_user_name",
+        user_name: "test_fake_user_23@user.name",
       };
 
       //Assinging jwt to header
@@ -3096,7 +3096,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_fake_user_23_user_name",
+        "test_fake_user_23@user.name",
       ]);
 
       //Check file data should be additonally invoked but not getFileContent- 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 + 1 fake user
@@ -3134,7 +3134,7 @@ describe("config user route", () => {
               "testFakeUser23TestPlant5ConfigValue",
           },
         },
-        userName: "test_fake_user_23_user_name",
+        userName: "test_fake_user_23@user.name",
         permissions: {
           role: UserRole.LocalUser,
           plants: {
@@ -3150,7 +3150,7 @@ describe("config user route", () => {
         email: "testFakeUserEmail",
         scope: ["testLocalUserScope"],
         ten: "testTenant2",
-        user_name: "test_fake_user_23_user_name",
+        user_name: "test_fake_user_23@user.name",
       };
 
       //Assinging jwt to header
@@ -3186,7 +3186,7 @@ describe("config user route", () => {
         "testTenant2",
         null,
         null,
-        "test_fake_user_23_user_name",
+        "test_fake_user_23@user.name",
       ]);
 
       //Check file data and get file data should be called only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 + 1 fake user data
@@ -3202,7 +3202,7 @@ describe("config user route", () => {
         email: "testGlobalAdminEmail",
         scope: ["fakeScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_21_user_name",
+        user_name: "test_global_admin_21@user.name",
       };
 
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
@@ -3345,5 +3345,2909 @@ describe("config user route", () => {
     });
 
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not update user - if getAllUsers throws", async () => {
+      getAllUsersThrows = true;
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(500);
+
+      expect(result.text).toEqual(`Ups.. Something fails..`);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
+  });
+
+  describe("PUT /me", () => {
+    let requestHeaders: any;
+    let requestBody: any;
+    let userPayload: MindSphereUserJWTData;
+    let setFileThrows: boolean;
+    let getAllUsersThrows: boolean;
+
+    beforeEach(() => {
+      requestHeaders = {};
+      requestBody = {
+        data: {
+          testPlant4: {
+            testGlobalAdmin22TestPlant4Data:
+              "testGlobalAdmin22TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Data:
+              "testGlobalAdmin22TestPlant5DataModifiedValue",
+          },
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Data:
+              "testGlobalAdmin22TestPlant6DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testGlobalAdmin22TestPlant4Config:
+              "testGlobalAdmin22TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Config:
+              "testGlobalAdmin22TestPlant5ConfigModifiedValue",
+          },
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Config:
+              "testGlobalAdmin22TestPlant6ConfigModifiedValue",
+          },
+        },
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+            testPlant5: PlantPermissions.Admin,
+            testPlant6: PlantPermissions.Admin,
+          },
+        },
+        userName: "test_global_admin_22@user.name",
+      };
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      setFileThrows = false;
+      getAllUsersThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      if (setFileThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set content error");
+          }
+        );
+      }
+
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
+      return request(server)
+        .put("/customApi/config/user/me")
+        .set(requestHeaders)
+        .send(requestBody);
+    };
+
+    it("should return 200 and payload of the updated user - if user is a subtenant user and global admin", async () => {
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testGlobalAdmin22",
+        appId: "ten-testTenant2-sub-subtenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData["testGlobalAdmin22"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_global_admin_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a subtenant user and global user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant4: {
+            testGlobalUser22TestPlant4Data:
+              "testGlobalUser22TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testGlobalUser22TestPlant5Data:
+              "testGlobalUser22TestPlant5DataModifiedValue",
+          },
+          testPlant6: {
+            testGlobalUser22TestPlant6Data:
+              "testGlobalUser22TestPlant6DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testGlobalUser22TestPlant4Config:
+              "testGlobalUser22TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testGlobalUser22TestPlant5Config:
+              "testGlobalUser22TestPlant5ConfigModifiedValue",
+          },
+          testPlant6: {
+            testGlobalUser22TestPlant6Config:
+              "testGlobalUser22TestPlant6ConfigModifiedValue",
+          },
+        },
+        userName: "test_global_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testGlobalUser22",
+        appId: "ten-testTenant2-sub-subtenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData["testGlobalUser22"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_global_user_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalUser22.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalUser22.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a subtenant user and local admin", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Data:
+              "testLocalAdmin22TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testLocalAdmin22TestPlant5Data:
+              "testLocalAdmin22TestPlant5DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Config:
+              "testLocalAdmin22TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testLocalAdmin22TestPlant5Config:
+              "testLocalAdmin22TestPlant5ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_admin_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.User,
+            testPlant5: PlantPermissions.Admin,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testLocalAdmin22",
+        appId: "ten-testTenant2-sub-subtenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData["testLocalAdmin22"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_local_admin_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testLocalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testLocalAdmin22.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a subtenant user and local user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data:
+              "testLocalUser22TestPlant5DataModifiedValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data:
+              "testLocalUser22TestPlant6DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigModifiedValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testLocalUser22",
+        appId: "ten-testTenant2-sub-subtenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData["testLocalUser22"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_local_user_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testLocalUser22.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testLocalUser22.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a tenant user and global admin", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant1: {
+            testGlobalAdmin21TestPlant1Data:
+              "testGlobalAdmin21TestPlant1DataModifiedValue",
+          },
+          testPlant2: {
+            testGlobalAdmin21TestPlant2Data:
+              "testGlobalAdmin21TestPlant2DataModifiedValue",
+          },
+          testPlant3: {
+            testGlobalAdmin21TestPlant3Data:
+              "testGlobalAdmin21TestPlant3DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant1: {
+            testGlobalAdmin21TestPlant1Config:
+              "testGlobalAdmin21TestPlant1ConfigModifiedValue",
+          },
+          testPlant2: {
+            testGlobalAdmin21TestPlant2Config:
+              "testGlobalAdmin21TestPlant2ConfigModifiedValue",
+          },
+          testPlant3: {
+            testGlobalAdmin21TestPlant3Config:
+              "testGlobalAdmin21TestPlant3ConfigModifiedValue",
+          },
+        },
+        userName: "test_global_admin_21@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant1: PlantPermissions.Admin,
+            testPlant2: PlantPermissions.Admin,
+            testPlant3: PlantPermissions.Admin,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testGlobalAdmin21",
+        appId: "ten-testTenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2"
+      ] as any)._userStorage._cacheData["testGlobalAdmin21"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        null,
+        null,
+        "test_global_admin_21@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testGlobalAdmin21.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testGlobalAdmin21.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a tenant user and global user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant1: {
+            testGlobalUser21TestPlant1Data:
+              "testGlobalUser21TestPlant1DataValue",
+          },
+          testPlant2: {
+            testGlobalUser21TestPlant2Data:
+              "testGlobalUser21TestPlant2DataValue",
+          },
+          testPlant3: {
+            testGlobalUser21TestPlant3Data:
+              "testGlobalUser21TestPlant3DataValue",
+          },
+        },
+        config: {
+          testPlant1: {
+            testGlobalUser21TestPlant1Config:
+              "testGlobalUser21TestPlant1ConfigValue",
+          },
+          testPlant2: {
+            testGlobalUser21TestPlant2Config:
+              "testGlobalUser21TestPlant2ConfigValue",
+          },
+          testPlant3: {
+            testGlobalUser21TestPlant3Config:
+              "testGlobalUser21TestPlant3ConfigValue",
+          },
+        },
+        userName: "test_global_user_21@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant1: PlantPermissions.User,
+            testPlant2: PlantPermissions.User,
+            testPlant3: PlantPermissions.User,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testGlobalUser21",
+        appId: "ten-testTenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2"
+      ] as any)._userStorage._cacheData["testGlobalUser21"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        null,
+        null,
+        "test_global_user_21@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testGlobalUser21.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testGlobalUser21.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a tenant user and local admin", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant1: {
+            testLocalAdmin21TestPlant1Data:
+              "testLocalAdmin21TestPlant1DataModifiedValue",
+          },
+          testPlant2: {
+            testLocalAdmin21TestPlant2Data:
+              "testLocalAdmin21TestPlant2DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant1: {
+            testLocalAdmin21TestPlant1Config:
+              "testLocalAdmin21TestPlant1ConfigModifiedValue",
+          },
+          testPlant2: {
+            testLocalAdmin21TestPlant2Config:
+              "testLocalAdmin21TestPlant2ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_admin_21@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant1: PlantPermissions.User,
+            testPlant2: PlantPermissions.Admin,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testLocalAdmin21",
+        appId: "ten-testTenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2"
+      ] as any)._userStorage._cacheData["testLocalAdmin21"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        null,
+        null,
+        "test_local_admin_21@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testLocalAdmin21.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testLocalAdmin21.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 200 and payload of the updated user - if user is a tenant user and local user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        data: {
+          testPlant2: {
+            testLocalUser21TestPlant2Data:
+              "testLocalUser21TestPlant2DataModifiedValue",
+          },
+          testPlant3: {
+            testLocalUser21TestPlant3Data:
+              "testLocalUser21TestPlant3DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant2: {
+            testLocalUser21TestPlant2Config:
+              "testLocalUser21TestPlant2onfigModifiedValue",
+          },
+          testPlant3: {
+            testLocalUser21TestPlant3Config:
+              "testLocalUser21TestPlant3ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_21@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant2: PlantPermissions.User,
+            testPlant3: PlantPermissions.User,
+          },
+        },
+      };
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedResult = {
+        ...requestBody,
+        userId: "testLocalUser21",
+        appId: "ten-testTenant2",
+      };
+      expect(result.body).toEqual(expectedResult);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2"
+      ] as any)._userStorage._cacheData["testLocalUser21"];
+
+      expect(storagePayload).toEqual(requestBody);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        null,
+        null,
+        "test_local_user_21@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testLocalUser21.user.config.json",
+      ]);
+
+      //Set file content should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testLocalUser21.user.config.json",
+        requestBody,
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    const testBodyValidation = async (
+      editedBody: any,
+      validCall: boolean,
+      responseCode: number,
+      errorText: string | null
+    ) => {
+      requestBody = editedBody;
+
+      let result = await exec();
+
+      if (validCall) {
+        //#region ===== CHECKING RESPONSE =====
+
+        let expectedResult = {
+          ...requestBody,
+          userId: "testGlobalAdmin22",
+          appId: "ten-testTenant2-sub-subtenant2",
+        };
+        expect(result.body).toEqual(expectedResult);
+
+        //#endregion ===== CHECKING RESPONSE =====
+
+        //#region  =====  CHECKING STORAGE =====
+
+        let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+          "ten-testTenant2-sub-subtenant2"
+        ] as any)._userStorage._cacheData;
+
+        //Creating expected storage of users
+        let expectedStoragePayload: any = {};
+
+        let allFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-asset-id"
+          ]
+        );
+
+        for (let filePath of allFilePaths) {
+          if (filePath.includes(".user.config.json")) {
+            let fileContent =
+              fileServiceContent["hostTenant"][
+                "ten-testTenant2-sub-subtenant2-asset-id"
+              ][filePath];
+            let userId = filePath.replace(".user.config.json", "");
+            expectedStoragePayload[userId] = fileContent;
+          }
+        }
+
+        expectedStoragePayload["testGlobalAdmin22"] = requestBody;
+
+        expect(userStorageContent).toEqual(expectedStoragePayload);
+
+        //#endregion  =====  CHECKING STORAGE =====
+
+        //#region  =====  CHECKING API CALLS =====
+
+        //User id should be fetched - via getAllUsers with proper filtering
+        expect(getAllUsers).toHaveBeenCalledTimes(1);
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          "testTenant2",
+          "subtenant2",
+          null,
+          "test_global_admin_22@user.name",
+        ]);
+
+        //Checking if app exists - should be invoked only one time during initalization
+        expect(getAssets).toHaveBeenCalledTimes(1);
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+
+        //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+        expect(getFileContent).toHaveBeenCalledTimes(48);
+        expect(getFileContent.mock.calls).toContainEqual([
+          "hostTenant",
+          "ten-testTenant2-sub-subtenant2-asset-id",
+          "testGlobalAdmin22.user.config.json",
+        ]);
+
+        //Set file content should have been called
+        expect(setFileContent).toHaveBeenCalledTimes(1);
+        expect(setFileContent.mock.calls).toContainEqual([
+          "hostTenant",
+          "ten-testTenant2-sub-subtenant2-asset-id",
+          "testGlobalAdmin22.user.config.json",
+          requestBody,
+        ]);
+
+        //#endregion  =====  CHECKING API CALLS =====
+      } else {
+        //#region ===== CHECKING RESPONSE =====
+
+        expect(result.status).toEqual(responseCode);
+        expect(result.text).toEqual(errorText);
+
+        //#endregion ===== CHECKING RESPONSE =====
+
+        //#region  =====  CHECKING STORAGE =====
+
+        let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+          "ten-testTenant2-sub-subtenant2"
+        ] as any)._userStorage._cacheData;
+
+        //Creating expected storage of users
+        let expectedStoragePayload: any = {};
+
+        let allFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            "ten-testTenant2-sub-subtenant2-asset-id"
+          ]
+        );
+
+        for (let filePath of allFilePaths) {
+          if (filePath.includes(".user.config.json")) {
+            let fileContent =
+              fileServiceContent["hostTenant"][
+                "ten-testTenant2-sub-subtenant2-asset-id"
+              ][filePath];
+            let userId = filePath.replace(".user.config.json", "");
+            expectedStoragePayload[userId] = fileContent;
+          }
+        }
+
+        expect(userStorageContent).toEqual(expectedStoragePayload);
+
+        //#endregion  =====  CHECKING STORAGE =====
+
+        //#region  =====  CHECKING API CALLS =====
+
+        //User id should be fetched - via getAllUsers with proper filtering
+        expect(getAllUsers).toHaveBeenCalledTimes(1);
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          "testTenant2",
+          "subtenant2",
+          null,
+          "test_global_admin_22@user.name",
+        ]);
+
+        //Checking if app exists - should be invoked only one time during initalization
+        expect(getAssets).toHaveBeenCalledTimes(1);
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+
+        //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+        expect(getFileContent).toHaveBeenCalledTimes(48);
+        expect(getFileContent.mock.calls).toContainEqual([
+          "hostTenant",
+          "ten-testTenant2-sub-subtenant2-asset-id",
+          "testGlobalAdmin22.user.config.json",
+        ]);
+
+        //Set file content should not have been called
+        expect(setFileContent).not.toHaveBeenCalled();
+
+        //#endregion  =====  CHECKING API CALLS =====
+      }
+    };
+
+    //#region ========== BODY VALIDATION =========
+
+    it("should return 400 - if request is not a valid JSON", async () => {
+      requestBody = "fakeBody";
+
+      await beforeExec();
+
+      let result = await request(server)
+        .put("/customApi/config/user/me")
+        .send('{"invalid"}')
+        .type("json");
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(400);
+      expect(result.text).toEqual("Invalid request content");
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 400 and not update user - if userName is not defined", async () => {
+      delete requestBody.userName;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"userName" is required`
+      );
+    });
+
+    it("should return 400 and not update user - if userName is null", async () => {
+      requestBody.userName = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"userName" must be a string`
+      );
+    });
+
+    it("should return 400 and not update user - if userName has invalid type (number)", async () => {
+      requestBody.userName = 1234;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"userName" must be a string`
+      );
+    });
+
+    it("should return 400 and not update user - if userName is invalid email", async () => {
+      requestBody.userName = "fakeEmailValue";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"userName" must be a valid email`
+      );
+    });
+
+    it("should return 400 and not update user - if data is undefined", async () => {
+      delete requestBody.data;
+
+      await testBodyValidation(requestBody, false, 400, `"data" is required`);
+    });
+
+    it("should return 400 and not update user - if data is null", async () => {
+      requestBody.data = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"data" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if data has invalid type (string)", async () => {
+      requestBody.data = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"data" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if data is an empty object - permissions of plants exist", async () => {
+      requestBody.data = {};
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`
+      );
+    });
+
+    it("should return 200 and not update user - if data is an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      let userFilePayload =
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]["testGlobalAdmin22.user.config.json"];
+
+      userFilePayload.data = {};
+      userFilePayload.config = {};
+      userFilePayload.permissions.plants = {};
+
+      await testBodyValidation(requestBody, true, 200, null);
+    });
+
+    it("should return 200 and not update user - if data has nested properties ", async () => {
+      //Creating nested properties
+      requestBody.data = {
+        testPlant4: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant5: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant6: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+      };
+
+      await testBodyValidation(requestBody, true, 200, null);
+    });
+
+    it("should return 400 and not update user - if data is not an empty object - permissions of plants don't exist", async () => {
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`
+      );
+    });
+
+    it("should return 400 and not update user - if data has additional plant id", async () => {
+      requestBody.data["fakePlantId"] = { test: 1234 };
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`
+      );
+    });
+
+    it("should return 400 and not update user - if config is undefined", async () => {
+      delete requestBody.config;
+
+      await testBodyValidation(requestBody, false, 400, `"config" is required`);
+    });
+
+    it("should return 400 and not update user - if config is null", async () => {
+      requestBody.config = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"config" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if config has invalid type (string)", async () => {
+      requestBody.config = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"config" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if config is an empty object - permissions of plants exist", async () => {
+      requestBody.config = {};
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`
+      );
+    });
+
+    it("should return 200 and not update user - if config is an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      let userFilePayload =
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]["testGlobalAdmin22.user.config.json"];
+
+      userFilePayload.data = {};
+      userFilePayload.config = {};
+      userFilePayload.permissions.plants = {};
+
+      await testBodyValidation(requestBody, true, 200, null);
+    });
+
+    it("should return 200 and not update user - if config has nested properties ", async () => {
+      //Creating nested properties
+      requestBody.config = {
+        testPlant4: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant5: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant6: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+      };
+
+      await testBodyValidation(requestBody, true, 200, null);
+    });
+
+    it("should return 400 and not update user - if config is not an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.permissions.plants = {};
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`
+      );
+    });
+
+    it("should return 400 and not update user - if config has additional plant id", async () => {
+      requestBody.config["fakePlantId"] = { test: 1234 };
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions is undefined", async () => {
+      delete requestBody.permissions;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions" is required`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions is null", async () => {
+      requestBody.permissions = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions has invalid type (string)", async () => {
+      requestBody.permissions = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.role is undefined", async () => {
+      delete requestBody.permissions.role;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.role" is required`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.role is null", async () => {
+      requestBody.permissions.role = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.role" must be one of [0, 1, 2, 3]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.role has invalid type (string)", async () => {
+      requestBody.permissions.role = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.role" must be one of [0, 1, 2, 3]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants is undefined", async () => {
+      delete requestBody.permissions.plants;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants" is required`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants is null", async () => {
+      requestBody.permissions.plants = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid type (string)", async () => {
+      requestBody.permissions.plants = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid type (string)", async () => {
+      requestBody.permissions.plants = "testData";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants" must be of type object`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants is an empty object - permissions exists in config and data", async () => {
+      requestBody.permissions.plants = {};
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`
+      );
+    });
+
+    it("should return 200 and not update user - if permissions.plants is an empty object - permissions does not exist in config and data", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      let userFilePayload =
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]["testGlobalAdmin22.user.config.json"];
+
+      userFilePayload.data = {};
+      userFilePayload.config = {};
+      userFilePayload.permissions.plants = {};
+
+      await testBodyValidation(requestBody, true, 200, null);
+    });
+
+    it("should return 400 and not update user - if permissions.plants is has one additional plant - permissions exists in config and data", async () => {
+      requestBody.permissions.plants["fakePlant"] = 0;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants is null", async () => {
+      requestBody.permissions.plants["fakePlant"] = null;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid type - string", async () => {
+      requestBody.permissions.plants["fakePlant"] = "abcd1234";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid number - float", async () => {
+      requestBody.permissions.plants["fakePlant"] = 0.123;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid number - below 0", async () => {
+      requestBody.permissions.plants["fakePlant"] = -1;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`
+      );
+    });
+
+    it("should return 400 and not update user - if permissions.plants has invalid number - above 1", async () => {
+      requestBody.permissions.plants["fakePlant"] = 2;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`
+      );
+    });
+
+    it("should return 400 and not update user - if role is a globalUser but permissions to plant is an admin", async () => {
+      requestBody.permissions.role = UserRole.GlobalUser;
+      requestBody.permissions.plants = {
+        testPlant4: PlantPermissions.Admin,
+        testPlant5: PlantPermissions.Admin,
+        testPlant6: PlantPermissions.Admin,
+      };
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `Users role should be a local or global admin, if they have administrative permissions for a plant!`
+      );
+    });
+
+    it("should return 400 and not update user - if role is a localUser but permissions to plant is an admin", async () => {
+      requestBody.permissions.role = UserRole.LocalUser;
+      requestBody.permissions.plants = {
+        testPlant4: PlantPermissions.Admin,
+        testPlant5: PlantPermissions.Admin,
+        testPlant6: PlantPermissions.Admin,
+      };
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `Users role should be a local or global admin, if they have administrative permissions for a plant!`
+      );
+    });
+
+    it("should return 400 and not update user - if user tries to change his permissions", async () => {
+      requestBody.permissions.role = UserRole.LocalAdmin;
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `Users role cannot be modified!`
+      );
+    });
+
+    it("should return 400 and not update user - if user tries to change his userName", async () => {
+      requestBody.userName = "newFakeUserName@fake.email";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `Users name cannot be modified!`
+      );
+    });
+
+    it("should return 400 and not update user - if user tries to change his plants permissions", async () => {
+      requestBody.data = {
+        testPlant5: {
+          testLocalAdmin22TestPlant5Data: "testLocalAdmin22TestPlant5DataValue",
+        },
+      };
+      requestBody.config = {
+        testPlant5: {
+          testLocalAdmin22TestPlant5Config:
+            "testLocalAdmin22TestPlant5ConfigValue",
+        },
+      };
+      (requestBody.permissions.plants = {
+        testPlant5: PlantPermissions.Admin,
+      }),
+        await testBodyValidation(
+          requestBody,
+          false,
+          400,
+          `Users plant permissions cannot be modified!`
+        );
+    });
+
+    //#endregion ========== BODY VALIDATION =========
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 403 and not update user - if user's payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. Invalid application id generated from user payload!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if there is no application", async () => {
+      userPayload.ten = "fakeTenant";
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. Application of given id not found for the user!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only two times - during initalization and to check whether fake app exists
+      expect(getAssets).toHaveBeenCalledTimes(2);
+      expect(getAssets.mock.calls[1]).toEqual([
+        "hostTenant",
+        "ten-fakeTenant-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if there is no application data for given user", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. Main application settings not found for the user!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time - during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 - 1 main config
+      //But check file should be invoked 48 times
+
+      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
+      expect(checkIfFileExists.mock.calls[47]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "main.app.config.json",
+      ]);
+      expect(getFileContent).toHaveBeenCalledTimes(47);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if user has valid scope, exists in user service exists but does not exist in file service", async () => {
+      //Adding new user to user service
+      userServiceContent["testTenant2"] = {
+        ...userServiceContent["testTenant2"],
+        testFakeUser23: {
+          active: true,
+          name: {
+            familyName: "testFakeUser23FamilyName",
+            givenName: "testFakeUser23GivenName",
+          },
+          userName: "test_fake_user_23@user.name",
+          emails: [
+            {
+              value: "testFakeUser23Email",
+            },
+          ],
+          groups: [],
+          externalId: "testFakeUser23ExternalId",
+          id: "testFakeUser23",
+          subtenants: [
+            {
+              id: "subtenant2",
+            },
+          ],
+        },
+      };
+
+      //Assinging user to local user group in tenant
+      userGroupServiceContent.testTenant2.localUserGroup.members = [
+        ...userGroupServiceContent.testTenant2.localUserGroup.members,
+        {
+          type: "USER",
+          value: "testFakeUser23",
+        },
+      ];
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. User does not exist for given app id!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_fake_user_23@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time - during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - invoked during initialization + during checking of new user - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      //But check file should be invoked 49 times + one fake user
+      expect(checkIfFileExists).toHaveBeenCalledTimes(49);
+      expect(checkIfFileExists.mock.calls[48]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testFakeUser23.user.config.json",
+      ]);
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. User of given name not found!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //There should be an attempt to fetch users id
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_fake_user_23@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time - during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 + 1 additional user
+      expect(checkIfFileExists).toHaveBeenCalledTimes(49);
+      expect(getFileContent).toHaveBeenCalledTimes(49);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if user has invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Forbidden access. No scope found to access the app!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 and not update user - if user has no access to the app - invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22_user_name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Forbidden access. No scope found to access the app!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 401 and not update user - if there is no authorization token in header", async () => {
+      delete requestHeaders["authorization"];
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(401);
+      expect(result.text).toEqual(
+        "Access denied. No token provided to fetch the user or token is invalid!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(401);
+      expect(result.text).toEqual(
+        "Access denied. No token provided to fetch the user or token is invalid!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(401);
+      expect(result.text).toEqual(
+        "Access denied. No token provided to fetch the user or token is invalid!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).not.toHaveBeenCalled();
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 403 - if user has valid scope to access app, but not valid permisssions in data", async () => {
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testGlobalAdmin22.user.config.json"].permissions.role = 123;
+
+      //#region ===== CHECKING RESPONSE =====
+
+      let result = await exec();
+      expect(result.status).toEqual(403);
+      expect(result.text).toEqual(
+        "Access denied. User must be a global user or admin or local user or admin!"
+      );
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_global_admin_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-asset-id",
+        "testGlobalAdmin21.user.config.json",
+      ]);
+
+      //Set file content should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion  =====  CHECKING API CALLS =====
+    });
+    //TODO - ADD CHECK TO MIDDLEWARE IS USER OR ADMIN!
+
+    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not update user - if setFileThrows", async () => {
+      setFileThrows = true;
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(500);
+
+      expect(result.text).toEqual(`Ups.. Something fails..`);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      //User stroge content should not have changed
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        "testTenant2",
+        "subtenant2",
+        null,
+        "test_global_admin_22@user.name",
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test set content error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not update user - if getAllUsers throws", async () => {
+      getAllUsersThrows = true;
+
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(500);
+
+      expect(result.text).toEqual(`Ups.. Something fails..`);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      //User stroge content should not have changed
+      let userStorageContent = (MindSphereAppsManager.getInstance().Apps[
+        "ten-testTenant2-sub-subtenant2"
+      ] as any)._userStorage._cacheData;
+
+      //Creating expected storage of users
+      let expectedStoragePayload: any = {};
+
+      let allFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][
+          "ten-testTenant2-sub-subtenant2-asset-id"
+        ]
+      );
+
+      for (let filePath of allFilePaths) {
+        if (filePath.includes(".user.config.json")) {
+          let fileContent =
+            fileServiceContent["hostTenant"][
+              "ten-testTenant2-sub-subtenant2-asset-id"
+            ][filePath];
+          let userId = filePath.replace(".user.config.json", "");
+          expectedStoragePayload[userId] = fileContent;
+        }
+      }
+
+      expect(userStorageContent).toEqual(expectedStoragePayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+
+      //#region  =====  CHECKING API CALLS =====
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls).toContainEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2-asset-id",
+        "testGlobalAdmin22.user.config.json",
+      ]);
+
+      //#endregion  =====  CHECKING API CALLS =====
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 });

@@ -2037,13 +2037,11 @@ describe("user route", () => {
   };
 
   describe("GET /me", () => {
-    let requestPayload: any;
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
 
     beforeEach(() => {
       requestHeaders = {};
-      requestPayload = {};
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -2064,7 +2062,7 @@ describe("user route", () => {
       return request(server)
         .get("/customApi/user/me")
         .set(requestHeaders)
-        .send(requestPayload);
+        .send();
     };
 
     it("should return 200 and payload of the user - if user is a subtenant user and global admin", async () => {
