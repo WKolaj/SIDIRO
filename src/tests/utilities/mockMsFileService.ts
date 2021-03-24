@@ -44,6 +44,12 @@ export function mockMsFileService(
   fileService.countTotalNumberOfFiles = countTotalNumberOfFiles;
 }
 
+export function setFileServiceContent(
+  fileServiceContent: MockedFileServiceContent
+) {
+  mindSphereContent = cloneObject(fileServiceContent);
+}
+
 export const checkIfFileExists = jest.fn(
   async (tenantName: string, assetId: string, filePath: string) => {
     if (!serviceAvailable) throw new Error("Service not available!");
