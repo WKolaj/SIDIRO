@@ -6083,8 +6083,7 @@ describe("config user route", () => {
 
       //#endregion  =====  CHECKING API CALLS =====
     });
-    //TODO - ADD CHECK TO MIDDLEWARE IS USER OR ADMIN!
-
+    
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
 
     //#region ========== MINDSPHERE SERVICE THROWS ==========
