@@ -2184,7 +2184,7 @@ describe("config user route", () => {
         .send();
     };
 
-    const testLocalUsersGet = async (
+    const testGlobalUsersGet = async (
       validCall: boolean,
       responseCode: number,
       errorText: string | null,
@@ -2278,7 +2278,7 @@ describe("config user route", () => {
     };
 
     it("should return 200 and payload of all users of the app - if user is a subtenant user and global admin", async () => {
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         true,
         200,
         null,
@@ -2305,7 +2305,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         true,
         200,
         null,
@@ -2332,7 +2332,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         true,
         200,
         null,
@@ -2359,7 +2359,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         true,
         200,
         null,
@@ -2543,7 +2543,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2575,7 +2575,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2602,7 +2602,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2629,7 +2629,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2657,7 +2657,7 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2684,7 +2684,7 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2711,7 +2711,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2738,7 +2738,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2766,7 +2766,7 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2794,7 +2794,7 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -2823,7 +2823,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -2851,7 +2851,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -2880,7 +2880,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -2908,7 +2908,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -2930,7 +2930,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not be called - invalid app id and blocked stright away
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. Invalid application id generated from user payload!",
@@ -2952,7 +2952,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAssets called twice - try to fetch new app
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. Application of given id not found for the user!",
@@ -2970,7 +2970,7 @@ describe("config user route", () => {
       ]["main.app.config.json"];
 
       //One user file should not be fetched during initialization
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. Main application settings not found for the user!",
@@ -3034,7 +3034,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User does not exist for given app id!",
@@ -3096,7 +3096,7 @@ describe("config user route", () => {
       )}`;
 
       //GetFileContent should be called 49 times - one additional user
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User of given name not found!",
@@ -3124,7 +3124,7 @@ describe("config user route", () => {
       )}`;
 
       //User should not have been fetched - checking scope first
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Forbidden access. No scope found to access the app!",
@@ -3154,7 +3154,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAssets should have been called twice - try fetching new app
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. Application of given id not found for the user!",
@@ -3186,7 +3186,7 @@ describe("config user route", () => {
       ];
 
       //GetFileContent should be invoked only 47 times - 1 time less due to lack of main app config file
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. Main application settings not found for the user!",
@@ -3244,7 +3244,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User does not exist for given app id!",
@@ -3305,7 +3305,7 @@ describe("config user route", () => {
       )}`;
 
       //GetFileContent should be called one more time - fetching new user data
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Access denied. User of given name not found!",
@@ -3332,7 +3332,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not be called - scope invalid before fetching the app or user data
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         403,
         "Forbidden access. No scope found to access the app!",
@@ -3348,7 +3348,7 @@ describe("config user route", () => {
       delete requestHeaders["authorization"];
 
       //GetAllUsers should not be called - token invalid before fetching the app or user data
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -3364,7 +3364,7 @@ describe("config user route", () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
       //GetAllUsers should not be called - token invalid before fetching the app or user data
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -3381,7 +3381,7 @@ describe("config user route", () => {
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
       //GetAllUsers should not be called - token invalid before fetching the app or user data
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -3401,7 +3401,7 @@ describe("config user route", () => {
       getAllUsersThrows = true;
 
       //GetAllUsers call 0 times - ovveridden with mock throw function
-      await testLocalUsersGet(
+      await testGlobalUsersGet(
         false,
         500,
         `Ups.. Something fails..`,
@@ -3466,7 +3466,7 @@ describe("config user route", () => {
         .send();
     };
 
-    const testLocalUserGet = async (
+    const testGlobalUserGet = async (
       validCall: boolean,
       responseCode: number,
       errorText: string | null,
@@ -3561,7 +3561,7 @@ describe("config user route", () => {
     };
 
     it("should return 200 and payload user of the app - if user who requests API is a subtenant user and global admin", async () => {
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3588,7 +3588,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3617,7 +3617,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3645,7 +3645,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3660,7 +3660,7 @@ describe("config user route", () => {
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a global admin", async () => {
       userId = "testGlobalAdmin22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3675,7 +3675,7 @@ describe("config user route", () => {
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a global user", async () => {
       userId = "testGlobalUser22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3690,7 +3690,7 @@ describe("config user route", () => {
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a local admin", async () => {
       userId = "testLocalAdmin22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3705,7 +3705,7 @@ describe("config user route", () => {
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a local user", async () => {
       userId = "testLocalUser22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3734,7 +3734,7 @@ describe("config user route", () => {
 
       userId = "testGlobalAdmin22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3763,7 +3763,7 @@ describe("config user route", () => {
 
       userId = "testGlobalUser22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3792,7 +3792,7 @@ describe("config user route", () => {
 
       userId = "testLocalAdmin22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3821,7 +3821,7 @@ describe("config user route", () => {
 
       userId = "testLocalUser22";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3983,7 +3983,7 @@ describe("config user route", () => {
     it("should return 200 - eve if user exists in storage and cache but not exists in tenant", async () => {
       delete userServiceContent["testTenant2"][userId];
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         true,
         200,
         null,
@@ -3998,7 +3998,7 @@ describe("config user route", () => {
     it("should return 404 - if there is no user of given id", async () => {
       userId = "fakeId";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         404,
         "User not found!",
@@ -4031,7 +4031,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4063,7 +4063,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4095,7 +4095,7 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4123,7 +4123,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4151,7 +4151,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4180,7 +4180,7 @@ describe("config user route", () => {
       appId = "ten-testTenant2";
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4208,7 +4208,7 @@ describe("config user route", () => {
       appId = "ten-testTenant2";
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4236,7 +4236,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4264,7 +4264,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4293,7 +4293,7 @@ describe("config user route", () => {
       appId = "ten-testTenant2";
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4322,7 +4322,7 @@ describe("config user route", () => {
       appId = "ten-testTenant2";
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User must be a global user or global admin!",
@@ -4351,7 +4351,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -4379,7 +4379,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -4408,7 +4408,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -4436,7 +4436,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. No access to given application!",
@@ -4458,7 +4458,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking app before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. Invalid application id generated from user payload!",
@@ -4481,7 +4481,7 @@ describe("config user route", () => {
 
       //GetAllUsers should not have been called - checking app before
       //GetAssets called twice - try to fetch fake app
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. Application of given id not found for the user!",
@@ -4500,7 +4500,7 @@ describe("config user route", () => {
 
       //GetAllUsers should not have been called - checking app before
       //GetFileContent invoked only 47 times - no main config file for one of the apps
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. Main application settings not found for the user!",
@@ -4564,7 +4564,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User does not exist for given app id!",
@@ -4626,7 +4626,7 @@ describe("config user route", () => {
       )}`;
 
       //GetFileContent call 49 times - additional user's data
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User of given name not found!",
@@ -4654,7 +4654,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should not have been called - checking scope before
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Forbidden access. No scope found to access the app!",
@@ -4685,7 +4685,7 @@ describe("config user route", () => {
 
       //GetAllUsers should not have been called - checking app before
       //GetAssets called 2 times - try to fetch not existing app
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. Application of given id not found for the user!",
@@ -4718,7 +4718,7 @@ describe("config user route", () => {
 
       //GetAllUsers should not have been called - checking app before
       //GetFileContent called 47 times - lack of one file, app config file
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. Main application settings not found for the user!",
@@ -4779,7 +4779,7 @@ describe("config user route", () => {
       )}`;
 
       //GetFileContent called 49 times - one additional user data
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Access denied. User of given name not found!",
@@ -4806,7 +4806,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers called 0 times - first check the users scope
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         403,
         "Forbidden access. No scope found to access the app!",
@@ -4822,7 +4822,7 @@ describe("config user route", () => {
       delete requestHeaders["authorization"];
 
       //GetAllUsers called 0 times - first check token
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -4838,7 +4838,7 @@ describe("config user route", () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
       //GetAllUsers called 0 times - first check token
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -4855,7 +4855,7 @@ describe("config user route", () => {
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
       //GetAllUsers called 0 times - first check token
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -4875,7 +4875,7 @@ describe("config user route", () => {
       getAllUsersThrows = true;
 
       //GetAllUsers called 0 times - first check token
-      await testLocalUserGet(
+      await testGlobalUserGet(
         false,
         500,
         `Ups.. Something fails..`,
@@ -4990,7 +4990,7 @@ describe("config user route", () => {
         .send(requestBody);
     };
 
-    const testLocalUserCreation = async (
+    const testGlobalUserCreation = async (
       validCall: boolean,
       responseCode: number,
       expectedAssignedUserGroupIds: string[] | null,
@@ -5276,7 +5276,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -5294,7 +5294,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalUserGroup", "subtenantUserGroup"],
@@ -5312,7 +5312,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["localAdminGroup", "subtenantUserGroup"],
@@ -5330,7 +5330,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["localUserGroup", "subtenantUserGroup"],
@@ -5361,7 +5361,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "standardUserGroup"],
@@ -5392,7 +5392,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalUserGroup", "standardUserGroup"],
@@ -5423,7 +5423,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["localAdminGroup", "standardUserGroup"],
@@ -5454,7 +5454,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["localUserGroup", "standardUserGroup"],
@@ -5465,7 +5465,7 @@ describe("config user route", () => {
     it("should return 400 - if user of given username already exists for the same app", async () => {
       requestBody.userName = "test_local_user_22@user.name";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5482,7 +5482,7 @@ describe("config user route", () => {
     it("should return 400 - if user of given username doesn't exist for the same app but exists for the same tenant", async () => {
       requestBody.userName = "test_local_user_21@user.name";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5501,7 +5501,7 @@ describe("config user route", () => {
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"].maxNumberOfUsers = 4;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5520,7 +5520,7 @@ describe("config user route", () => {
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"].maxNumberOfUsers = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -5531,7 +5531,7 @@ describe("config user route", () => {
     it("should return 200 and create the user - if user of given username exists for different tenant", async () => {
       requestBody.userName = "test_local_user_11@user.name";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -5625,7 +5625,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if there is an attempt to create user with user id", async () => {
       requestBody.userId = "fakeUserId";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5642,7 +5642,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if there is an attempt to create user with app id", async () => {
       requestBody.appId = "fakeAppId";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5659,7 +5659,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if userName is not defined", async () => {
       delete requestBody.userName;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5676,7 +5676,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if userName is null", async () => {
       requestBody.userName = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5693,7 +5693,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if userName has invalid type (number)", async () => {
       requestBody.userName = 1234;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5710,7 +5710,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if userName is invalid email", async () => {
       requestBody.userName = "fakeEmailValue";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5727,7 +5727,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if data is undefined", async () => {
       delete requestBody.data;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5744,7 +5744,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if data is null", async () => {
       requestBody.data = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5761,7 +5761,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if data has invalid type (string)", async () => {
       requestBody.data = "testData";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5778,7 +5778,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if data is an empty object - permissions of plants exist", async () => {
       requestBody.data = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5797,7 +5797,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -5858,7 +5858,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -5870,7 +5870,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5888,7 +5888,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if data has additional plant id", async () => {
       requestBody.data["fakePlantId"] = { test: 1234 };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5905,7 +5905,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if config is undefined", async () => {
       delete requestBody.config;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5922,7 +5922,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if config is null", async () => {
       requestBody.config = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5939,7 +5939,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if config has invalid type (string)", async () => {
       requestBody.config = "testData";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5956,7 +5956,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if config is an empty object - permissions of plants exist", async () => {
       requestBody.config = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -5975,7 +5975,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -6036,7 +6036,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -6048,7 +6048,7 @@ describe("config user route", () => {
       requestBody.data = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6065,7 +6065,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if config has additional plant id", async () => {
       requestBody.config["fakePlantId"] = { test: 1234 };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6082,7 +6082,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions is undefined", async () => {
       delete requestBody.permissions;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6099,7 +6099,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions is null", async () => {
       requestBody.permissions = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6116,7 +6116,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions has invalid type (string)", async () => {
       requestBody.permissions = "testData";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6133,7 +6133,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.role is undefined", async () => {
       delete requestBody.permissions.role;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6150,7 +6150,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.role is null", async () => {
       requestBody.permissions.role = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6167,7 +6167,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.role has invalid type (string)", async () => {
       requestBody.permissions.role = "testData";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6184,7 +6184,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.role has invalid value", async () => {
       requestBody.permissions.role = 5;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6201,7 +6201,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants is undefined", async () => {
       delete requestBody.permissions.plants;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6218,7 +6218,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants is null", async () => {
       requestBody.permissions.plants = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6235,7 +6235,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants has invalid type (string)", async () => {
       requestBody.permissions.plants = "testData";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6252,7 +6252,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants is an empty object - permissions exists in config and data", async () => {
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6271,7 +6271,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         true,
         200,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -6282,7 +6282,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants has one additional plant - permissions exists in config and data", async () => {
       requestBody.permissions.plants["fakePlant"] = 0;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6299,7 +6299,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants of one plant is null", async () => {
       requestBody.permissions.plants["fakePlant"] = null;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6316,7 +6316,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants of one plant has invalid type - string", async () => {
       requestBody.permissions.plants["fakePlant"] = "abcd1234";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6333,7 +6333,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants of one plant has invalid number - float", async () => {
       requestBody.permissions.plants["fakePlant"] = 0.123;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6350,7 +6350,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants of one plant has invalid number - below 0", async () => {
       requestBody.permissions.plants["fakePlant"] = -1;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6367,7 +6367,7 @@ describe("config user route", () => {
     it("should return 400 and not create new user - if permissions.plants of one plant has invalid number - above 1", async () => {
       requestBody.permissions.plants["fakePlant"] = 2;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6389,7 +6389,7 @@ describe("config user route", () => {
         testPlant6: PlantPermissions.Admin,
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6411,7 +6411,7 @@ describe("config user route", () => {
         testPlant6: PlantPermissions.Admin,
       };
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         400,
         null,
@@ -6446,7 +6446,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should be called - fetching users data
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6477,7 +6477,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should be called - fetching users data
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6508,7 +6508,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should be called - fetching users data
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6531,7 +6531,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6561,7 +6561,7 @@ describe("config user route", () => {
       )}`;
 
       //2 x GetAssets call - try fetching new app
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6590,7 +6590,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6609,7 +6609,7 @@ describe("config user route", () => {
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"];
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6673,7 +6673,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should be caled - try fetching user's data
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6737,7 +6737,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUsers should be caled - try fetching user's data
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6766,7 +6766,7 @@ describe("config user route", () => {
       )}`;
 
       //Get all users should not have been called - checking scope before fetching user
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6797,7 +6797,7 @@ describe("config user route", () => {
       )}`;
 
       //Get all users should have been called - checking user's app assingment
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6827,7 +6827,7 @@ describe("config user route", () => {
       )}`;
 
       //Get all users should have been called - checking user's app assingment
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         403,
         null,
@@ -6844,7 +6844,7 @@ describe("config user route", () => {
     it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         401,
         null,
@@ -6862,7 +6862,7 @@ describe("config user route", () => {
       requestHeaders["authorization"] =
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         401,
         null,
@@ -6879,7 +6879,7 @@ describe("config user route", () => {
     it("should return 401 - if authorization token is invalid - no token provided", async () => {
       delete requestHeaders["authorization"];
 
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         401,
         null,
@@ -6901,7 +6901,7 @@ describe("config user route", () => {
       getAllUsersThrows = true;
 
       //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         500,
         null,
@@ -6928,7 +6928,7 @@ describe("config user route", () => {
       createUserThrows = true;
 
       //0 calls for create user - becouse createUser mock is overridden with a different mocked method
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         500,
         null,
@@ -6955,7 +6955,7 @@ describe("config user route", () => {
       setFileContentThrows = true;
 
       //0 calls for set file content - becouse setFileContent mock is overridden with a different mocked method
-      await testLocalUserCreation(
+      await testGlobalUserCreation(
         false,
         500,
         ["globalAdminGroup", "subtenantUserGroup"],
@@ -6981,7 +6981,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("PUT /global/:appId", () => {
+  describe("PUT /global/:appId/:userId", () => {
     let requestBody: any;
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
@@ -7073,7 +7073,7 @@ describe("config user route", () => {
         .send(requestBody);
     };
 
-    const testLocalUserEdition = async (
+    const testGlobalUserEdition = async (
       validCall: boolean,
       responseCode: number,
       errorText: string | null,
@@ -7288,7 +7288,7 @@ describe("config user route", () => {
     };
 
     it("should update user in MindSphere and in storage and return 200 with a payload of created user", async () => {
-      await testLocalUserEdition(true, 200, null);
+      await testGlobalUserEdition(true, 200, null);
     });
 
     it("should update user in MindSphere and in storage and return 200 with a payload of created user - if user to update is local user and current user is global admin", async () => {
@@ -7327,7 +7327,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7388,7 +7388,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7449,7 +7449,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7510,7 +7510,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7581,7 +7581,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(true, 200, null);
+      await testGlobalUserEdition(true, 200, null);
     });
 
     it("should update user in MindSphere and in storage and return 200 with a payload of created user - tenant app", async () => {
@@ -7629,7 +7629,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7691,7 +7691,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7753,7 +7753,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7815,7 +7815,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7877,7 +7877,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -7939,7 +7939,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -8116,7 +8116,7 @@ describe("config user route", () => {
     it("should not update user in MindSphere nor in storage and return 404 - if user of given id does not exist in user service but exists in cache and storage", async () => {
       delete userServiceContent["testTenant2"][userId];
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         404,
         `User of name: test_local_user_22@user.name does not exist in tenant!`,
@@ -8136,7 +8136,7 @@ describe("config user route", () => {
     it("should not update user in MindSphere nor in storage and return 404 - if user of given id does not exist in userService nor in cache or storage ", async () => {
       userId = "fakeUserId";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         404,
         "User of id: fakeUserId does not exist!",
@@ -8224,7 +8224,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if there is an attempt to change userName", async () => {
       requestBody.userName = "newFakeUserName@fake.email";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `Users name cannot be modified!`,
@@ -8244,7 +8244,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if there is an attempt to change userId", async () => {
       requestBody.userId = "fakeUserId";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"userId" is not allowed`,
@@ -8264,7 +8264,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if there is an attempt to change appId", async () => {
       requestBody.appId = "fakAppId";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"appId" is not allowed`,
@@ -8284,7 +8284,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if userName is not defined", async () => {
       delete requestBody.userName;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"userName" is required`,
@@ -8304,7 +8304,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if userName is null", async () => {
       requestBody.userName = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"userName" must be a string`,
@@ -8324,7 +8324,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if userName has invalid type (number)", async () => {
       requestBody.userName = 1234;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"userName" must be a string`,
@@ -8344,7 +8344,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if userName is invalid email", async () => {
       requestBody.userName = "fakeEmailValue";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"userName" must be a valid email`,
@@ -8364,7 +8364,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if data is undefined", async () => {
       delete requestBody.data;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"data" is required`,
@@ -8384,7 +8384,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if data is null", async () => {
       requestBody.data = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"data" must be of type object`,
@@ -8404,7 +8404,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if data has invalid type (string)", async () => {
       requestBody.data = "testData";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"data" must be of type object`,
@@ -8424,7 +8424,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if data is an empty object - permissions of plants exist", async () => {
       requestBody.data = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User data invalid - plantIds in data and in permissions must be identical!`,
@@ -8446,7 +8446,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -8508,7 +8508,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -8537,7 +8537,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User data invalid - plantIds in data and in permissions must be identical!`,
@@ -8557,7 +8557,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if data has additional plant id", async () => {
       requestBody.data["fakePlantId"] = { test: 1234 };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User data invalid - plantIds in data and in permissions must be identical!`,
@@ -8577,7 +8577,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if config is undefined", async () => {
       delete requestBody.config;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"config" is required`,
@@ -8597,7 +8597,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if config is null", async () => {
       requestBody.config = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"config" must be of type object`,
@@ -8617,7 +8617,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if config has invalid type (string)", async () => {
       requestBody.config = "testData";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"config" must be of type object`,
@@ -8637,7 +8637,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if config is an empty object - permissions of plants exist", async () => {
       requestBody.config = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User config invalid - plantIds in config and in permissions must be identical!`,
@@ -8659,7 +8659,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -8721,7 +8721,7 @@ describe("config user route", () => {
         },
       };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -8750,7 +8750,7 @@ describe("config user route", () => {
       requestBody.data = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User config invalid - plantIds in config and in permissions must be identical!`,
@@ -8770,7 +8770,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if config has additional plant id", async () => {
       requestBody.config["fakePlantId"] = { test: 1234 };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User config invalid - plantIds in config and in permissions must be identical!`,
@@ -8790,7 +8790,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions is undefined", async () => {
       delete requestBody.permissions;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions" is required`,
@@ -8810,7 +8810,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions is null", async () => {
       requestBody.permissions = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions" must be of type object`,
@@ -8830,7 +8830,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions has invalid type (string)", async () => {
       requestBody.permissions = "testData";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions" must be of type object`,
@@ -8850,7 +8850,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.role is undefined", async () => {
       delete requestBody.permissions.role;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.role" is required`,
@@ -8870,7 +8870,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.role is null", async () => {
       requestBody.permissions.role = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.role" must be one of [0, 1, 2, 3]`,
@@ -8890,7 +8890,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.role has invalid type (string)", async () => {
       requestBody.permissions.role = "testData";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.role" must be one of [0, 1, 2, 3]`,
@@ -8910,7 +8910,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.role has invalid value", async () => {
       requestBody.permissions.role = 5;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.role" must be one of [0, 1, 2, 3]`,
@@ -8930,7 +8930,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants is undefined", async () => {
       delete requestBody.permissions.plants;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants" is required`,
@@ -8950,7 +8950,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants is null", async () => {
       requestBody.permissions.plants = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants" must be of type object`,
@@ -8970,7 +8970,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants has invalid type (string)", async () => {
       requestBody.permissions.plants = "testData";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants" must be of type object`,
@@ -8990,7 +8990,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants is an empty object - permissions exists in config and data", async () => {
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User config invalid - plantIds in config and in permissions must be identical!`,
@@ -9012,7 +9012,7 @@ describe("config user route", () => {
       requestBody.config = {};
       requestBody.permissions.plants = {};
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         true,
         200,
         null,
@@ -9040,7 +9040,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants has one additional plant - permissions exists in config and data", async () => {
       requestBody.permissions.plants["fakePlant"] = 0;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `User config invalid - plantIds in config and in permissions must be identical!`,
@@ -9060,7 +9060,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants of one plant is null", async () => {
       requestBody.permissions.plants["fakePlant"] = null;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants.fakePlant" must be one of [0, 1]`,
@@ -9080,7 +9080,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants of one plant has invalid type - string", async () => {
       requestBody.permissions.plants["fakePlant"] = "abcd1234";
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants.fakePlant" must be one of [0, 1]`,
@@ -9100,7 +9100,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - float", async () => {
       requestBody.permissions.plants["fakePlant"] = 0.123;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants.fakePlant" must be one of [0, 1]`,
@@ -9120,7 +9120,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - below 0", async () => {
       requestBody.permissions.plants["fakePlant"] = -1;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants.fakePlant" must be one of [0, 1]`,
@@ -9140,7 +9140,7 @@ describe("config user route", () => {
     it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - above 1", async () => {
       requestBody.permissions.plants["fakePlant"] = 2;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `"permissions.plants.fakePlant" must be one of [0, 1]`,
@@ -9165,7 +9165,7 @@ describe("config user route", () => {
         testPlant6: PlantPermissions.Admin,
       };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `Users role should be a local or global admin, if they have administrative permissions for a plant!`,
@@ -9190,7 +9190,7 @@ describe("config user route", () => {
         testPlant6: PlantPermissions.Admin,
       };
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         400,
         `Users role should be a local or global admin, if they have administrative permissions for a plant!`,
@@ -9227,7 +9227,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. User must be a global admin!",
@@ -9260,7 +9260,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. User must be a global admin!",
@@ -9293,7 +9293,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. User must be a global admin!",
@@ -9320,7 +9320,7 @@ describe("config user route", () => {
       )}`;
 
       //GetAllUser should not be called - call ended before fetching user's data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. Invalid application id generated from user payload!",
@@ -9354,7 +9354,7 @@ describe("config user route", () => {
 
       //2 x GetAssets call - try fetching new app
       //GetAllUser should not be called - call ended before fetching user's data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. Application of given id not found for the user!",
@@ -9386,7 +9386,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. No access to given application!",
@@ -9410,7 +9410,7 @@ describe("config user route", () => {
 
       //GetAllUser should not be called - call ended before fetching user's data
       //47 calls of getFileContent - no file containing one main app data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. Main application settings not found for the user!",
@@ -9477,7 +9477,7 @@ describe("config user route", () => {
       )}`;
 
       //49 calls of getFileContent - one additional user
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. User of given name not found!",
@@ -9543,7 +9543,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. User does not exist for given app id!",
@@ -9575,7 +9575,7 @@ describe("config user route", () => {
       )}`;
 
       //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Forbidden access. No scope found to access the app!",
@@ -9608,7 +9608,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. No access to given application!",
@@ -9640,7 +9640,7 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         403,
         "Access denied. No access to given application!",
@@ -9661,7 +9661,7 @@ describe("config user route", () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
       //No calling getAllUsers - returning before fetching user's data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -9683,7 +9683,7 @@ describe("config user route", () => {
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
       //No calling getAllUsers - returning before fetching user's data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -9704,7 +9704,7 @@ describe("config user route", () => {
       delete requestHeaders["authorization"];
 
       //No calling getAllUsers - returning before fetching user's data
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         401,
         "Access denied. No token provided to fetch the user or token is invalid!",
@@ -9729,7 +9729,7 @@ describe("config user route", () => {
       getAllUsersThrows = true;
 
       //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         500,
         `Ups.. Something fails..`,
@@ -9760,7 +9760,7 @@ describe("config user route", () => {
 
       //0 calls for set file content - becouse setFileContent mock is overridden with a different mocked method
       //API Calls for changing user's role should have been called
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         500,
         `Ups.. Something fails..`,
@@ -9792,7 +9792,7 @@ describe("config user route", () => {
       //0 calls for set file content - it should not have been called
       //0 calls for adding user to group - mocking it with different method that throws
       //API Calls for removing user from group should not have been called
-      await testLocalUserEdition(
+      await testGlobalUserEdition(
         false,
         500,
         `Ups.. Something fails..`,
@@ -9814,6 +9814,958 @@ describe("config user route", () => {
       expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
       expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
         "Test add user to group error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
+  });
+
+  describe("DELETE /global/:appId/:userId", () => {
+    let requestHeaders: any;
+    let userPayload: MindSphereUserJWTData;
+    let appId: string;
+    let userId: string;
+    let getAllUsersThrows: boolean;
+    let deleteFileThrows: boolean;
+    let deleteUserThrows: boolean;
+
+    beforeEach(() => {
+      requestHeaders = {};
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      getAllUsersThrows = false;
+      deleteFileThrows = false;
+      deleteUserThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
+      if (deleteFileThrows) {
+        MindSphereFileService.getInstance().deleteFile = jest.fn(async () => {
+          throw new Error("Test delete file error");
+        });
+      }
+
+      if (deleteUserThrows) {
+        MindSphereUserService.getInstance().deleteUser = jest.fn(async () => {
+          throw new Error("Test delete user error");
+        });
+      }
+
+      return request(server)
+        .delete(`/customApi/config/user/global/${appId}/${userId}`)
+        .set(requestHeaders)
+        .send();
+    };
+
+    const testGlobalUserDeletion = async (
+      validCall: boolean,
+      responseCode: number,
+      errorText: string | null,
+      expectedGetAllUsersCallNumber: number = 1,
+      expectedGetAssetsCallNumber: number = 1,
+      expectedGetFileContentCallNumber: number = 48,
+      expectedDeleteUserCalls: number = 1,
+      expectedDeleteFileCalls: number = 1
+    ) => {
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      if (validCall) {
+        expect(result.status).toEqual(200);
+
+        let expectedPayload = getUserDataResponse(
+          appId,
+          `${appId}-asset-id`,
+          userId
+        );
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.status).toEqual(responseCode);
+        expect(result.text).toEqual(errorText);
+      }
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant ?? null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+
+      //Delete user should have been called properly
+      expect(deleteUser).toHaveBeenCalledTimes(expectedDeleteUserCalls);
+      if (expectedDeleteUserCalls > 0) {
+        expect(deleteUser.mock.calls).toContainEqual([userPayload.ten, userId]);
+      }
+
+      //Delete file content should have been called properly
+      expect(deleteFile).toHaveBeenCalledTimes(expectedDeleteFileCalls);
+      if (expectedDeleteFileCalls > 0) {
+        expect(deleteFile.mock.calls).toContainEqual([
+          "hostTenant",
+          `${appId}-asset-id`,
+          `${userId}.user.config.json`,
+        ]);
+      }
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      if (validCall) {
+        //Storage should have changed
+        let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+        let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+        let expectedStorageContent = getUsersStorageContent(
+          appId,
+          `${appId}-asset-id`
+        );
+        delete expectedStorageContent[userId];
+
+        expect(storagePayload).toEqual(expectedStorageContent);
+      } else {
+        //Storage should not have changed
+        let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+        if (appInstance != null) {
+          let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+          let expectedStorageContent = getUsersStorageContent(
+            appId,
+            `${appId}-asset-id`
+          );
+
+          //User payload should not have changed
+          expect(storagePayload).toEqual(expectedStorageContent);
+        }
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should delete user in MindSphere and in storage and return 200 with a payload of deleted user", async () => {
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete local user - subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete local admin - subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalAdmin22";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete global user - subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalUser22";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete global admin - subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalAdmin22";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete local user - tenant app", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      appId = "ten-testTenant2";
+      userId = "testLocalUser21";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete local admin - tenant app", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      appId = "ten-testTenant2";
+      userId = "testLocalAdmin21";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete global user - tenant app", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      appId = "ten-testTenant2";
+      userId = "testGlobalUser21";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should delete user - if there is an attempt to delete global admin - tenant app", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      appId = "ten-testTenant2";
+      userId = "testGlobalAdmin21";
+
+      await testGlobalUserDeletion(true, 200, null);
+    });
+
+    it("should fetch user and delete him - if user exists in storage but not in cache", async () => {
+      let userFileContent =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `${userId}.user.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+
+      //Initializing whole service
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = userFileContent;
+
+      //Setting new file content
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .delete(`/customApi/config/user/global/${appId}/${userId}`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedPayload = getUserDataResponse(
+        appId,
+        `${appId}-asset-id`,
+        userId
+      );
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant ?? null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization 47 times (without one user) and one time when delete is called
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //Delete user should have been called properly
+      expect(deleteUser).toHaveBeenCalledTimes(1);
+      expect(deleteUser.mock.calls).toContainEqual([userPayload.ten, userId]);
+
+      //Delete file content should have been called properly
+      expect(deleteFile).toHaveBeenCalledTimes(1);
+      expect(deleteFile.mock.calls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      //Storage should have changed
+      let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+      let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+      let expectedStorageContent = getUsersStorageContent(
+        appId,
+        `${appId}-asset-id`
+      );
+      delete expectedStorageContent[userId];
+
+      expect(storagePayload).toEqual(expectedStorageContent);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    it("should not delete user and return 404 - if user exists in storage and cache but does not exist in user service", async () => {
+      delete userServiceContent["testTenant2"][userId];
+
+      await testGlobalUserDeletion(
+        false,
+        404,
+        `User of name: test_local_user_22@user.name does not exist in tenant!`,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should not delete user and return 404 - if user does not exist in storage but does exist in user service", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+
+      //Only 47 x getFileContent call - one file of user config less
+      await testGlobalUserDeletion(
+        false,
+        404,
+        `User of id: testLocalUser22 does not exist!`,
+        undefined,
+        undefined,
+        47,
+        0,
+        0
+      );
+    });
+
+    it("should not delete user and return 404 - if user does not exist in storage nor cache nor in user service", async () => {
+      delete userServiceContent["testTenant2"][userId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+
+      //Only 47 x getFileContent call - one file of user config less
+      await testGlobalUserDeletion(
+        false,
+        404,
+        `User of id: testLocalUser22 does not exist!`,
+        undefined,
+        undefined,
+        47,
+        0,
+        0
+      );
+    });
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 403 and not delete user - if global user attempts to delete user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if local admin attempts to delete user", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if local user attempts to delete user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if user's jwt payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //GetAllUser should not be called - call ended before fetching user's data
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. Invalid application id generated from user payload!",
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if there is no application of given id", async () => {
+      appId = "ten-fakeTen-sub-fakeSub";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "fakeTen",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "fakeSub",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //GetAllUser should not be called - call ended before fetching user's data
+      //GetAssets should be called x2 - try fetching fake app
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        0,
+        2,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if app id in user's payload and param differs", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if there is no application data for given app", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      //GetAllUser should not be called - call ended before fetching user's data
+      //47 calls of getFileContent - no file containing one main app data
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        0,
+        undefined,
+        47,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //49 calls of getFileContent - one additional user
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        49,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if user has valid scope, exists in user service but does not exist in file service", async () => {
+      userServiceContent["testTenant2"]["testFakeUser23"] = {
+        active: true,
+        name: {
+          familyName: "testFakeUser23FamilyName",
+          givenName: "testFakeUser23GivenName",
+        },
+        userName: "test_fake_user_23@user.name",
+        emails: [
+          {
+            value: "testFakeUser23Email",
+          },
+        ],
+        groups: [],
+        externalId: "testFakeUser23ExternalId",
+        id: "testFakeUser23",
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. User does not exist for given app id!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if user has no access to the app - invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22_user_name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if subtenant user attempts to delete user for tenant app", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 403 and not delete user - if tenant user attempts to delete user for subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testGlobalUserDeletion(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testGlobalUserDeletion(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testGlobalUserDeletion(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - no token provided", async () => {
+      delete requestHeaders["authorization"];
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testGlobalUserDeletion(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+    });
+
+    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not delete user - if get all users throws", async () => {
+      getAllUsersThrows = true;
+
+      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
+      await testGlobalUserDeletion(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        0,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not delete user - if delete file throws", async () => {
+      deleteFileThrows = true;
+
+      //0 calls for delete file - becouse deleteFile mock is overridden with a different mocked method
+      //API Calls for deleting user from mindsphere should have been called
+      await testGlobalUserDeletion(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test delete file error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not delete user - if add memeber to group fails", async () => {
+      deleteUserThrows = true;
+
+      //0 calls for delete file - it should not have been called
+      //0 calls for deleting user - mocking it with different method that throws
+      await testGlobalUserDeletion(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test delete user error"
       );
 
       //#endregion ===== CHECKING LOGGING =====
