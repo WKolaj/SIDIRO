@@ -4555,6 +4555,28 @@ describe("config user route", () => {
       //#endregion  =====  CHECKING API CALLS =====
     });
 
+    it("should return 400 and not update user - if there is an attempt to set userId", async () => {
+      requestBody.userId = "fakeUserId";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"userId" is not allowed`
+      );
+    });
+
+    it("should return 400 and not update user - if there is an attempt to set appId", async () => {
+      requestBody.appId = "fakeAppId";
+
+      await testBodyValidation(
+        requestBody,
+        false,
+        400,
+        `"appId" is not allowed`
+      );
+    });
+
     it("should return 400 and not update user - if userName is not defined", async () => {
       delete requestBody.userName;
 
@@ -6083,7 +6105,7 @@ describe("config user route", () => {
 
       //#endregion  =====  CHECKING API CALLS =====
     });
-    
+
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
 
     //#region ========== MINDSPHERE SERVICE THROWS ==========

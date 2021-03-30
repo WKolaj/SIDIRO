@@ -2101,7 +2101,28 @@ describe("config user route", () => {
   };
 
   /**
-   * @description Method for creating content of users storage
+   * @description Method for creating response contain user data payloads
+   */
+  const getUserDataResponse = (
+    appId: string,
+    appAssetId: string,
+    userId: string
+  ) => {
+    let userPayload: any = {};
+
+    let userStorageContent = getUsersStorageContent(appId, appAssetId);
+
+    userPayload = {
+      ...userStorageContent[userId],
+      userId: userId,
+      appId: appId,
+    };
+
+    return userPayload;
+  };
+
+  /**
+   * @description Method for getting content of users storage
    */
   const getUsersStorageContent = (appId: string, appAssetId: string) => {
     const tenantName = "hostTenant";
@@ -2163,50 +2184,110 @@ describe("config user route", () => {
         .send();
     };
 
-    it("should return 200 and payload of all users of the app - if user is a subtenant user and global admin", async () => {
+    const testLocalUsersGet = async (
+      validCall: boolean,
+      responseCode: number,
+      errorText: string | null,
+      expectedGetAllUsersCallNumber: number = 1,
+      expectedGetAssetsCallNumber: number = 1,
+      expectedGetFileContentCallNumber: number = 48,
+      expectedGetFileContentCallParameters: Array<any>[] = [],
+      expectedFileServiceContent: any
+    ) => {
       let result = await exec();
-      expect(result.status).toEqual(200);
 
       //#region ===== CHECKING RESPONSE =====
 
-      let expectedPayload = getAllUsersDataResponse(
-        "ten-testTenant2-sub-subtenant2",
-        "ten-testTenant2-sub-subtenant2-asset-id"
-      );
+      expect(result.status).toEqual(responseCode);
 
-      expect(result.body).toEqual(expectedPayload);
+      if (validCall) {
+        let expectedPayload = getAllUsersDataResponse(
+          appId,
+          `${appId}-asset-id`
+        );
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.text).toEqual(errorText);
+      }
 
       //#endregion ===== CHECKING RESPONSE =====
 
       //#region ===== CHECKING API CALLS =====
 
       //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
-        null,
-        "test_global_admin_22@user.name",
-      ]);
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant != null ? userPayload.subtenant : null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
 
       //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
 
       //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+      if (expectedGetFileContentCallNumber > 0) {
+        for (let parameters of expectedGetFileContentCallParameters) {
+          expect(getFileContent.mock.calls).toContainEqual(parameters);
+        }
+      }
 
       //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        appId
+      ] as any)._userStorage._cacheData;
+
+      let allUsersPayload: any = {};
+
+      let userFilePaths = Object.keys(
+        expectedFileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".user.config.json"));
+
+      for (let userFilePath of userFilePaths) {
+        let userFileContent =
+          expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+            userFilePath
+          ];
+        let userId = userFilePath.replace(".user.config.json", "");
+        allUsersPayload[userId] = {
+          ...userFileContent,
+        };
+      }
+
+      expect(storagePayload).toEqual(allUsersPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should return 200 and payload of all users of the app - if user is a subtenant user and global admin", async () => {
+      await testLocalUsersGet(
+        true,
+        200,
+        null,
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload of all users of the app - if user is a subtenant user and global user", async () => {
@@ -2224,49 +2305,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = getAllUsersDataResponse(
-        "ten-testTenant2-sub-subtenant2",
-        "ten-testTenant2-sub-subtenant2-asset-id"
+      await testLocalUsersGet(
+        true,
+        200,
+        null,
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
-        null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalUser22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 200 and payload of all users of the app - if user is a tenant user and global admin", async () => {
@@ -2284,50 +2332,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = getAllUsersDataResponse(
-        "ten-testTenant2",
-        "ten-testTenant2-asset-id"
+      await testLocalUsersGet(
+        true,
+        200,
+        null,
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        null,
-        null,
-        "test_global_admin_21@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-asset-id",
-        "testGlobalAdmin21.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 200 and payload of all users of the app - if user is a tenant user and global user", async () => {
@@ -2345,50 +2359,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = getAllUsersDataResponse(
-        "ten-testTenant2",
-        "ten-testTenant2-asset-id"
+      await testLocalUsersGet(
+        true,
+        200,
+        null,
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        null,
-        null,
-        "test_global_user_21@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-asset-id",
-        "testGlobalUser21.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 200 and payload of the users - together with fetching new users - if there are more users in file service that has not been fetched before", async () => {
@@ -2419,7 +2399,7 @@ describe("config user route", () => {
         value: "testFakeUser1",
       });
 
-      //#region ===== CHECKING RESPONSE =====
+      //#region ===== EXEC =====
 
       //Initializing app
       await beforeExec();
@@ -2461,6 +2441,8 @@ describe("config user route", () => {
         .get(`/customApi/config/user/global/${appId}`)
         .set(requestHeaders)
         .send();
+
+      //#endregion ===== EXEC =====
 
       let expectedPayload = getAllUsersDataResponse(
         "ten-testTenant2-sub-subtenant2",
@@ -2561,17 +2543,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - valid scope invalid role", async () => {
@@ -2594,83 +2575,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
-    });
-
-    it("should return 403 - if user is a tenant user and local admin - valid scope invalid role", async () => {
-      fileServiceContent["hostTenant"]["ten-testTenant2-asset-id"][
-        "testGlobalAdmin21.user.config.json"
-      ].permissions.role = UserRole.LocalAdmin;
-
-      userPayload = {
-        client_id: "testLocalAdminClientId",
-        email: "testLocalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_21@user.name",
-      };
-
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      appId = "ten-testTenant2";
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
-      );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
-    });
-
-    it("should return 403 - if user is a tenant user and local user - valid scope invalid role", async () => {
-      fileServiceContent["hostTenant"]["ten-testTenant2-asset-id"][
-        "testGlobalAdmin21.user.config.json"
-      ].permissions.role = UserRole.LocalUser;
-
-      userPayload = {
-        client_id: "testLocalUserClientId",
-        email: "testLocalUserEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_21@user.name",
-      };
-
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      appId = "ten-testTenant2";
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
-      );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local admin - invalid scope, valid role", async () => {
@@ -2688,17 +2602,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - invalid scope, valid role", async () => {
@@ -2716,17 +2629,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local admin - invalid scope, valid role", async () => {
@@ -2745,17 +2657,16 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local user - invalid scope, valid role", async () => {
@@ -2773,17 +2684,16 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local admin - invalid scope and role", async () => {
@@ -2801,17 +2711,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - invalid scope and role", async () => {
@@ -2829,17 +2738,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local admin - invalid scope and role", async () => {
@@ -2858,17 +2766,16 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local user - invalid scope and role", async () => {
@@ -2887,17 +2794,16 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - subtenant user, tenant app", async () => {
@@ -2917,17 +2823,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - tenant user, subtenant app", async () => {
@@ -2946,21 +2851,20 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - subtenant user, other subtenant app", async () => {
-      appId = "ten-testTenant1-sub-subtenant2";
+      appId = "ten-testTenant1-sub-subtenant1";
 
       userPayload = {
         client_id: "testGlobalAdminClientId",
@@ -2976,17 +2880,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - tenant user, other tenant app", async () => {
@@ -3005,17 +2908,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        1,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user's payload does not have tenant assigned", async () => {
@@ -3027,35 +2929,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Invalid application id generated from user payload!"
+      //GetAllUsers should not be called - invalid app id and blocked stright away
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. Invalid application id generated from user payload!",
+        0,
+        1,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should not be fetched
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //TUsers data should be fetched only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 403 - if there is no application - subtenant user", async () => {
@@ -3067,35 +2951,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Application of given id not found for the user!"
+      //GetAssets called twice - try to fetch new app
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        0,
+        2,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked two times - one time during initialization, second during checking if app of given "fake name" exists
-      expect(getAssets).toHaveBeenCalledTimes(2);
-      expect(getAssets.mock.calls[1]).toEqual([
-        "hostTenant",
-        "ten-fakeTenant-sub-subtenant2",
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //User id should not be fetched - invalid app id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 403 - if there is no application data for given user - subtenant user", async () => {
@@ -3103,44 +2969,20 @@ describe("config user route", () => {
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Main application settings not found for the user!"
+      //One user file should not be fetched during initialization
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        0,
+        undefined,
+        47,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked one time during initialization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //User id should not be fetched - invalid app id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 - 1 (main app config)
-      //Check file data from app config should be called, but not get file content
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(checkIfFileExists.mock.calls[47]).toEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "main.app.config.json",
-      ]);
-      expect(getFileContent).toHaveBeenCalledTimes(47);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
-    it("should return 403 - if user has valid scope, exists in user service exists but does not exist in file service - subtenant user", async () => {
+    it("should return 403 - if user has valid scope, exists in user service but does not exist in file service - subtenant user", async () => {
       //Adding new user to user service
       userServiceContent["testTenant2"] = {
         ...userServiceContent["testTenant2"],
@@ -3192,15 +3034,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User does not exist for given app id!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User does not exist for given app id!",
+        undefined,
+        undefined,
+        48,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has valid scope, doest not exist in user service but exists in file service - subtenant user", async () => {
@@ -3252,15 +3095,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User of given name not found!"
+      //GetFileContent should be called 49 times - one additional user
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        49,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has invalid scope - subtenant user", async () => {
@@ -3277,6 +3122,18 @@ describe("config user route", () => {
         userPayload,
         "testPrivateKey"
       )}`;
+
+      //User should not have been fetched - checking scope first
+      await testLocalUsersGet(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
+      );
     });
 
     it("should return 403 - if there is no application - tenant user", async () => {
@@ -3296,15 +3153,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Application of given id not found for the user!"
+      //GetAssets should have been called twice - try fetching new app
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        0,
+        2,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if there is no application data for given user - tenant user", async () => {
@@ -3326,15 +3185,17 @@ describe("config user route", () => {
         "main.app.config.json"
       ];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Main application settings not found for the user!"
+      //GetFileContent should be invoked only 47 times - 1 time less due to lack of main app config file
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        0,
+        undefined,
+        47,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has valid scope, exists in user service exists but does not exist in file service - tenant user", async () => {
@@ -3383,15 +3244,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User does not exist for given app id!"
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User does not exist for given app id!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has valid scope, doest not exist in user service but exists in file service - tenant user", async () => {
@@ -3442,15 +3304,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User of given name not found!"
+      //GetFileContent should be called one more time - fetching new user data
+      await testLocalUsersGet(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        49,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has invalid scope - tenant user", async () => {
@@ -3467,78 +3331,66 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Forbidden access. No scope found to access the app!"
+      //GetAllUsers should not be called - scope invalid before fetching the app or user data
+      await testLocalUsersGet(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if there is no authorization token in header", async () => {
       delete requestHeaders["authorization"];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers should not be called - token invalid before fetching the app or user data
+      await testLocalUsersGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers should not be called - token invalid before fetching the app or user data
+      await testLocalUsersGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if authorization token is invalid - invalid token", async () => {
       requestHeaders["authorization"] =
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers should not be called - token invalid before fetching the app or user data
+      await testLocalUsersGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Get all users should not have been called - returning before fetching id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Check file data and get file data should be called only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
@@ -3548,15 +3400,17 @@ describe("config user route", () => {
     it("should return 500 - if getAllUsers throws", async () => {
       getAllUsersThrows = true;
 
-      let result = await exec();
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(500);
-
-      expect(result.text).toEqual(`Ups.. Something fails..`);
-
-      //#endregion ===== CHECKING RESPONSE =====
+      //GetAllUsers call 0 times - ovveridden with mock throw function
+      await testLocalUsersGet(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
+      );
 
       //#region ===== CHECKING LOGGING =====
 
@@ -3612,53 +3466,111 @@ describe("config user route", () => {
         .send();
     };
 
-    it("should return 200 and payload user of the app - if user who requests API is a subtenant user and global admin", async () => {
+    const testLocalUserGet = async (
+      validCall: boolean,
+      responseCode: number,
+      errorText: string | null,
+      expectedGetAllUsersCallNumber: number = 1,
+      expectedGetAssetsCallNumber: number = 1,
+      expectedGetFileContentCallNumber: number = 48,
+      expectedGetFileContentCallParameters: Array<any>[] = [],
+      expectedFileServiceContent: any
+    ) => {
       let result = await exec();
-      expect(result.status).toEqual(200);
 
       //#region ===== CHECKING RESPONSE =====
 
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
+      expect(result.status).toEqual(responseCode);
 
-      expect(result.body).toEqual(expectedPayload);
+      if (validCall) {
+        let expectedPayload = getUserDataResponse(
+          appId,
+          `${appId}-asset-id`,
+          userId
+        );
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.text).toEqual(errorText);
+      }
 
       //#endregion ===== CHECKING RESPONSE =====
 
       //#region ===== CHECKING API CALLS =====
 
       //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
-        null,
-        "test_global_admin_22@user.name",
-      ]);
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant != null ? userPayload.subtenant : null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
 
       //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
 
       //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+      if (expectedGetFileContentCallNumber > 0) {
+        for (let parameters of expectedGetFileContentCallParameters) {
+          expect(getFileContent.mock.calls).toContainEqual(parameters);
+        }
+      }
 
       //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        appId
+      ] as any)._userStorage._cacheData;
+
+      let allUsersPayload: any = {};
+
+      let userFilePaths = Object.keys(
+        expectedFileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".user.config.json"));
+
+      for (let userFilePath of userFilePaths) {
+        let userFileContent =
+          expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+            userFilePath
+          ];
+        let userId = userFilePath.replace(".user.config.json", "");
+        allUsersPayload[userId] = {
+          ...userFileContent,
+        };
+      }
+
+      expect(storagePayload).toEqual(allUsersPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should return 200 and payload user of the app - if user who requests API is a subtenant user and global admin", async () => {
+      await testLocalUserGet(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a subtenant user and global user", async () => {
@@ -3676,52 +3588,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalUser22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a tenant user and global admin", async () => {
@@ -3741,53 +3617,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        null,
-        "test_global_admin_21@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-asset-id",
-        "testGlobalAdmin21.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a tenant user and global user", async () => {
@@ -3806,258 +3645,76 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      let result = await exec();
-
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        null,
-        "test_global_user_21@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-asset-id",
-        "testGlobalUser21.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a global admin", async () => {
       userId = "testGlobalAdmin22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_admin_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a global user", async () => {
       userId = "testGlobalUser22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_admin_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a local admin", async () => {
       userId = "testLocalAdmin22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_admin_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global admin, user to get is a local user", async () => {
       userId = "testLocalUser22";
 
-      let result = await exec();
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(200);
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_admin_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global user, user to get is a global admin", async () => {
@@ -4077,52 +3734,16 @@ describe("config user route", () => {
 
       userId = "testGlobalAdmin22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global user, user to get is a global user", async () => {
@@ -4142,52 +3763,16 @@ describe("config user route", () => {
 
       userId = "testGlobalUser22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global user, user to get is a local admin", async () => {
@@ -4207,52 +3792,16 @@ describe("config user route", () => {
 
       userId = "testLocalAdmin22";
 
-      let result = await exec();
-      expect(result.status).toEqual(200);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload user of the app - if user who requests API is a global user, user to get is a local user", async () => {
@@ -4272,53 +3821,16 @@ describe("config user route", () => {
 
       userId = "testLocalUser22";
 
-      let result = await exec();
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(200);
-
-      let expectedPayload = {
-        ...fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `${userId}.user.config.json`
-        ],
-        appId: appId,
-        userId: userId,
-      };
-
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        "testTenant2",
-        "subtenant2",
+      await testLocalUserGet(
+        true,
+        200,
         null,
-        "test_global_user_22@user.name",
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls).toContainEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "testGlobalAdmin22.user.config.json",
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
     });
 
     it("should return 200 and payload of the user - together with fetching new user - if user exists in storage but not in cache", async () => {
@@ -4468,22 +3980,35 @@ describe("config user route", () => {
       //#endregion  =====  CHECKING STORAGE =====
     });
 
+    it("should return 200 - eve if user exists in storage and cache but not exists in tenant", async () => {
+      delete userServiceContent["testTenant2"][userId];
+
+      await testLocalUserGet(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        [["hostTenant", `${appId}-asset-id`, `${userId}.user.config.json`]],
+        fileServiceContent
+      );
+    });
+
     it("should return 404 - if there is no user of given id", async () => {
       userId = "fakeId";
 
-      let result = await exec();
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(404);
-
-      expect(result.text).toEqual("User not found!");
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check calls - no additional call should be invoked
+      await testLocalUserGet(
+        false,
+        404,
+        "User not found!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
+      );
     });
-
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
     it("should return 403 - if user is a subtenant user and local admin - valid scope invalid role", async () => {
@@ -4506,17 +4031,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - valid scope invalid role", async () => {
@@ -4539,50 +4063,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
-    });
-
-    it("should return 403 - if user is a tenant user and local admin - valid scope invalid role", async () => {
-      fileServiceContent["hostTenant"]["ten-testTenant2-asset-id"][
-        "testGlobalAdmin21.user.config.json"
-      ].permissions.role = UserRole.LocalAdmin;
-
-      userPayload = {
-        client_id: "testLocalAdminClientId",
-        email: "testLocalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_21@user.name",
-      };
-
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      appId = "ten-testTenant2";
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
-      );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local user - valid scope invalid role", async () => {
@@ -4605,17 +4095,16 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local admin - invalid scope, valid role", async () => {
@@ -4633,17 +4122,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - invalid scope, valid role", async () => {
@@ -4661,17 +4150,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local admin - invalid scope, valid role", async () => {
@@ -4690,17 +4179,17 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local user - invalid scope, valid role", async () => {
@@ -4718,17 +4207,17 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local admin - invalid scope and role", async () => {
@@ -4746,17 +4235,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a subtenant user and local user - invalid scope and role", async () => {
@@ -4774,17 +4263,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local admin - invalid scope and role", async () => {
@@ -4803,17 +4292,17 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is a tenant user and local user - invalid scope and role", async () => {
@@ -4832,17 +4321,17 @@ describe("config user route", () => {
 
       appId = "ten-testTenant2";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User must be a global user or global admin!"
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User must be a global user or global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - subtenant user, tenant app", async () => {
@@ -4862,17 +4351,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - tenant user, subtenant app", async () => {
@@ -4891,21 +4379,20 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - subtenant user, other subtenant app", async () => {
-      appId = "ten-testTenant1-sub-subtenant2";
+      appId = "ten-testTenant1-sub-subtenant1";
 
       userPayload = {
         client_id: "testGlobalAdminClientId",
@@ -4921,17 +4408,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user is trying to access not his app - tenant user, other tenant app", async () => {
@@ -4950,17 +4436,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. No access to given application!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //No point to check API calls - they are the same as for valid call
     });
 
     it("should return 403 - if user's payload does not have tenant assigned", async () => {
@@ -4972,35 +4457,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Invalid application id generated from user payload!"
+      //GetAllUsers should not have been called - checking app before
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. Invalid application id generated from user payload!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should not be fetched
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //TUsers data should be fetched only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 403 - if there is no application - subtenant user", async () => {
@@ -5012,35 +4479,18 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Application of given id not found for the user!"
+      //GetAllUsers should not have been called - checking app before
+      //GetAssets called twice - try to fetch fake app
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        0,
+        2,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked two times - one time during initialization, second during checking if app of given "fake name" exists
-      expect(getAssets).toHaveBeenCalledTimes(2);
-      expect(getAssets.mock.calls[1]).toEqual([
-        "hostTenant",
-        "ten-fakeTenant-sub-subtenant2",
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //User id should not be fetched - invalid app id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 403 - if there is no application data for given user - subtenant user", async () => {
@@ -5048,41 +4498,18 @@ describe("config user route", () => {
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Main application settings not found for the user!"
+      //GetAllUsers should not have been called - checking app before
+      //GetFileContent invoked only 47 times - no main config file for one of the apps
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        0,
+        undefined,
+        47,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked one time during initialization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //User id should not be fetched - invalid app id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48 - 1 (main app config)
-      //Check file data from app config should be called, but not get file content
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(checkIfFileExists.mock.calls[47]).toEqual([
-        "hostTenant",
-        "ten-testTenant2-sub-subtenant2-asset-id",
-        "main.app.config.json",
-      ]);
-      expect(getFileContent).toHaveBeenCalledTimes(47);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     it("should return 403 - if user has valid scope, exists in user service exists but does not exist in file service - subtenant user", async () => {
@@ -5137,15 +4564,16 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User does not exist for given app id!"
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User does not exist for given app id!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has valid scope, doest not exist in user service but exists in file service - subtenant user", async () => {
@@ -5197,15 +4625,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User of given name not found!"
+      //GetFileContent call 49 times - additional user's data
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        49,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has invalid scope - subtenant user", async () => {
@@ -5222,6 +4652,18 @@ describe("config user route", () => {
         userPayload,
         "testPrivateKey"
       )}`;
+
+      //GetAllUsers should not have been called - checking scope before
+      await testLocalUserGet(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
+      );
     });
 
     it("should return 403 - if there is no application - tenant user", async () => {
@@ -5241,15 +4683,18 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Application of given id not found for the user!"
+      //GetAllUsers should not have been called - checking app before
+      //GetAssets called 2 times - try to fetch not existing app
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        0,
+        2,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if there is no application data for given user - tenant user", async () => {
@@ -5271,72 +4716,18 @@ describe("config user route", () => {
         "main.app.config.json"
       ];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. Main application settings not found for the user!"
+      //GetAllUsers should not have been called - checking app before
+      //GetFileContent called 47 times - lack of one file, app config file
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        0,
+        undefined,
+        47,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-    });
-
-    it("should return 403 - if user has valid scope, exists in user service exists but does not exist in file service - tenant user", async () => {
-      //Adding new user to user service
-      userServiceContent["testTenant2"] = {
-        ...userServiceContent["testTenant2"],
-        testFakeUser23: {
-          active: true,
-          name: {
-            familyName: "testFakeUser23FamilyName",
-            givenName: "testFakeUser23GivenName",
-          },
-          userName: "test_fake_user_23@user.name",
-          emails: [
-            {
-              value: "testFakeUser23Email",
-            },
-          ],
-          groups: [],
-          externalId: "testFakeUser23ExternalId",
-          id: "testFakeUser23",
-        },
-      };
-
-      //Assinging user to local user group in tenant
-      userGroupServiceContent.testTenant2.localUserGroup.members = [
-        ...userGroupServiceContent.testTenant2.localUserGroup.members,
-        {
-          type: "USER",
-          value: "testFakeUser23",
-        },
-      ];
-
-      //Creating new user's jwt payload
-      userPayload = {
-        client_id: "testFakeUserClientId",
-        email: "testFakeUserEmail",
-        scope: ["testLocalUserScope"],
-        ten: "testTenant2",
-        user_name: "test_fake_user_23@user.name",
-      };
-
-      //Assinging jwt to header
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User does not exist for given app id!"
-      );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has valid scope, doest not exist in user service but exists in file service - tenant user", async () => {
@@ -5387,15 +4778,17 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Access denied. User of given name not found!"
+      //GetFileContent called 49 times - one additional user data
+      await testLocalUserGet(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        49,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 403 - if user has invalid scope - tenant user", async () => {
@@ -5412,78 +4805,66 @@ describe("config user route", () => {
         "testPrivateKey"
       )}`;
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(403);
-      expect(result.text).toEqual(
-        "Forbidden access. No scope found to access the app!"
+      //GetAllUsers called 0 times - first check the users scope
+      await testLocalUserGet(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if there is no authorization token in header", async () => {
       delete requestHeaders["authorization"];
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers called 0 times - first check token
+      await testLocalUserGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
       requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers called 0 times - first check token
+      await testLocalUserGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
     });
 
     it("should return 401 - if authorization token is invalid - invalid token", async () => {
       requestHeaders["authorization"] =
         "Bearer thisIsTheFakeValueOfTheJWTToken";
 
-      //#region ===== CHECKING RESPONSE =====
-
-      let result = await exec();
-      expect(result.status).toEqual(401);
-      expect(result.text).toEqual(
-        "Access denied. No token provided to fetch the user or token is invalid!"
+      //GetAllUsers called 0 times - first check token
+      await testLocalUserGet(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
       );
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Get all users should not have been called - returning before fetching id
-      expect(getAllUsers).not.toHaveBeenCalled();
-
-      //Check file data and get file data should be called only during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(checkIfFileExists).toHaveBeenCalledTimes(48);
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //#endregion ===== CHECKING API CALLS =====
     });
 
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
@@ -5493,15 +4874,17 @@ describe("config user route", () => {
     it("should return 500 - if getAllUsers throws", async () => {
       getAllUsersThrows = true;
 
-      let result = await exec();
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(500);
-
-      expect(result.text).toEqual(`Ups.. Something fails..`);
-
-      //#endregion ===== CHECKING RESPONSE =====
+      //GetAllUsers called 0 times - first check token
+      await testLocalUserGet(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        fileServiceContent
+      );
 
       //#region ===== CHECKING LOGGING =====
 
@@ -6237,6 +5620,40 @@ describe("config user route", () => {
       expect(addUserToGroup).not.toHaveBeenCalled();
 
       //#endregion  =====  CHECKING API CALLS =====
+    });
+
+    it("should return 400 and not create new user - if there is an attempt to create user with user id", async () => {
+      requestBody.userId = "fakeUserId";
+
+      await testLocalUserCreation(
+        false,
+        400,
+        null,
+        `"userId" is not allowed`,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0,
+        0
+      );
+    });
+
+    it("should return 400 and not create new user - if there is an attempt to create user with app id", async () => {
+      requestBody.appId = "fakeAppId";
+
+      await testLocalUserCreation(
+        false,
+        400,
+        null,
+        `"appId" is not allowed`,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        0,
+        0
+      );
     });
 
     it("should return 400 and not create new user - if userName is not defined", async () => {
@@ -7556,6 +6973,2847 @@ describe("config user route", () => {
       expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
       expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
         "Test set file content error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
+  });
+
+  describe("PUT /global/:appId", () => {
+    let requestBody: any;
+    let requestHeaders: any;
+    let userPayload: MindSphereUserJWTData;
+    let appId: string;
+    let userId: string;
+    let getAllUsersThrows: boolean;
+    let setFileContentThrows: boolean;
+    let addUserToGroupThrows: boolean;
+
+    beforeEach(() => {
+      requestHeaders = {};
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser22TestPlant5Data:
+              "testLocalUser22TestPlant5DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      getAllUsersThrows = false;
+      setFileContentThrows = false;
+      addUserToGroupThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
+      if (setFileContentThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      if (addUserToGroupThrows) {
+        MindSphereUserGroupService.getInstance().addUserToGroup = jest.fn(
+          async () => {
+            throw new Error("Test add user to group error");
+          }
+        );
+      }
+
+      return request(server)
+        .put(`/customApi/config/user/global/${appId}/${userId}`)
+        .set(requestHeaders)
+        .send(requestBody);
+    };
+
+    const testLocalUserEdition = async (
+      validCall: boolean,
+      responseCode: number,
+      errorText: string | null,
+      expectedFinalUserGroupIds: string[] | null = [
+        "globalAdminGroup",
+        "subtenantUserGroup",
+      ],
+      expectedGetAllUsersCallNumber: number = 1,
+      expectedGetAssetsCallNumber: number = 1,
+      expectedGetFileContentCallNumber: number = 48,
+      expectedUpdateUserCallNumber: number = 0,
+      expectedAddUserToGroupCallNumber: number = 1,
+      expectedAddUserToGroupParameters: Array<any[]> = [
+        ["testTenant2", "globalAdminGroup", "testLocalUser22"],
+      ],
+      expectedRemoveUserFromGroupCallNumber: number = 1,
+      expectedRemoveUserFromGroupParameters: Array<any[]> = [
+        ["testTenant2", "localUserGroup", "testLocalUser22"],
+      ],
+      expectedSetFileContentCallNumber: number = 1,
+      expectedSetFileContentParameters: Array<any[]> = [
+        [
+          "hostTenant",
+          "ten-testTenant2-sub-subtenant2-asset-id",
+          "testLocalUser22.user.config.json",
+          {
+            data: {
+              testPlant4: {
+                testLocalUser22TestPlant4Data:
+                  "testLocalUser22TestPlant4DataModifiedValue",
+              },
+              testPlant5: {
+                testLocalUser22TestPlant5Data:
+                  "testLocalUser22TestPlant5DataModifiedValue",
+              },
+            },
+            config: {
+              testPlant4: {
+                testLocalUser22TestPlant4Config:
+                  "testLocalUser22TestPlant4ConfigModifiedValue",
+              },
+              testPlant5: {
+                testLocalUser22TestPlant5Config:
+                  "testLocalUser22TestPlant5ConfigModifiedValue",
+              },
+            },
+            userName: "test_local_user_22@user.name",
+            permissions: {
+              role: UserRole.GlobalAdmin,
+              plants: {
+                testPlant4: PlantPermissions.Admin,
+                testPlant5: PlantPermissions.User,
+              },
+            },
+          },
+        ],
+      ]
+    ) => {
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      if (validCall) {
+        expect(result.status).toEqual(200);
+
+        let expectedPayload = {
+          ...requestBody,
+          appId: appId,
+          userId: userId,
+        };
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.status).toEqual(responseCode);
+        expect(result.text).toEqual(errorText);
+      }
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant ?? null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+
+      //Update user should most likely not be called
+      expect(updateUser).toHaveBeenCalledTimes(expectedUpdateUserCallNumber);
+
+      //User should be assigned to propert groups
+      expect(addUserToGroup).toHaveBeenCalledTimes(
+        expectedAddUserToGroupCallNumber
+      );
+      if (expectedAddUserToGroupCallNumber > 0) {
+        for (let addUserToGroupParameters of expectedAddUserToGroupParameters!) {
+          expect(addUserToGroup.mock.calls).toContainEqual(
+            addUserToGroupParameters
+          );
+        }
+      }
+
+      //User should be removed from proper groups
+      expect(removeUserFromGroup).toHaveBeenCalledTimes(
+        expectedRemoveUserFromGroupCallNumber
+      );
+      if (expectedRemoveUserFromGroupCallNumber > 0) {
+        for (let removeUserFromGroupParameters of expectedRemoveUserFromGroupParameters!) {
+          expect(removeUserFromGroup.mock.calls).toContainEqual(
+            removeUserFromGroupParameters
+          );
+        }
+      }
+
+      //User should be created in File Content
+      expect(setFileContent).toHaveBeenCalledTimes(
+        expectedSetFileContentCallNumber
+      );
+      if (expectedSetFileContentCallNumber > 0) {
+        for (let setFileContentParameters of expectedSetFileContentParameters!) {
+          expect(setFileContent.mock.calls).toContainEqual(
+            setFileContentParameters
+          );
+        }
+      }
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      if (validCall) {
+        let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+        let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+        let expectedStorageContent = getUsersStorageContent(
+          appId,
+          `${appId}-asset-id`
+        );
+        expectedStorageContent[userId] = requestBody;
+
+        expect(storagePayload).toEqual(expectedStorageContent);
+
+        //User should be accessible now via getUser
+        let userData = await appInstance.getUser(userId);
+
+        let expectedStorageData = requestBody;
+        expect(userData.storageData).toEqual(expectedStorageData);
+
+        let userContent = userServiceContent[userPayload.ten][userId];
+
+        let expectedMsData: any = {
+          ...userContent,
+          userName: requestBody.userName,
+          groups: expectedFinalUserGroupIds!.map((groupId) => {
+            return {
+              display: `${groupId}DisplayName`,
+              type: "DIRECT",
+              value: groupId,
+            };
+          }),
+          id: userId,
+        };
+
+        //Adding subtenant to paylod if exists for the app
+        if (userPayload.subtenant != null)
+          expectedMsData.subtenants = [
+            {
+              id: userPayload.subtenant,
+            },
+          ];
+
+        expect(userData.msData).toEqual(expectedMsData);
+      } else {
+        //Storage should not have changed
+        let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+        if (appInstance != null) {
+          let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+          let expectedStorageContent = getUsersStorageContent(
+            appId,
+            `${appId}-asset-id`
+          );
+
+          //User payload should not have changed
+          expect(storagePayload).toEqual(expectedStorageContent);
+        }
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user", async () => {
+      await testLocalUserEdition(true, 200, null);
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - if user to update is local user and current user is global admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["localUserGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        1,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - if user to update is a local admin and current user is global admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Data:
+              "testLocalAdmin22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Config:
+              "testLocalAdmin22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_admin_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+          },
+        },
+      };
+      userId = "testLocalAdmin22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["localAdminGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        1,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - if user to update is a global user and current user is global admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testGlobalUser22TestPlant4Data:
+              "testGlobalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testGlobalUser22TestPlant4Config:
+              "testGlobalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_global_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      userId = "testGlobalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["globalUserGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        1,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - if user to update is a global admin and current user is global admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testGlobalAdmin22TestPlant4Data:
+              "testGlobalAdmin22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testGlobalAdmin22TestPlant4Config:
+              "testGlobalAdmin22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_global_admin_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      userId = "testGlobalAdmin22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["globalAdminGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        1,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - subtenant app", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser22TestPlant5Data:
+              "testLocalUser22TestPlant5DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(true, 200, null);
+    });
+
+    it("should update user in MindSphere and in storage and return 200 with a payload of created user - tenant app", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser21TestPlant4Data:
+              "testLocalUser21TestPlant4DataModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser21TestPlant5Data:
+              "testLocalUser21TestPlant5DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser21TestPlant4Config:
+              "testLocalUser21TestPlant4ConfigModifiedValue",
+          },
+          testPlant5: {
+            testLocalUser21TestPlant5Config:
+              "testLocalUser21TestPlant5ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_21@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2";
+      userId = "testLocalUser21";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["globalAdminGroup", "standardUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        [["testTenant2", "globalAdminGroup", "testLocalUser21"]],
+        1,
+        [["testTenant2", "localUserGroup", "testLocalUser21"]],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should degrade user to local user - if new role is a local user", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Data:
+              "testLocalAdmin22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalAdmin22TestPlant4Config:
+              "testLocalAdmin22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_admin_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalAdmin22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["localUserGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        [["testTenant2", "localUserGroup", userId]],
+        1,
+        [["testTenant2", "localAdminGroup", userId]],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should promote user to local admin - if new role is a local admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["localAdminGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        [["testTenant2", "localAdminGroup", userId]],
+        1,
+        [["testTenant2", "localUserGroup", userId]],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should promote user to global user - if new role is a global user", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["globalUserGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        [["testTenant2", "globalUserGroup", userId]],
+        1,
+        [["testTenant2", "localUserGroup", userId]],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should promote user to global user - if new role is a global admin", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant4: PlantPermissions.Admin,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["globalAdminGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        [["testTenant2", "globalAdminGroup", userId]],
+        1,
+        [["testTenant2", "localUserGroup", userId]],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should not change users memebership - if there is no change in membership in user's payload", async () => {
+      requestBody = {
+        data: {
+          testPlant4: {
+            testLocalUser22TestPlant4Data:
+              "testLocalUser22TestPlant4DataModifiedValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testLocalUser22TestPlant4Config:
+              "testLocalUser22TestPlant4ConfigModifiedValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant4: PlantPermissions.User,
+          },
+        },
+      };
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        ["localUserGroup", "subtenantUserGroup"],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should fetch user and update him - if user exists in service, does not exist in cache but exists in storage", async () => {
+      let userFileContent =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `${userId}.user.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+
+      //Initializing whole service
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = userFileContent;
+
+      //Setting new file content
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .put(`/customApi/config/user/global/${appId}/${userId}`)
+        .set(requestHeaders)
+        .send(requestBody);
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      //Id of the user should be generated automatically
+      expect(result.body.userId).toBeDefined();
+
+      let expectedPayload = {
+        ...requestBody,
+        appId: appId,
+        userId: userId,
+      };
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization 47 times (without one user) and one time when update is called
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //Update user should most likely not be called
+      expect(updateUser).not.toHaveBeenCalled();
+
+      //User should be assigned to propert groups
+      expect(addUserToGroup).toHaveBeenCalledTimes(1);
+      expect(addUserToGroup.mock.calls[0]).toEqual([
+        "testTenant2",
+        "globalAdminGroup",
+        userId,
+      ]);
+
+      //User should be removed from proper groups
+      expect(removeUserFromGroup).toHaveBeenCalledTimes(1);
+      expect(removeUserFromGroup.mock.calls[0]).toEqual([
+        "testTenant2",
+        "localUserGroup",
+        userId,
+      ]);
+
+      //User should be created in File Content
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+        requestBody,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+      let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+      let expectedStorageContent = getUsersStorageContent(
+        appId,
+        `${appId}-asset-id`
+      );
+      expectedStorageContent[userId] = requestBody;
+
+      expect(storagePayload).toEqual(expectedStorageContent);
+
+      //User should be accessible now via getUser
+      let userData = await appInstance.getUser(userId);
+
+      let expectedStorageData = requestBody;
+      expect(userData.storageData).toEqual(expectedStorageData);
+
+      let userContent = userServiceContent[userPayload.ten][userId];
+
+      let expectedMsData: any = {
+        ...userContent,
+        userName: requestBody.userName,
+        groups: [
+          {
+            display: `globalAdminGroupDisplayName`,
+            type: "DIRECT",
+            value: "globalAdminGroup",
+          },
+          {
+            display: `subtenantUserGroupDisplayName`,
+            type: "DIRECT",
+            value: "subtenantUserGroup",
+          },
+        ],
+        id: userId,
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      expect(userData.msData).toEqual(expectedMsData);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    it("should not update user in MindSphere nor in storage and return 404 - if user of given id does not exist in user service but exists in cache and storage", async () => {
+      delete userServiceContent["testTenant2"][userId];
+
+      await testLocalUserEdition(
+        false,
+        404,
+        `User of name: test_local_user_22@user.name does not exist in tenant!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should not update user in MindSphere nor in storage and return 404 - if user of given id does not exist in userService nor in cache or storage ", async () => {
+      userId = "fakeUserId";
+
+      await testLocalUserEdition(
+        false,
+        404,
+        "User of id: fakeUserId does not exist!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    //#region ========== BODY VALIDATION =========
+
+    it("should return 400 - if request is not a valid JSON", async () => {
+      requestBody = "fakeBody";
+
+      await beforeExec();
+
+      let result = await request(server)
+        .put("/customApi/config/user/me")
+        .send('{"invalid"}')
+        .type("json");
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(400);
+      expect(result.text).toEqual("Invalid request content");
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should not be fetched
+      expect(getAllUsers).toHaveBeenCalledTimes(0);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+
+      //Update user should not be called
+      expect(updateUser).not.toHaveBeenCalled();
+
+      //User assignment should not have changed
+      expect(addUserToGroup).not.toHaveBeenCalled();
+      expect(removeUserFromGroup).not.toHaveBeenCalled();
+
+      //File content should not have changed
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      //Storage should not have changed
+      let appInstance = MindSphereAppsManager.getInstance().Apps[appId];
+
+      if (appInstance != null) {
+        let storagePayload = (appInstance as any)._userStorage._cacheData;
+
+        let expectedStorageContent = getUsersStorageContent(
+          appId,
+          `${appId}-asset-id`
+        );
+
+        //User payload should not have changed
+        expect(storagePayload).toEqual(expectedStorageContent);
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    it("should return 400 and not edit user - if there is an attempt to change userName", async () => {
+      requestBody.userName = "newFakeUserName@fake.email";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `Users name cannot be modified!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if there is an attempt to change userId", async () => {
+      requestBody.userId = "fakeUserId";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"userId" is not allowed`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if there is an attempt to change appId", async () => {
+      requestBody.appId = "fakAppId";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"appId" is not allowed`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if userName is not defined", async () => {
+      delete requestBody.userName;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"userName" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if userName is null", async () => {
+      requestBody.userName = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"userName" must be a string`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if userName has invalid type (number)", async () => {
+      requestBody.userName = 1234;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"userName" must be a string`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if userName is invalid email", async () => {
+      requestBody.userName = "fakeEmailValue";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"userName" must be a valid email`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if data is undefined", async () => {
+      delete requestBody.data;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"data" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if data is null", async () => {
+      requestBody.data = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"data" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if data has invalid type (string)", async () => {
+      requestBody.data = "testData";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"data" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if data is an empty object - permissions of plants exist", async () => {
+      requestBody.data = {};
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 200 and edit user - if data is an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should return 200 and edit user - if data has nested properties ", async () => {
+      //Creating nested properties
+      requestBody.data = {
+        testPlant4: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant5: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+      };
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should return 400 and not edit user - if data is not an empty object - permissions of plants don't exist", async () => {
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if data has additional plant id", async () => {
+      requestBody.data["fakePlantId"] = { test: 1234 };
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User data invalid - plantIds in data and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if config is undefined", async () => {
+      delete requestBody.config;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"config" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if config is null", async () => {
+      requestBody.config = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"config" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if config has invalid type (string)", async () => {
+      requestBody.config = "testData";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"config" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if config is an empty object - permissions of plants exist", async () => {
+      requestBody.config = {};
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 200 and not edit user - if config is an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should return 200 and not edit user - if config has nested properties ", async () => {
+      //Creating nested properties
+      requestBody.config = {
+        testPlant4: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+        testPlant5: {
+          a: {
+            b: {
+              c: {
+                d: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+          e: {
+            f: {
+              g: {
+                h: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+              },
+            },
+          },
+        },
+      };
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should return 400 and not edit user - if config is not an empty object - permissions of plants don't exist", async () => {
+      requestBody.data = {};
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if config has additional plant id", async () => {
+      requestBody.config["fakePlantId"] = { test: 1234 };
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions is undefined", async () => {
+      delete requestBody.permissions;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions is null", async () => {
+      requestBody.permissions = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions has invalid type (string)", async () => {
+      requestBody.permissions = "testData";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.role is undefined", async () => {
+      delete requestBody.permissions.role;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.role" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.role is null", async () => {
+      requestBody.permissions.role = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.role" must be one of [0, 1, 2, 3]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.role has invalid type (string)", async () => {
+      requestBody.permissions.role = "testData";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.role" must be one of [0, 1, 2, 3]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.role has invalid value", async () => {
+      requestBody.permissions.role = 5;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.role" must be one of [0, 1, 2, 3]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants is undefined", async () => {
+      delete requestBody.permissions.plants;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants" is required`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants is null", async () => {
+      requestBody.permissions.plants = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants has invalid type (string)", async () => {
+      requestBody.permissions.plants = "testData";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants" must be of type object`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants is an empty object - permissions exists in config and data", async () => {
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 200 and not edit user - if permissions.plants is an empty object - permissions does not exist in config and data", async () => {
+      requestBody.data = {};
+      requestBody.config = {};
+      requestBody.permissions.plants = {};
+
+      await testLocalUserEdition(
+        true,
+        200,
+        null,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [
+          [
+            "hostTenant",
+            `${appId}-asset-id`,
+            `${userId}.user.config.json`,
+            requestBody,
+          ],
+        ]
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants has one additional plant - permissions exists in config and data", async () => {
+      requestBody.permissions.plants["fakePlant"] = 0;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `User config invalid - plantIds in config and in permissions must be identical!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants of one plant is null", async () => {
+      requestBody.permissions.plants["fakePlant"] = null;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants of one plant has invalid type - string", async () => {
+      requestBody.permissions.plants["fakePlant"] = "abcd1234";
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - float", async () => {
+      requestBody.permissions.plants["fakePlant"] = 0.123;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - below 0", async () => {
+      requestBody.permissions.plants["fakePlant"] = -1;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if permissions.plants of one plant has invalid number - above 1", async () => {
+      requestBody.permissions.plants["fakePlant"] = 2;
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `"permissions.plants.fakePlant" must be one of [0, 1]`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if role is a globalUser but permissions to plant is an admin", async () => {
+      requestBody.permissions.role = UserRole.GlobalUser;
+      requestBody.permissions.plants = {
+        testPlant4: PlantPermissions.Admin,
+        testPlant5: PlantPermissions.Admin,
+        testPlant6: PlantPermissions.Admin,
+      };
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `Users role should be a local or global admin, if they have administrative permissions for a plant!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 400 and not edit user - if role is a localUser but permissions to plant is an admin", async () => {
+      requestBody.permissions.role = UserRole.LocalUser;
+      requestBody.permissions.plants = {
+        testPlant4: PlantPermissions.Admin,
+        testPlant5: PlantPermissions.Admin,
+        testPlant6: PlantPermissions.Admin,
+      };
+
+      await testLocalUserEdition(
+        false,
+        400,
+        `Users role should be a local or global admin, if they have administrative permissions for a plant!`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    //#endregion ========== BODY VALIDATION =========
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 403 and not edit user - if global user attempts to edit user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if local admin attempts to edit user", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if local user attempts to edit user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. User must be a global admin!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if user's jwt payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //GetAllUser should not be called - call ended before fetching user's data
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. Invalid application id generated from user payload!",
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if there is no application of given id", async () => {
+      appId = "ten-fakeTen-sub-fakeSub";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "fakeTen",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "fakeSub",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //2 x GetAssets call - try fetching new app
+      //GetAllUser should not be called - call ended before fetching user's data
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. Application of given id not found for the user!",
+        undefined,
+        0,
+        2,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if app id in user's payload and param differs", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if there is no application data for given app", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      //GetAllUser should not be called - call ended before fetching user's data
+      //47 calls of getFileContent - no file containing one main app data
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. Main application settings not found for the user!",
+        undefined,
+        0,
+        undefined,
+        47,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //49 calls of getFileContent - one additional user
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. User of given name not found!",
+        undefined,
+        undefined,
+        undefined,
+        49,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if user has valid scope, exists in user service but does not exist in file service", async () => {
+      userServiceContent["testTenant2"]["testFakeUser23"] = {
+        active: true,
+        name: {
+          familyName: "testFakeUser23FamilyName",
+          givenName: "testFakeUser23GivenName",
+        },
+        userName: "test_fake_user_23@user.name",
+        emails: [
+          {
+            value: "testFakeUser23Email",
+          },
+        ],
+        groups: [],
+        externalId: "testFakeUser23ExternalId",
+        id: "testFakeUser23",
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. User does not exist for given app id!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if user has no access to the app - invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22_user_name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
+      await testLocalUserEdition(
+        false,
+        403,
+        "Forbidden access. No scope found to access the app!",
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if subtenant user attempts to edit user for tenant app", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 403 and not edit user - if tenant user attempts to edit user for subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testLocalUserEdition(
+        false,
+        403,
+        "Access denied. No access to given application!",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testLocalUserEdition(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testLocalUserEdition(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    it("should return 401 - if authorization token is invalid - no token provided", async () => {
+      delete requestHeaders["authorization"];
+
+      //No calling getAllUsers - returning before fetching user's data
+      await testLocalUserEdition(
+        false,
+        401,
+        "Access denied. No token provided to fetch the user or token is invalid!",
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+    });
+
+    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not edit user - if get all users throws", async () => {
+      getAllUsersThrows = true;
+
+      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
+      await testLocalUserEdition(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        undefined,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not edit user - if set file content throws", async () => {
+      setFileContentThrows = true;
+
+      //0 calls for set file content - becouse setFileContent mock is overridden with a different mocked method
+      //API Calls for changing user's role should have been called
+      await testLocalUserEdition(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test set file content error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not edit user - if add memeber to group fails", async () => {
+      addUserToGroupThrows = true;
+
+      //0 calls for set file content - it should not have been called
+      //0 calls for adding user to group - mocking it with different method that throws
+      //API Calls for removing user from group should not have been called
+      await testLocalUserEdition(
+        false,
+        500,
+        `Ups.. Something fails..`,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        [],
+        0,
+        [],
+        0,
+        []
+      );
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test add user to group error"
       );
 
       //#endregion ===== CHECKING LOGGING =====

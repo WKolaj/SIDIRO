@@ -384,6 +384,18 @@ router.delete(
         .status(404)
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
 
+    //Checking if user exists in tenant
+    let userExistsInTenant = await userRequest.appInstance!.userExistsInTenant(
+      userToDeleteStorageData.userName
+    );
+
+    if (!userExistsInTenant)
+      return res
+        .status(404)
+        .send(
+          `User of name: ${userToDeleteStorageData.userName} does not exist in tenant!`
+        );
+
     //#endregion  ========== CHECKING IF USER EXISTS ==========
 
     //#region  ========== DELETING USER ==========
@@ -437,6 +449,17 @@ router.put(
       return res
         .status(404)
         .send(`User of id: ${userRequest.params.userId} does not exist!`);
+
+    let userExistsInTenant = await userRequest.appInstance!.userExistsInTenant(
+      userToUpdateStorageData.userName
+    );
+
+    if (!userExistsInTenant)
+      return res
+        .status(404)
+        .send(
+          `User of name: ${userToUpdateStorageData.userName} does not exist in tenant!`
+        );
 
     //#endregion  ========== CHECKING IF USER EXISTS ==========
 
@@ -693,6 +716,18 @@ router.delete(
     )
       return res.status(404).send(`User not found!`);
 
+    //Checking if user exists in tenant
+    let userExistsInTenant = await userRequest.appInstance!.userExistsInTenant(
+      userToDeleteStorageData.userName
+    );
+
+    if (!userExistsInTenant)
+      return res
+        .status(404)
+        .send(
+          `User of name: ${userToDeleteStorageData.userName} does not exist in tenant!`
+        );
+
     //#endregion ========== CHECKING IF USER EXISTS AND HAS ACCESS TO PLANT ==========
 
     //#region ========== CHECKING IF USER IS NOT A GLOBAL USER ==========
@@ -782,6 +817,18 @@ router.put(
       )
     )
       return res.status(404).send(`User not found!`);
+
+    //Checking if user exists in tenant
+    let userExistsInTenant = await userRequest.appInstance!.userExistsInTenant(
+      userToEditStorageData.userName
+    );
+
+    if (!userExistsInTenant)
+      return res
+        .status(404)
+        .send(
+          `User of name: ${userToEditStorageData.userName} does not exist in tenant!`
+        );
 
     //#endregion ========== CHECKING IF USER TO EDIT EXISTS AND HAS ACCESS TO PLANT ==========
 
