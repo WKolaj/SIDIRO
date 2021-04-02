@@ -547,7 +547,7 @@ router.get(
   fetchUserAndAppData,
   checkAppIdParam,
   isLocalOrGlobalAdmin,
-  checkPlantIdParamUserOrAdmin,
+  checkPlantIdParamAdmin,
   async function(
     req: express.Request<{ appId: string; userId: string; plantId: string }>,
     res: express.Response

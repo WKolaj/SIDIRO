@@ -12,7 +12,7 @@ export default async function(
     appId: string;
   }>;
 
-  //Checking if user is admin for plant
+  //Checking if user is admin for plant and if plant exists for given user
   if (
     !MindSphereApp.isLocalAdminOfPlant(
       appDataRequest.params.plantId,
