@@ -5253,7 +5253,7 @@ describe("config user route", () => {
           expectedSetFileContentCallNumber
         );
         if (expectedSetFileContentCallNumber > 0) {
-          let userId = createUser.mock.results[0].value.id;
+          let userId = (await createUser.mock.results[0].value).id;
           expect(setFileContent.mock.calls[0]).toEqual([
             "hostTenant",
             `${appId}-asset-id`,

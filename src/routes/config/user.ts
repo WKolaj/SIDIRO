@@ -18,6 +18,7 @@ import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdPar
 import {
   applyJSONParsingToRoute,
   areObjectsIdentical,
+  cloneObject,
   containsTheSameElements,
 } from "../../utilities/utilities";
 import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAdmin";
@@ -854,19 +855,28 @@ router.put(
 
     //#endregion =========== CHECKING IF USER EDIT PAYLOAD IS VALID LOCAL PAYLOAD (with only one plant's data) ===========
 
-    //#region =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR NAME ===========
+    //#region =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE, NAME OR PLANT PERMISSIONS ===========
 
     if (req.body.userName !== userToEditStorageData.userName)
-      return res.status(400).send(`Users userName cannot be deleted!`);
+      return res.status(400).send(`Users userName cannot be edited!`);
 
     if (req.body.permissions.role !== userToEditStorageData.permissions.role)
       return res.status(400).send(`Users global role cannot be edited localy!`);
+
+    //LOCAL PLANT PERMISSIONS CHANGE SHOULD BE FORBIDDEN - IN ORDER TO PREVENT LOCAL ADMIN'S TO PROMOTE THEIRSELFES TO ADMINS FOR PLANT'S WHERE THEY HAVE ONLY USER ACCESS SET BY GLOBAL ADMINS
+    if (
+      req.body.permissions.plants[req.params.plantId] !==
+      userToEditStorageData.permissions.plants[req.params.plantId]
+    )
+      return res.status(400).send(`Plant permissions cannot be edited localy!`);
 
     //#endregion =========== CHECKING IF THERE IS AN ATTEMPT TO EDIT ROLE OR NAME ===========
 
     //#region =========== GENERETING PAYLOAD TO UPDATE - EDITING ONLY VALUES ASSOCIATED WITH THIS PLANT ===========
 
-    let userEditPayload: UserStorageData = { ...userToEditStorageData };
+    //Cloning object - allowing for a longer calculation, due to the fact that update user data is really rare
+    let userEditPayload: UserStorageData = cloneObject(userToEditStorageData);
+
     userEditPayload.config[req.params.plantId] =
       req.body.config[req.params.plantId];
     userEditPayload.data[req.params.plantId] =
