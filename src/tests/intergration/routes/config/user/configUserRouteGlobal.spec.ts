@@ -5547,7 +5547,7 @@ describe("config user route", () => {
       await beforeExec();
 
       let result = await request(server)
-        .put("/customApi/config/user/me")
+        .post(`/customApi/config/user/global/${appId}`)
         .send('{"invalid"}')
         .type("json");
 
@@ -8161,7 +8161,7 @@ describe("config user route", () => {
       await beforeExec();
 
       let result = await request(server)
-        .put("/customApi/config/user/me")
+        .put(`/customApi/config/user/global/${appId}/${userId}`)
         .send('{"invalid"}')
         .type("json");
 
