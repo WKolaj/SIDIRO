@@ -2149,7 +2149,7 @@ describe("config user route", () => {
     return userPayloads;
   };
 
-  describe("GET /global/:appId", () => {
+  describe("GET /local/:appId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
@@ -3281,7 +3281,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("GET /global/:appId/:userId", () => {
+  describe("GET /local/:appId/:userId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
@@ -4585,7 +4585,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("POST /global/:appId/", () => {
+  describe("POST /local/:appId/", () => {
     //Inputs
     let requestHeaders: any;
     let requestBody: any;
@@ -6765,7 +6765,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("PUT /global/:appId/:userId", () => {
+  describe("PUT /local/:appId/:userId", () => {
     //Inputs
     let requestHeaders: any;
     let requestBody: any;
@@ -9753,5 +9753,2824 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  //TODO - add delete user unit tests
+  describe("DELETE /local/:appId/:userId", () => {
+    //Inputs
+    let requestHeaders: any;
+    let userPayload: MindSphereUserJWTData;
+    let appId: string;
+    let userId: string;
+    let plantId: string;
+    let getAllUsersThrows: boolean;
+    let setFileThrows: boolean;
+    let deleteFileThrows: boolean;
+    let deleteUserThrows: boolean;
+
+    //Outputs
+    let expectedValidCall: boolean;
+    let expectedResponseCode: number;
+    let expectedErrorText: string | null;
+    let expectedGetAllUsersCallNumber: number;
+    let expectedGetAssetsCallNumber: number;
+    let expectedGetFileContentCallNumber: number;
+    let expectedFileServiceContent: any;
+    let expectedSetFileContentCallNumber: number;
+    let expectedDeleteFileCallNumber: number;
+    let expectedDeleteUserCallNumber: number;
+
+    beforeEach(() => {
+      //Inputs
+      requestHeaders = {};
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      getAllUsersThrows = false;
+      setFileThrows = false;
+      deleteFileThrows = false;
+      deleteUserThrows = false;
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
+      if (setFileThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      if (deleteFileThrows) {
+        MindSphereFileService.getInstance().deleteFile = jest.fn(async () => {
+          throw new Error("Test delete file error");
+        });
+      }
+
+      if (deleteUserThrows) {
+        MindSphereUserService.getInstance().deleteUser = jest.fn(async () => {
+          throw new Error("Test delete user error");
+        });
+      }
+
+      return request(server)
+        .delete(`/customApi/config/user/local/${appId}/${plantId}/${userId}`)
+        .set(requestHeaders)
+        .send();
+    };
+
+    const testLocalUserDelete = async () => {
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(expectedResponseCode);
+
+      if (expectedValidCall) {
+        let expectedPaylod = getUserDataResponse(
+          appId,
+          `${appId}-asset-id`,
+          userId,
+          plantId
+        );
+
+        expect(result.body).toEqual(expectedPaylod);
+      } else {
+        expect(result.text).toEqual(expectedErrorText);
+      }
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant != null ? userPayload.subtenant : null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+
+      //Delete file should have been called
+      expect(deleteFile).toHaveBeenCalledTimes(expectedDeleteFileCallNumber);
+      if (expectedDeleteFileCallNumber > 0) {
+        expect(deleteFile.mock.calls).toContainEqual([
+          "hostTenant",
+          `${appId}-asset-id`,
+          `${userId}.user.config.json`,
+        ]);
+      }
+
+      //Set file should have been called - if this is not the only plant for the user
+      expect(setFileContent).toHaveBeenCalledTimes(
+        expectedSetFileContentCallNumber
+      );
+      if (expectedSetFileContentCallNumber > 0) {
+        let expectedUpdatePayload = cloneObject(
+          fileServiceContent["hostTenant"][`${appId}-asset-id`][
+            `${userId}.user.config.json`
+          ]
+        );
+        delete expectedUpdatePayload.config[plantId];
+        delete expectedUpdatePayload.data[plantId];
+        delete expectedUpdatePayload.permissions.plants[plantId];
+
+        expect(setFileContent.mock.calls).toContainEqual([
+          "hostTenant",
+          `${appId}-asset-id`,
+          `${userId}.user.config.json`,
+          expectedUpdatePayload,
+        ]);
+      }
+
+      //Delete user should have been called - if this is the only plant for the user
+      expect(deleteUser).toHaveBeenCalledTimes(expectedDeleteUserCallNumber);
+      if (expectedDeleteUserCallNumber > 0) {
+        expect(deleteUser.mock.calls).toContainEqual([userPayload.ten, userId]);
+      }
+
+      //Update user should never be called - don't change user's permissions
+      expect(updateUser).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[appId] as any;
+
+      //Checking app only if it exists - ther are some cases where api calls about app that does not exist
+      if (app != null) {
+        let storagePayload = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          expectedFileServiceContent["hostTenant"][`${appId}-asset-id`]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+              userFilePath
+            ];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(storagePayload).toEqual(allUsersPayload);
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app", async () => {
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app - if user has multiple plants - subtenant app", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete user and return local payload of user of the app - if user has access only to given app - subtenant app", async () => {
+      //Inputs
+
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have user of userId anymore
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      //SetFile should not have been called - it should have been deleted instead
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 1;
+      //User should be deleted from MindSphere
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app - if user has multiple plants - tenant app", async () => {
+      //Inputs
+      appId = "ten-testTenant2";
+      userId = "testLocalUser21";
+      plantId = "testPlant2";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant2: {
+            testLocalUser21TestPlant2Data: "testLocalUser21TestPlant2DataValue",
+          },
+          testPlant3: {
+            testLocalUser21TestPlant3Data: "testLocalUser21TestPlant3DataValue",
+          },
+        },
+        config: {
+          testPlant2: {
+            testLocalUser21TestPlant2Config:
+              "testLocalUser21TestPlant2onfigValue",
+          },
+          testPlant3: {
+            testLocalUser21TestPlant3Config:
+              "testLocalUser21TestPlant3ConfigValue",
+          },
+        },
+        userName: "test_local_user_21@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant2: PlantPermissions.User,
+            testPlant3: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete user and return local payload of user of the app - if user has access only to given app - tenant app", async () => {
+      //Inputs
+      appId = "ten-testTenant2";
+      userId = "testLocalUser21";
+      plantId = "testPlant2";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant2: {
+            testLocalUser21TestPlant2Data: "testLocalUser21TestPlant2DataValue",
+          },
+        },
+        config: {
+          testPlant2: {
+            testLocalUser21TestPlant2Config:
+              "testLocalUser21TestPlant2onfigValue",
+          },
+        },
+        userName: "test_local_user_21@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant2: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have user of userId anymore
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      //SetFile should not have been called - it should have been deleted instead
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 1;
+      //User should be deleted from MindSphere
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app - if user has access to multiple plants (user) - user to delete is local user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete user and return local payload of user of the app - if user has access only to given app (user) - user to delete is local user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have user of userId anymore
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      //SetFile should not have been called - it should have been deleted instead
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 1;
+      //User should be deleted from MindSphere
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404, and do nothing - if user has no access to the app - user to delete is local user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = `User not found!`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      //No SetFileContent / DeleteFile / DeleteUser have been called
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app - if user has multiple plants (admin) - user to delete is local admin", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalAdmin22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalAdmin22TestPlant5Data:
+              "testLocalAdmin22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalAdmin22TestPlant6Data:
+              "testLocalAdmin22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalAdmin22TestPlant5Config:
+              "testLocalAdmin22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalAdmin22TestPlant6Config:
+              "testLocalAdmin22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_admin_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.Admin,
+            testPlant6: PlantPermissions.Admin,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete user and return local payload of user of the app - if user has access only to given app (admin) - user to delete is local user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalAdmin22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalAdmin22TestPlant5Data:
+              "testLocalAdmin22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalAdmin22TestPlant5Config:
+              "testLocalAdmin22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_admin_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.Admin,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have user of userId anymore
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      //SetFile should not have been called - it should have been deleted instead
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 1;
+      //User should be deleted from MindSphere
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete plantIds from user and return local payload of user of the app - if user has multiple plants (user) - user to delete is local admin", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      //Making testLocalUser a local admin
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+      //Moving user to a proper group
+      userGroupServiceContent.testTenant2.localUserGroup.members = userGroupServiceContent.testTenant2.localUserGroup.members.filter(
+        (group) => group.value !== userId
+      );
+      userGroupServiceContent.testTenant2.localAdminGroup.members.push({
+        type: "USER",
+        value: userId,
+      });
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should have the same number of users but with deleted plant ids
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+      expectedSetFileContentCallNumber = 1;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, delete user and return local payload of user of the app - if user has access only to given app (user) - user to delete is local user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      //Making testLocalUser a local admin
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUserTestPlant5Data: "testLocalUserTestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUserTestPlant5Config: "testLocalUserTestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+      //Moving user to a proper group
+      userGroupServiceContent.testTenant2.localUserGroup.members = userGroupServiceContent.testTenant2.localUserGroup.members.filter(
+        (group) => group.value !== userId
+      );
+      userGroupServiceContent.testTenant2.localAdminGroup.members.push({
+        type: "USER",
+        value: userId,
+      });
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have user of userId anymore
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      //SetFile should not have been called - it should have been deleted instead
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 1;
+      //User should be deleted from MindSphere
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404, and do nothing - if user has no access to the app - user to delete is a local admin", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      //Making testLocalUser a local admin
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalAdmin,
+          plants: {
+            testPlant6: PlantPermissions.Admin,
+          },
+        },
+      };
+      //Moving user to a proper group
+      userGroupServiceContent.testTenant2.localUserGroup.members = userGroupServiceContent.testTenant2.localUserGroup.members.filter(
+        (group) => group.value !== userId
+      );
+      userGroupServiceContent.testTenant2.localAdminGroup.members.push({
+        type: "USER",
+        value: userId,
+      });
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = `User not found!`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      //No SetFileContent / DeleteFile / DeleteUser have been called
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 400, and not delete plantIds from user - if user has access to multiple plants (user) - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalUser22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testGlobalUser22TestPlant5Data:
+              "testGlobalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testGlobalUser22TestPlant6Data:
+              "testGlobalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testGlobalUser22TestPlant5Config:
+              "testGlobalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testGlobalUser22TestPlant6Config:
+              "testGlobalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_global_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = "Cannot delete global admin or global user locally!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 400, and not delete user - if user has access only to given app (user) - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testGlobalUser22TestPlant5Data:
+              "testGlobalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testGlobalUser22TestPlant5Config:
+              "testGlobalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_global_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = "Cannot delete global admin or global user locally!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404, and do nothing - if user has no access to the app - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant6: {
+            testGlobalUser22TestPlant6Data:
+              "testGlobalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant6: {
+            testGlobalUser22TestPlant6Config:
+              "testGlobalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_global_user_22@user.name",
+        permissions: {
+          role: UserRole.GlobalUser,
+          plants: {
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = `User not found!`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      //No SetFileContent / DeleteFile / DeleteUser have been called
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 400, and not delete plantIds from user - if user has access to multiple plants (user) - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalAdmin22";
+      plantId = "testPlant5";
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Data:
+              "testGlobalAdmin22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Data:
+              "testGlobalAdmin22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Config:
+              "testGlobalAdmin22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Config:
+              "testGlobalAdmin22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_global_admin_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = "Cannot delete global admin or global user locally!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 400, and not delete user - if user has access only to given app (user) - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalAdmin22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Data:
+              "testGlobalAdmin22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testGlobalAdmin22TestPlant5Config:
+              "testGlobalAdmin22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_global_admin_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = "Cannot delete global admin or global user locally!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404, and do nothing - if user has no access to the app - user to delete is global user", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testGlobalAdmin22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Data:
+              "testGlobalAdmin22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant6: {
+            testGlobalAdmin22TestPlant6Config:
+              "testGlobalAdmin22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_global_admin_22@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = `User not found!`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      //No SetFileContent / DeleteFile / DeleteUser have been called
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if user has no access to the plant", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "User not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if user has invalid access to the plant", async () => {
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId] = 123;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "User not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 - if there is no plant of given id", async () => {
+      plantId = "fakePlant";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User has no admin permissions to given plant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if there is no user of given id", async () => {
+      userId = "fakeUserId";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "User not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if there is no user of given id in fileService in cache or in storage", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "User not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //One file less = config file of user
+      expectedGetFileContentCallNumber = 47;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if there is no user of given id in userService  - if user has multiple plants (user) ", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+      //Deleting user from user service
+      delete userServiceContent["testTenant2"][userId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText =
+        "User of name: test_local_user_22@user.name does not exist in tenant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 404 - if there is no user of given id in userService  - if user has access only to given plant (user) ", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+      //Deleting user from user service
+      delete userServiceContent["testTenant2"][userId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText =
+        "User of name: test_local_user_22@user.name does not exist in tenant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200, fetch the user and then remove plant ids from its storage - if user exists in storage but not in cache - user has access to multiple plants (user)", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      let oldUserPayload = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = oldUserPayload;
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .delete(`/customApi/config/user/local/${appId}/${plantId}/${userId}`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(expectedResponseCode);
+
+      let expectedPaylod = getUserDataResponse(
+        appId,
+        `${appId}-asset-id`,
+        userId,
+        plantId
+      );
+
+      expect(result.body).toEqual(expectedPaylod);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be called 47 during initalization + 1 during fetching the user's storage data during deletion
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //Delete file should not have been called
+      expect(deleteFile).not.toHaveBeenCalled();
+
+      //Set file should have been called
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      let expectedUpdatePayload = cloneObject(
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `${userId}.user.config.json`
+        ]
+      );
+      delete expectedUpdatePayload.config[plantId];
+      delete expectedUpdatePayload.data[plantId];
+      delete expectedUpdatePayload.permissions.plants[plantId];
+
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+        expectedUpdatePayload,
+      ]);
+
+      //Delete user should not have been called
+      expect(deleteUser).not.toHaveBeenCalled();
+
+      //Update user should never be called - don't change user's permissions
+      expect(updateUser).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[appId] as any;
+
+      let storagePayload = app._userStorage._cacheData;
+
+      let allUsersPayload: any = {};
+
+      let userFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".user.config.json"));
+
+      for (let userFilePath of userFilePaths) {
+        let userFileContent =
+          fileServiceContent["hostTenant"][`${appId}-asset-id`][userFilePath];
+        let userId = userFilePath.replace(".user.config.json", "");
+        allUsersPayload[userId] = {
+          ...userFileContent,
+        };
+      }
+
+      //User should not have access to given plants
+      delete allUsersPayload[userId].config[plantId];
+      delete allUsersPayload[userId].data[plantId];
+      delete allUsersPayload[userId].permissions.plants[plantId];
+
+      expect(storagePayload).toEqual(allUsersPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    it("should return 200, fetch the user and then remove it from service and storage - if user exists in storage but not in cache - user has access only to given plant (user)", async () => {
+      //Inputs
+      appId = "ten-testTenant2-sub-subtenant2";
+      userId = "testLocalUser22";
+      plantId = "testPlant5";
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ];
+      let oldUserPayload = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = oldUserPayload;
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .delete(`/customApi/config/user/local/${appId}/${plantId}/${userId}`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(expectedResponseCode);
+
+      let expectedPaylod = getUserDataResponse(
+        appId,
+        `${appId}-asset-id`,
+        userId,
+        plantId
+      );
+
+      expect(result.body).toEqual(expectedPaylod);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be called 47 during initalization + 1 during fetching the user's storage data during deletion
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //Delete file should have been called
+      expect(deleteFile).toHaveBeenCalledTimes(1);
+      expect(deleteFile.mock.calls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${userId}.user.config.json`,
+      ]);
+
+      //Set file should not have been called
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //Delete user should have been called
+      expect(deleteUser).toHaveBeenCalledTimes(1);
+      expect(deleteUser.mock.calls[0]).toEqual([userPayload.ten, userId]);
+
+      //Update user should never be called - don't change user's permissions
+      expect(updateUser).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[appId] as any;
+
+      //Checking app only if it exists - ther are some cases where api calls about app that does not exist
+      if (app != null) {
+        let storagePayload = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][`${appId}-asset-id`]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][`${appId}-asset-id`][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        //User should not be present in storage cache
+        delete allUsersPayload[userId];
+
+        expect(storagePayload).toEqual(allUsersPayload);
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 403 and not delete the user - if global admin without access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].data[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].config[plantId];
+
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User has no admin permissions to given plant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if global admin with user access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User has no admin permissions to given plant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200 and delete the user - if global admin with admin access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if global user without access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].data[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].config[plantId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if global user with user access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if local admin without access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].data[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].config[plantId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User has no admin permissions to given plant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if local admin with user access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User has no admin permissions to given plant!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 200 and delete the user - if local admin with admin access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].config[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].data[plantId];
+      delete expectedFileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ].permissions.plants[plantId];
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if local user without access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].data[plantId];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].config[plantId];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if local user with user access to the given plant attempts to delete the user", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if user's jwt payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Invalid application id generated from user payload!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if there is no application of given id", async () => {
+      appId = "ten-fakeTen-sub-fakeSub";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "fakeTen",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "fakeSub",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Application of given id not found for the user!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      //GetAssets should be called x2 - try fetching fake app
+      expectedGetAssetsCallNumber = 2;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if app id in user's payload and param differs", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if there is no application data for given app", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Main application settings not found for the user!";
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Main application settings not found for the user!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      //47 calls of getFileContent - no file containing one main app data
+      expectedGetFileContentCallNumber = 47;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. User of given name not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //49 calls of getFileContent - one additional user
+      expectedGetFileContentCallNumber = 49;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if user has valid scope, exists in user service but does not exist in file service", async () => {
+      userServiceContent["testTenant2"]["testFakeUser23"] = {
+        active: true,
+        name: {
+          familyName: "testFakeUser23FamilyName",
+          givenName: "testFakeUser23GivenName",
+        },
+        userName: "test_fake_user_23@user.name",
+        emails: [
+          {
+            value: "testFakeUser23Email",
+          },
+        ],
+        groups: [],
+        externalId: "testFakeUser23ExternalId",
+        id: "testFakeUser23",
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User does not exist for given app id!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if user has no access to the app - invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22_user_name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Forbidden access. No scope found to access the app!";
+      //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if subtenant user attempts to get user for tenant app", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 403 and not delete the user - if tenant user attempts to get user for subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    it("should return 401 - if authorization token is invalid - no token provided", async () => {
+      delete requestHeaders["authorization"];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+    });
+
+    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not delete the user or its plantIds - if get all users throws", async () => {
+      getAllUsersThrows = true;
+
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not delete the user or its plantIds - if delete user throws - user has access only to given plant (user)", async () => {
+      deleteUserThrows = true;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      //0 calls for deleteUser - becouse deleteUser mock is overridden with a different mocked method
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test delete user error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and delete user from service - if delete file throws - user has access only to given plant (user)", async () => {
+      deleteFileThrows = true;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+          },
+        },
+      };
+
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      expectedSetFileContentCallNumber = 0;
+      //0 calls for deleteFile - becouse deleteFile mock is overridden with a different mocked method
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 1;
+
+      await testLocalUserDelete();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test delete file error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not delete the user or its plantIds - if set file throws - user has access to multiple plants (user)", async () => {
+      setFileThrows = true;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${userId}.user.config.json`
+      ] = {
+        data: {
+          testPlant5: {
+            testLocalUser22TestPlant5Data: "testLocalUser22TestPlant5DataValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Data: "testLocalUser22TestPlant6DataValue",
+          },
+        },
+        config: {
+          testPlant5: {
+            testLocalUser22TestPlant5Config:
+              "testLocalUser22TestPlant5ConfigValue",
+          },
+          testPlant6: {
+            testLocalUser22TestPlant6Config:
+              "testLocalUser22TestPlant6ConfigValue",
+          },
+        },
+        userName: "test_local_user_22@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //FileService content should not have changed
+      expectedFileServiceContent = cloneObject(fileServiceContent);
+      //0 calls for setFileContent - becouse setFileContent mock is overridden with a different mocked method
+      expectedSetFileContentCallNumber = 0;
+      expectedDeleteFileCallNumber = 0;
+      expectedDeleteUserCallNumber = 0;
+
+      await testLocalUserDelete();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test set file content error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
+  });
 });

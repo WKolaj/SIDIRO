@@ -748,10 +748,9 @@ router.delete(
 
     //If user exists for more than one plant - don't delete him, just update him and remove actual plant id from his payload
     if (Object.keys(userToDeleteStorageData.permissions.plants).length > 1) {
-      //Creating payload without access to plant
-      let payloadToEdit: UserStorageData = {
-        ...userToDeleteStorageData,
-      };
+      //Creating payload without access to plant - accepting call of clone object - efficiency is not the key here, due to the fact that this route is called very rarely
+      let payloadToEdit: UserStorageData = cloneObject(userToDeleteStorageData);
+
       delete payloadToEdit.config[req.params.plantId];
       delete payloadToEdit.data[req.params.plantId];
       delete payloadToEdit.permissions.plants[req.params.plantId];
@@ -772,9 +771,10 @@ router.delete(
     return res
       .status(200)
       .send(
-        normalizeGlobalUserPayload(
+        normalizeLocalUserPayload(
           userRequest.params.appId,
           userRequest.params.userId,
+          userRequest.params.plantId,
           userToDeleteStorageData
         )
       );
