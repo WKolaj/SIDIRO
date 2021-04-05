@@ -2377,13 +2377,12 @@ describe("config user route", () => {
       await testLocalUsersGet();
     });
 
-    it("should return 403 - if there is no plant of given id", async () => {
+    it("should return 404 - if there is no plant of given id", async () => {
       plantId = "fakePlant";
 
       expectedValidCall = false;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
-      expectedResponseCode = 403;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
 
       await testLocalUsersGet();
     });
@@ -2508,7 +2507,7 @@ describe("config user route", () => {
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
-    it("should return 403 and not get all users - if global admin without access to the given plant attempts to get all users", async () => {
+    it("should return 404 and not get all users - if global admin without access to the given plant attempts to get all users", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -2537,15 +2536,14 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUsersGet();
     });
 
-    it("should return 403 and not get all users - if global admin with user access to the given plant attempts to get all users", async () => {
+    it("should return 404 and not get all users - if global admin with user access to the given plant attempts to get all users", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -2568,9 +2566,8 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUsersGet();
@@ -2669,7 +2666,7 @@ describe("config user route", () => {
       await testLocalUsersGet();
     });
 
-    it("should return 403 and not get all users - if local admin without access to the given plant attempts to get all users", async () => {
+    it("should return 404 and not get all users - if local admin without access to the given plant attempts to get all users", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -2698,15 +2695,14 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUsersGet();
     });
 
-    it("should return 403 and not get all users - if local admin with user access to the given plant attempts to get all users", async () => {
+    it("should return 404 and not get all users - if local admin with user access to the given plant attempts to get all users", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -2727,9 +2723,8 @@ describe("config user route", () => {
       ].permissions.plants[plantId] = PlantPermissions.User;
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUsersGet();
@@ -3680,13 +3675,12 @@ describe("config user route", () => {
       await testLocalUserGet();
     });
 
-    it("should return 403 - if there is no plant of given id", async () => {
+    it("should return 404 - if there is no plant of given id", async () => {
       plantId = "fakePlant";
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
 
       await testLocalUserGet();
     });
@@ -3812,7 +3806,7 @@ describe("config user route", () => {
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
-    it("should return 403 and not get user - if global admin without access to the given plant attempts to get the user", async () => {
+    it("should return 404 and not get user - if global admin without access to the given plant attempts to get the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -3841,15 +3835,14 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUserGet();
     });
 
-    it("should return 403 and not get user - if global admin with user access to the given plant attempts to get the user", async () => {
+    it("should return 404 and not get user - if global admin with user access to the given plant attempts to get the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -3872,9 +3865,8 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUserGet();
@@ -4002,9 +3994,8 @@ describe("config user route", () => {
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUserGet();
@@ -4031,9 +4022,8 @@ describe("config user route", () => {
       ].permissions.plants[plantId] = PlantPermissions.User;
 
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedFileServiceContent = cloneObject(fileServiceContent);
 
       await testLocalUserGet();
@@ -5947,7 +5937,7 @@ describe("config user route", () => {
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
-    it("should return 403 and not create user - if global admin without access to the given plant attempts to create the user", async () => {
+    it("should return 404 and not create user - if global admin without access to the given plant attempts to create the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -5975,8 +5965,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = `Access denied. User has no admin permissions to given plant!`;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -5987,7 +5977,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not create user - if global admin with user access to the given plant attempts to create the user", async () => {
+    it("should return 404 and not create user - if global admin with user access to the given plant attempts to create the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -6009,8 +5999,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = `Access denied. User has no admin permissions to given plant!`;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -6120,7 +6110,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not create the user - if local admin without access to the given plant attempts to create the user", async () => {
+    it("should return 404 and not create the user - if local admin without access to the given plant attempts to create the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -6148,9 +6138,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -6161,7 +6150,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not create the user - if local admin with user access to the given plant attempts to create the user", async () => {
+    it("should return 404 and not create the user - if local admin with user access to the given plant attempts to create the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -6183,9 +6172,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -7274,7 +7262,7 @@ describe("config user route", () => {
       //#endregion  =====  CHECKING STORAGE =====
     });
 
-    it("should not update user and return 403 - if there is no plantId of given id", async () => {
+    it("should not update user and return 404 - if there is no plantId of given id", async () => {
       //Inputs
       appId = "ten-testTenant2-sub-subtenant2";
       plantId = "fakePlant";
@@ -7282,8 +7270,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = `Access denied. User has no admin permissions to given plant!`;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -9006,7 +8994,7 @@ describe("config user route", () => {
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
-    it("should return 403 and not edit the user - if global admin without access to the given plant attempts to edit the user", async () => {
+    it("should return 404 and not edit the user - if global admin without access to the given plant attempts to edit the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -9034,8 +9022,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = `Access denied. User has no admin permissions to given plant!`;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -9044,7 +9032,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not edit the user - if global admin with user access to the given plant attempts to edit the user", async () => {
+    it("should return 404 and not edit the user - if global admin with user access to the given plant attempts to edit the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -9066,8 +9054,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = `Access denied. User has no admin permissions to given plant!`;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -9171,7 +9159,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not edit the user - if local admin without access to the given plant attempts to edit the user", async () => {
+    it("should return 404 and not edit the user - if local admin without access to the given plant attempts to edit the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -9199,9 +9187,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -9210,7 +9197,7 @@ describe("config user route", () => {
       await testLocalUserPost();
     });
 
-    it("should return 403 and not edit the user - if local admin with user access to the given plant attempts to edit the user", async () => {
+    it("should return 404 and not edit the user - if local admin with user access to the given plant attempts to edit the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -9232,9 +9219,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -11102,14 +11088,13 @@ describe("config user route", () => {
       await testLocalUserDelete();
     });
 
-    it("should return 403 - if there is no plant of given id", async () => {
+    it("should return 404 - if there is no plant of given id", async () => {
       plantId = "fakePlant";
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -11579,7 +11564,7 @@ describe("config user route", () => {
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
 
-    it("should return 403 and not delete the user - if global admin without access to the given plant attempts to delete the user", async () => {
+    it("should return 404 and not delete the user - if global admin without access to the given plant attempts to delete the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -11609,9 +11594,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -11624,7 +11608,7 @@ describe("config user route", () => {
       await testLocalUserDelete();
     });
 
-    it("should return 403 and not delete the user - if global admin with user access to the given plant attempts to delete the user", async () => {
+    it("should return 404 and not delete the user - if global admin with user access to the given plant attempts to delete the user", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -11648,9 +11632,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -11777,7 +11760,7 @@ describe("config user route", () => {
       await testLocalUserDelete();
     });
 
-    it("should return 403 and not delete the user - if local admin without access to the given plant attempts to delete the user", async () => {
+    it("should return 404 and not delete the user - if local admin without access to the given plant attempts to delete the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -11805,9 +11788,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
@@ -11820,7 +11802,7 @@ describe("config user route", () => {
       await testLocalUserDelete();
     });
 
-    it("should return 403 and not delete the user - if local admin with user access to the given plant attempts to delete the user", async () => {
+    it("should return 404 and not delete the user - if local admin with user access to the given plant attempts to delete the user", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -11842,9 +11824,8 @@ describe("config user route", () => {
 
       //Outputs
       expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User has no admin permissions to given plant!";
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;

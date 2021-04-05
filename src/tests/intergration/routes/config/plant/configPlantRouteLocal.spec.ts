@@ -3442,6 +3442,23 @@ describe("config plant route", () => {
       await testLocalPlantGet();
     });
 
+    it("should return 404 - if there is no plant's data for given plantId but it exists in user's permissions", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${plantId}.plant.config.json`
+      ];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant data not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //One file of plant does not exist
+      expectedGetFileContentCallNumber = 47;
+
+      await testLocalPlantGet();
+    });
+
     it("should return 404 - if user is a local user without local access to given plant", async () => {
       delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
         `testLocalUser22.user.config.json`
@@ -4285,6 +4302,1535 @@ describe("config plant route", () => {
       expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
       expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
         "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
+  });
+
+  describe("PUT /local/:appId/:plantId", () => {
+    let requestHeaders: any;
+    let requestBody: any;
+    let userPayload: MindSphereUserJWTData;
+    let appId: string;
+    let plantId: string;
+    let getAllUsersThrows: boolean;
+    let setFileContentThrows: boolean;
+
+    //Outputs
+    let expectedValidCall: boolean;
+    let expectedResponseCode: number;
+    let expectedErrorText: string | null;
+    let expectedGetAllUsersCallNumber: number;
+    let expectedGetAssetsCallNumber: number;
+    let expectedGetFileContentCallNumber: number;
+    let expectedSetFileContentCallNumber: number;
+
+    beforeEach(() => {
+      //Inputs
+      requestHeaders = {};
+      appId = "ten-testTenant2-sub-subtenant2";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        plantId: plantId,
+        data: {
+          testPlant5Data: "testPlant5ModifiedDataValue",
+        },
+        config: {
+          testPlant5Config: "testPlant5ModifiedConfigValue",
+        },
+      };
+      getAllUsersThrows = false;
+      setFileContentThrows = false;
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 1;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      if (getAllUsersThrows) {
+        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
+          throw new Error("Test get all users error");
+        });
+      }
+
+      if (setFileContentThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      return request(server)
+        .put(`/customApi/config/plant/local/${appId}/${plantId}`)
+        .set(requestHeaders)
+        .send(requestBody);
+    };
+
+    const testLocalPlantUpdate = async () => {
+      let result = await exec();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(expectedResponseCode);
+
+      if (expectedValidCall) {
+        let expectedPayload = {
+          ...requestBody,
+          appId: appId,
+        };
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.text).toEqual(expectedErrorText);
+      }
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
+      if (expectedGetAllUsersCallNumber > 0) {
+        expect(getAllUsers.mock.calls[0]).toEqual([
+          userPayload.ten,
+          userPayload.subtenant != null ? userPayload.subtenant : null,
+          null,
+          userPayload.user_name,
+        ]);
+      }
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
+      if (expectedGetAssetsCallNumber > 0) {
+        expect(getAssets.mock.calls[0]).toEqual([
+          "hostTenant",
+          null,
+          "testAppContainerAssetId",
+          "testAppAssetType",
+        ]);
+      }
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(
+        expectedGetFileContentCallNumber
+      );
+
+      expect(setFileContent).toHaveBeenCalledTimes(
+        expectedSetFileContentCallNumber
+      );
+      if (expectedSetFileContentCallNumber > 0) {
+        expect(setFileContent.mock.calls[0]).toEqual([
+          "hostTenant",
+          `${appId}-asset-id`,
+          `${plantId}.plant.config.json`,
+          {
+            data: requestBody.data,
+            config: requestBody.config,
+          },
+        ]);
+      }
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[appId] as any;
+
+      //Testing app only if it exists
+      if (app != null) {
+        let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+          appId
+        ] as any)._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][`${appId}-asset-id`]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][`${appId}-asset-id`][
+              plantFilePath
+            ];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        //If call is valid - payload in storage should have been updated
+        if (expectedValidCall) {
+          allPlantsPayload[plantId] = {
+            data: requestBody.data,
+            config: requestBody.config,
+          };
+        }
+
+        expect(storagePayload).toEqual(allPlantsPayload);
+      }
+
+      //#endregion  =====  CHECKING STORAGE =====
+    };
+
+    it("should update plant's data and return 200", async () => {
+      await testLocalPlantUpdate();
+    });
+
+    it("should update plant's data and return 200 - if app is a subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      plantId = "testPlant5";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        plantId: plantId,
+        data: {
+          testPlant5Data: "testPlant5ModifiedDataValue",
+        },
+        config: {
+          testPlant5Config: "testPlant5ModifiedConfigValue",
+        },
+      };
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should update plant's data and return 200 - if app is a tenant app", async () => {
+      appId = "ten-testTenant2";
+      plantId = "testPlant2";
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      requestBody = {
+        plantId: plantId,
+        data: {
+          testPlant2Data: "testPlant2ModifiedDataValue",
+        },
+        config: {
+          testPlant2Config: "testPlant2ModifiedConfigValue",
+        },
+      };
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should fetch the plant's data then update it and return 200 - if plant's data exists in storage but not in cache", async () => {
+      let oldPlant5 =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `testPlant5.plant.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ] = oldPlant5;
+
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .put(`/customApi/config/plant/local/${appId}/${plantId}`)
+        .set(requestHeaders)
+        .send(requestBody);
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(expectedResponseCode);
+
+      let expectedPayload = {
+        ...requestBody,
+        appId: appId,
+      };
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //getFileContent should have been called 47 times during initialization and 48th time during fetching plant's data
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${plantId}.plant.config.json`,
+      ]);
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `${plantId}.plant.config.json`,
+        {
+          data: requestBody.data,
+          config: requestBody.config,
+        },
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[appId] as any;
+
+      let storagePayload = app._plantStorage._cacheData;
+
+      let allPlantsPayload: any = {};
+
+      let plantFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+      for (let plantFilePath of plantFilePaths) {
+        let plantFileContent =
+          fileServiceContent["hostTenant"][`${appId}-asset-id`][plantFilePath];
+        let plantId = plantFilePath.replace(".plant.config.json", "");
+        allPlantsPayload[plantId] = {
+          ...plantFileContent,
+        };
+      }
+
+      //If call is valid - payload in storage should have been updated
+      allPlantsPayload[plantId] = {
+        data: requestBody.data,
+        config: requestBody.config,
+      };
+
+      expect(storagePayload).toEqual(allPlantsPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
+    //#region ========== BODY VALIDATION =========
+
+    it("should return 400 and not update the plant - if there is an attempt to update plant with appId in body", async () => {
+      //Inputs
+      requestBody.appId = appId;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"appId\" is not allowed`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if plant id is not defined", async () => {
+      //Inputs
+      delete requestBody.plantId;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"plantId\" is required`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if plant id is null", async () => {
+      //Inputs
+      requestBody.plantId = null;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"plantId\" must be a string`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if plant id is invalid type - number", async () => {
+      //Inputs
+      requestBody.plantId = 1234;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"plantId\" must be a string`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if plant id is an empty string", async () => {
+      //Inputs
+      requestBody.plantId = "";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"plantId\" is not allowed to be empty`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if plant id in request body is different then plantId in params", async () => {
+      //Inputs
+      requestBody.plantId = "testPlant6";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `Plant id cannot be changed!`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if data in payload is undefined", async () => {
+      //Inputs
+      delete requestBody.data;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"data\" is required`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if data in payload is null", async () => {
+      //Inputs
+      requestBody.data = null;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"data\" must be of type object`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if data in payload is not an object (string)", async () => {
+      //Inputs
+      requestBody.data = "abcd1234";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"data\" must be of type object`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 and update the plant - if data in payload is not an empty object", async () => {
+      //Inputs
+      requestBody.data = {};
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 1;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 and update the plant - if data in payload is a nested property", async () => {
+      //Inputs
+      requestBody.data = {
+        a: {
+          c: {
+            e: 1234,
+            f: 4321,
+          },
+          d: {
+            g: 1234,
+            h: 4321,
+          },
+        },
+        b: {
+          i: {
+            k: "abcd",
+            l: "dcba",
+          },
+          j: {
+            m: "abcd",
+            n: "dcba",
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 1;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if config in payload is undefined", async () => {
+      //Inputs
+      delete requestBody.config;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"config\" is required`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if config in payload is null", async () => {
+      //Inputs
+      requestBody.config = null;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"config\" must be of type object`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 400 and not update the plant - if config in payload is not an object (string)", async () => {
+      //Inputs
+      requestBody.config = "abcd1234";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 400;
+      expectedErrorText = `\"config\" must be of type object`;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 and update the plant - if config in payload is not an empty object", async () => {
+      //Inputs
+      requestBody.config = {};
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 1;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 and update the plant - if config in payload is a nested property", async () => {
+      //Inputs
+      requestBody.config = {
+        a: {
+          c: {
+            e: 1234,
+            f: 4321,
+          },
+          d: {
+            g: 1234,
+            h: 4321,
+          },
+        },
+        b: {
+          i: {
+            k: "abcd",
+            l: "dcba",
+          },
+          j: {
+            m: "abcd",
+            n: "dcba",
+          },
+        },
+      };
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 1;
+
+      await testLocalPlantUpdate();
+    });
+
+    //#endregion ========== BODY VALIDATION =========
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 404 - if there is no plant of given id", async () => {
+      plantId = "fakePlant";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if there is no plant's data for given plantId but it exists in user's permissions", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${plantId}.plant.config.json`
+      ];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant data not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //One file of plant does not exist
+      expectedGetFileContentCallNumber = 47;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a local user without local access to given plant", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a local admin without local access to given plant", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a global user without local access to given plant", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a global admin without local access to given plant", async () => {
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a local user with user access to the plant", async () => {
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a local admin with user access to the plant", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a global user with user access to the plant", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a global admin with user access to the plant", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 - if user is a local admin with admin access to the plant", async () => {
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 200 - if user is a global admin with admin access to the plant", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a local user with invalid user role", async () => {
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a local admin with invalid user role", async () => {
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 - if user is a global user with invalid user role", async () => {
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 404 - if user is a global admin with invalid user role", async () => {
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant of given id not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if user's jwt payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Invalid application id generated from user payload!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if there is no application of given id", async () => {
+      appId = "ten-fakeTen-sub-fakeSub";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "fakeTen",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "fakeSub",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Application of given id not found for the user!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      //GetAssets should be called x2 - try fetching fake app
+      expectedGetAssetsCallNumber = 2;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if app id in user's payload and param differs", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if there is no application data for given app", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Main application settings not found for the user!";
+      //GetAllUser should not be called - call ended before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      //47 calls of getFileContent - no file containing one main app data
+      expectedGetFileContentCallNumber = 47;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if user has invalid role", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.role = 99;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global admin or local admin!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.LocalUser,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. User of given name not found!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //49 calls of getFileContent - one additional user
+      expectedGetFileContentCallNumber = 49;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if user has valid scope, exists in user service but does not exist in file service", async () => {
+      userServiceContent["testTenant2"]["testFakeUser23"] = {
+        active: true,
+        name: {
+          familyName: "testFakeUser23FamilyName",
+          givenName: "testFakeUser23GivenName",
+        },
+        userName: "test_fake_user_23@user.name",
+        emails: [
+          {
+            value: "testFakeUser23Email",
+          },
+        ],
+        groups: [],
+        externalId: "testFakeUser23ExternalId",
+        id: "testFakeUser23",
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User does not exist for given app id!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if user has no access to the app - invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22_user_name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Forbidden access. No scope found to access the app!";
+      //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if subtenant user attempts to update user for tenant app", async () => {
+      appId = "ten-testTenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 403 and not update the plant - if tenant user attempts to update user for subtenant app", async () => {
+      appId = "ten-testTenant2-sub-subtenant2";
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. No access to given application!";
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    it("should return 401 - if authorization token is invalid - no token provided", async () => {
+      delete requestHeaders["authorization"];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+      //No calling getAllUsers - returning before fetching user's data
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+    });
+
+    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    //#region ========== MINDSPHERE SERVICE THROWS ==========
+
+    it("should return 500 and not create the plant - if get all users throws", async () => {
+      getAllUsersThrows = true;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
+      expectedGetAllUsersCallNumber = 0;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get all users error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not create the plant - if set file content throws", async () => {
+      setFileContentThrows = true;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 500;
+      expectedErrorText = `Ups.. Something fails..`;
+      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      expectedGetFileContentCallNumber = 48;
+      //0 calls for setFileContent - becouse setFileContent mock is overridden with a different mocked method
+      expectedSetFileContentCallNumber = 0;
+
+      await testLocalPlantUpdate();
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test set file content error"
       );
 
       //#endregion ===== CHECKING LOGGING =====

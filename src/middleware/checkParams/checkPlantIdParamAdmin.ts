@@ -12,16 +12,22 @@ export default async function(
     appId: string;
   }>;
 
-  //Checking if user is admin for plant and if plant exists for given user
+  //Checking if app exists for the user of the plant
+  if (
+    appDataRequest.userData?.permissions.plants[
+      appDataRequest.params.plantId
+    ] == null
+  )
+    return res.status(404).send("Plant of given id not found!");
+
+  //Checking if user is admin or user for plant - also returning 404 in order not to show the difference between not having access to the app and trying to access app that does not exist
   if (
     !MindSphereApp.isLocalAdminOfPlant(
       appDataRequest.params.plantId,
       appDataRequest.userData!
     )
   )
-    return res
-      .status(403)
-      .send("Access denied. User has no admin permissions to given plant!");
+    return res.status(404).send("Plant of given id not found!");
 
   next();
 }

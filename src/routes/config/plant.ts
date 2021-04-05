@@ -487,6 +487,13 @@ router.put(
 
     //#endregion ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
 
+    //#region ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE PLANT ID ==========
+
+    if (req.params.plantId !== appDataReq.body.plantId)
+      return res.status(400).send("Plant id cannot be changed!");
+
+    //#endregion ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE PLANT ID ==========
+
     //#region ========== UPDATING PLANT DATA ==========
 
     let payloadToUpdate: PlantStorageData = {
