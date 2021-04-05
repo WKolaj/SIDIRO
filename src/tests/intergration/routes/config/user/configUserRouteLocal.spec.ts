@@ -2149,7 +2149,7 @@ describe("config user route", () => {
     return userPayloads;
   };
 
-  describe("GET /local/:appId", () => {
+  describe("GET /local/:appId/:plantId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
@@ -3281,7 +3281,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("GET /local/:appId/:userId", () => {
+  describe("GET /local/:appId/:plantId/:userId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
@@ -4585,7 +4585,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("POST /local/:appId/", () => {
+  describe("POST /local/:appId/:plantId/", () => {
     //Inputs
     let requestHeaders: any;
     let requestBody: any;
@@ -6765,7 +6765,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("PUT /local/:appId/:userId", () => {
+  describe("PUT /local/:appId/:plantId/:userId", () => {
     //Inputs
     let requestHeaders: any;
     let requestBody: any;
@@ -9753,7 +9753,7 @@ describe("config user route", () => {
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 
-  describe("DELETE /local/:appId/:userId", () => {
+  describe("DELETE /local/:appId/:plantId/:userId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
