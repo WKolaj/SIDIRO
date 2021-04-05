@@ -378,7 +378,11 @@ router.put(
     return res
       .status(200)
       .send(
-        normalizePlantPayload(req.params.appId, req.params.plantId, plantData)
+        normalizePlantPayload(
+          req.params.appId,
+          req.params.plantId,
+          payloadToUpdate
+        )
       );
   }
 );
