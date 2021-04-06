@@ -2116,13 +2116,27 @@ describe("config config route", () => {
     payloadToReturn.userData = userData;
 
     payloadToReturn.plantsData = {};
-    for (let plantId of Object.keys(userData.permissions.plants)) {
-      if (plantDataStorageContent[plantId] != null) {
+    //If user is global user or a global admin - he should have access to every plant
+    if (
+      userData.permissions.role === UserRole.GlobalAdmin ||
+      userData.permissions.role === UserRole.GlobalUser
+    ) {
+      for (let plantId of Object.keys(plantDataStorageContent)) {
         payloadToReturn.plantsData[plantId] = {
           ...plantDataStorageContent[plantId],
           plantId: plantId,
           appId: appId,
         };
+      }
+    } else {
+      for (let plantId of Object.keys(userData.permissions.plants)) {
+        if (plantDataStorageContent[plantId] != null) {
+          payloadToReturn.plantsData[plantId] = {
+            ...plantDataStorageContent[plantId],
+            plantId: plantId,
+            appId: appId,
+          };
+        }
       }
     }
 
@@ -3209,6 +3223,64 @@ describe("config config route", () => {
         userPayload,
         "testPrivateKey"
       )}`;
+
+      await testMeConfigGet();
+    });
+
+    it("should return 200 and payload with all plants - if user is a global admin and has no access to every plant", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants["testPlant5"];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].data["testPlant5"];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].config["testPlant5"];
+
+      await testMeConfigGet();
+    });
+
+    it("should return 200 and payload with all plants - if user is a global user and has no access to every plant", async () => {
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants["testPlant5"];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].data["testPlant5"];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].config["testPlant5"];
 
       await testMeConfigGet();
     });
