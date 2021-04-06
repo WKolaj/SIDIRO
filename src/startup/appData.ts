@@ -30,3 +30,5 @@ export default async function() {
     logger.info("applications data initialization failure !");
   }
 }
+
+//TODO - add startup tests after implementing services

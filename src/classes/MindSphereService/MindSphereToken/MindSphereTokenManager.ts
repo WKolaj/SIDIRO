@@ -159,5 +159,3 @@ export class MindSphereTokenManager {
     return this._token;
   }
 }
-
-//TODO - test this class

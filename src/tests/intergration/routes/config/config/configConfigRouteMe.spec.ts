@@ -67,7 +67,7 @@ import logger from "../../../../../logger/logger";
 import { cloneObject } from "../../../../../utilities/utilities";
 import { config } from "node-config-ts";
 
-describe("config app route", () => {
+describe("config config route", () => {
   let userServiceContent: MockedUserServiceContent;
   let userGroupServiceContent: MockedUserGroupServiceContent;
   let fileServiceContent: MockedFileServiceContent;
@@ -2088,19 +2088,45 @@ describe("config app route", () => {
   /**
    * @description Method for creating response contain plant data payload
    */
-  const getAppDataResponse = (appId: string, appAssetId: string) => {
-    let plantPayload: any = {};
+  const getConfigResponse = (userPayload: MindSphereUserJWTData) => {
+    let appId = getAppIdFromUserPaylad(userPayload);
+    let appAssetId = `${appId}-asset-id`;
 
-    let plantStorageContent = getAppsStorageContent(appId, appAssetId);
+    let appDataStorageContent = getAppsStorageContent(appId, appAssetId);
+    let plantDataStorageContent = getPlantsStorageContent(appId, appAssetId);
+    let userDataStorageContent = getUsersStorageContent(appId, appAssetId);
 
-    if (plantStorageContent["main"] == null) return null;
-
-    plantPayload = {
-      ...plantStorageContent["main"],
+    let payloadToReturn: any = {};
+    payloadToReturn.appData = {
+      ...appDataStorageContent["main"],
       appId: appId,
     };
 
-    return plantPayload;
+    let userId = Object.keys(userServiceContent[userPayload.ten]).find(
+      (id) =>
+        userServiceContent[userPayload.ten][id].userName ===
+        userPayload.user_name
+    );
+    let userData = {
+      ...userDataStorageContent[userId!],
+      userId: userId,
+      appId: appId,
+    };
+
+    payloadToReturn.userData = userData;
+
+    payloadToReturn.plantsData = {};
+    for (let plantId of Object.keys(userData.permissions.plants)) {
+      if (plantDataStorageContent[plantId] != null) {
+        payloadToReturn.plantsData[plantId] = {
+          ...plantDataStorageContent[plantId],
+          plantId: plantId,
+          appId: appId,
+        };
+      }
+    }
+
+    return payloadToReturn;
   };
 
   /**
@@ -2125,6 +2151,54 @@ describe("config app route", () => {
     }
 
     return allAppsPayload;
+  };
+
+  /**
+   * @description Method for getting content of plants storage
+   */
+  const getPlantsStorageContent = (appId: string, appAssetId: string) => {
+    const tenantName = "hostTenant";
+
+    let allPlantsPayload: any = {};
+
+    let plantFilePaths = Object.keys(
+      fileServiceContent[tenantName][appAssetId]
+    ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+    for (let plantFilePath of plantFilePaths) {
+      let plantFileContent =
+        fileServiceContent[tenantName][appAssetId][plantFilePath];
+      let plantId = plantFilePath.replace(".plant.config.json", "");
+      allPlantsPayload[plantId] = {
+        ...plantFileContent,
+      };
+    }
+
+    return allPlantsPayload;
+  };
+
+  /**
+   * @description Method for getting content of users storage
+   */
+  const getUsersStorageContent = (appId: string, appAssetId: string) => {
+    const tenantName = "hostTenant";
+
+    let allUsersPayload: any = {};
+
+    let userFilePaths = Object.keys(
+      fileServiceContent[tenantName][appAssetId]
+    ).filter((filePath) => filePath.includes(".user.config.json"));
+
+    for (let userFilePath of userFilePaths) {
+      let userFileContent =
+        fileServiceContent[tenantName][appAssetId][userFilePath];
+      let userId = userFilePath.replace(".user.config.json", "");
+      allUsersPayload[userId] = {
+        ...userFileContent,
+      };
+    }
+
+    return allUsersPayload;
   };
 
   describe("GET /me/", () => {
@@ -2176,12 +2250,12 @@ describe("config app route", () => {
       }
 
       return request(server)
-        .get(`/customApi/config/app/me`)
+        .get(`/customApi/config/me`)
         .set(requestHeaders)
         .send();
     };
 
-    const testMeAppGet = async () => {
+    const testMeConfigGet = async () => {
       let result = await exec();
 
       //#region ===== CHECKING RESPONSE =====
@@ -2189,10 +2263,8 @@ describe("config app route", () => {
       expect(result.status).toEqual(expectedResponseCode);
 
       if (expectedValidCall) {
-        let expectedPayload = getAppDataResponse(
-          getAppIdFromUserPaylad(userPayload),
-          `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-        );
+        let expectedPayload = getConfigResponse(userPayload);
+
         expect(result.body).toEqual(expectedPayload);
       } else {
         expect(result.text).toEqual(expectedErrorText);
@@ -2239,6 +2311,55 @@ describe("config app route", () => {
 
       //Testing app only if it exists
       if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
         let storagePayload = app._appStorage._cacheData;
 
         let allAppsPayload: any = {};
@@ -2263,14 +2384,14 @@ describe("config app route", () => {
         expect(storagePayload).toEqual(allAppsPayload);
       }
 
-      //#endregion  =====  CHECKING STORAGE =====
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
     };
 
-    it("should return 200 and payload of user's app", async () => {
-      await testMeAppGet();
+    it("should return 200 and whole payload of config - app, plants and user's", async () => {
+      await testMeConfigGet();
     });
 
-    it("should return 200 and payload of user's app - if app is a subtenant app", async () => {
+    it("should return 200 and whole payload of config - app, plants and user's - if app is a subtenant app", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -2284,10 +2405,10 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
-    it("should return 200 and payload of user's app - if app is a tenant app", async () => {
+    it("should return 200 and whole payload of config - app, plants and user's - if app is a tenant app", async () => {
       userPayload = {
         client_id: "testLocalAdminClientId",
         email: "testLocalAdminEmail",
@@ -2300,10 +2421,282 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
-    it("should fetch the app's data and return 200 - if app's data exists in storage but not in cache", async () => {
+    it("should return 200 and whole payload of config - if there are no plant's in user's app", async () => {
+      //Inputs
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant4.plant.config.json"];
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant5.plant.config.json"];
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant6.plant.config.json"];
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].config = {};
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].data = {};
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].permissions.plants = {};
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //there are no 3 plant's file available - 48 - 3
+      expectedGetFileContentCallNumber = 45;
+
+      await testMeConfigGet();
+    });
+
+    it("should return 200 and whole payload of config - if there are no plant's in user's app but the exists in user's storage data", async () => {
+      //Inputs
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant4.plant.config.json"];
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant5.plant.config.json"];
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testPlant6.plant.config.json"];
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedGetAllUsersCallNumber = 1;
+      expectedGetAssetsCallNumber = 1;
+      //there are no 3 plant's file available - 48 - 3
+      expectedGetFileContentCallNumber = 45;
+
+      await testMeConfigGet();
+    });
+
+    it("should return 200 and whole payload of config - if there are plants in user's app but user doesn't have access to any plant", async () => {
+      //Inputs
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].config = {};
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].data = {};
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testLocalAdmin22.user.config.json"].permissions.plants = {};
+
+      await testMeConfigGet();
+    });
+
+    it("should fetch app's and user's and plant's data and return 200 - if all data have not existed before in cache but in storage", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      let oldTotalData = fileServiceContent["hostTenant"][`${appId}-asset-id`];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`] = oldTotalData;
+
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .get(`/customApi/config/me`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedPayload = getConfigResponse(userPayload);
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Called 3 times - 1 x initialization, 1 x checking if app exists, 1x fetching apps asset
+      expect(getAssets).toHaveBeenCalledTimes(3);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+      expect(getAssets.mock.calls[1]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+      expect(getAssets.mock.calls[2]).toEqual([
+        "hostTenant",
+        "ten-testTenant2-sub-subtenant2",
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //39 times during initialization + 1 x for app data, 4 x for user's data, 3 x for plant's data
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      let laterCalls = [
+        getFileContent.mock.calls[40],
+        getFileContent.mock.calls[41],
+        getFileContent.mock.calls[42],
+        getFileContent.mock.calls[43],
+        getFileContent.mock.calls[44],
+        getFileContent.mock.calls[45],
+        getFileContent.mock.calls[46],
+        getFileContent.mock.calls[47],
+      ];
+
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `main.app.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testLocalUser22.user.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testLocalAdmin22.user.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testGlobalUser22.user.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testGlobalAdmin22.user.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testPlant4.plant.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testPlant5.plant.config.json`,
+      ]);
+      expect(laterCalls).toContainEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testPlant6.plant.config.json`,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[
+        getAppIdFromUserPaylad(userPayload)
+      ] as any;
+
+      //Testing app only if it exists
+      if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
+        let storagePayload = app._appStorage._cacheData;
+
+        let allAppsPayload: any = {};
+
+        let appFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".app.config.json"));
+
+        for (let appFilePath of appFilePaths) {
+          let appFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][appFilePath];
+          let appId = appFilePath.replace(".app.config.json", "");
+          allAppsPayload[appId] = {
+            ...appFileContent,
+          };
+        }
+
+        expect(storagePayload).toEqual(allAppsPayload);
+      }
+
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
+    });
+
+    it("should fetch app's data and return 200 - if app's data exists in storage but not in cache", async () => {
       let appId = getAppIdFromUserPaylad(userPayload);
 
       let oldAppData =
@@ -2324,7 +2717,7 @@ describe("config app route", () => {
       setFileServiceContent(fileServiceContent);
 
       let result = await request(server)
-        .get(`/customApi/config/app/me`)
+        .get(`/customApi/config/me`)
         .set(requestHeaders)
         .send();
 
@@ -2332,10 +2725,8 @@ describe("config app route", () => {
 
       expect(result.status).toEqual(200);
 
-      let expectedPayload = getAppDataResponse(
-        getAppIdFromUserPaylad(userPayload),
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-      );
+      let expectedPayload = getConfigResponse(userPayload);
+
       expect(result.body).toEqual(expectedPayload);
 
       //#endregion ===== CHECKING RESPONSE =====
@@ -2360,11 +2751,11 @@ describe("config app route", () => {
         "testAppAssetType",
       ]);
 
-      //getFileContent should have been called 47 times during initialization and 48th time during fetching app's data
+      //47 times during initialization, 48th time - fetching app's data
       expect(getFileContent).toHaveBeenCalledTimes(48);
       expect(getFileContent.mock.calls[47]).toEqual([
         "hostTenant",
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`,
+        `${appId}-asset-id`,
         `main.app.config.json`,
       ]);
 
@@ -2378,6 +2769,55 @@ describe("config app route", () => {
 
       //Testing app only if it exists
       if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
         let storagePayload = app._appStorage._cacheData;
 
         let allAppsPayload: any = {};
@@ -2402,7 +2842,305 @@ describe("config app route", () => {
         expect(storagePayload).toEqual(allAppsPayload);
       }
 
-      //#endregion  =====  CHECKING STORAGE =====
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
+    });
+
+    it("should fetch user's data and return 200 - if user's data exists in storage but not in cache", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      let oldUserData =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `testLocalAdmin22.user.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ] = oldUserData;
+
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .get(`/customApi/config/me`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedPayload = getConfigResponse(userPayload);
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //47 times during initialization, 48th time - fetching users's data
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testLocalAdmin22.user.config.json`,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[
+        getAppIdFromUserPaylad(userPayload)
+      ] as any;
+
+      //Testing app only if it exists
+      if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
+        let storagePayload = app._appStorage._cacheData;
+
+        let allAppsPayload: any = {};
+
+        let appFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".app.config.json"));
+
+        for (let appFilePath of appFilePaths) {
+          let appFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][appFilePath];
+          let appId = appFilePath.replace(".app.config.json", "");
+          allAppsPayload[appId] = {
+            ...appFileContent,
+          };
+        }
+
+        expect(storagePayload).toEqual(allAppsPayload);
+      }
+
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
+    });
+
+    it("should fetch plant's data and return 200 - if plant's data exists in storage but not in cache", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      let oldPlantData =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `testPlant5.plant.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ] = oldPlantData;
+
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
+
+      let result = await request(server)
+        .get(`/customApi/config/me`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(200);
+
+      let expectedPayload = getConfigResponse(userPayload);
+
+      expect(result.body).toEqual(expectedPayload);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+      expect(getAllUsers.mock.calls[0]).toEqual([
+        userPayload.ten,
+        userPayload.subtenant != null ? userPayload.subtenant : null,
+        null,
+        userPayload.user_name,
+      ]);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //47 times during initialization, 48th time - fetching plant's data
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+      expect(getFileContent.mock.calls[47]).toEqual([
+        "hostTenant",
+        `${appId}-asset-id`,
+        `testPlant5.plant.config.json`,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[
+        getAppIdFromUserPaylad(userPayload)
+      ] as any;
+
+      //Testing app only if it exists
+      if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
+        let storagePayload = app._appStorage._cacheData;
+
+        let allAppsPayload: any = {};
+
+        let appFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".app.config.json"));
+
+        for (let appFilePath of appFilePaths) {
+          let appFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][appFilePath];
+          let appId = appFilePath.replace(".app.config.json", "");
+          allAppsPayload[appId] = {
+            ...appFileContent,
+          };
+        }
+
+        expect(storagePayload).toEqual(allAppsPayload);
+      }
+
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
     });
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
@@ -2421,7 +3159,7 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 200 - if user is a local admin", async () => {
@@ -2438,7 +3176,7 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 200 - if user is a global user", async () => {
@@ -2455,7 +3193,7 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 200 - if user is a global admin", async () => {
@@ -2472,7 +3210,7 @@ describe("config app route", () => {
         "testPrivateKey"
       )}`;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user's jwt payload does not have tenant assigned", async () => {
@@ -2494,7 +3232,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if there is no application of given id", async () => {
@@ -2522,7 +3260,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 2;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user has no access to given app", async () => {
@@ -2547,7 +3285,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if there is no application data for given app", async () => {
@@ -2566,7 +3304,7 @@ describe("config app route", () => {
       //47 calls of getFileContent - no file containing one main app data
       expectedGetFileContentCallNumber = 47;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user has invalid role", async () => {
@@ -2586,7 +3324,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user has invalid scope", async () => {
@@ -2612,7 +3350,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user has valid scope, doest not exist in user service but exists in file service", async () => {
@@ -2673,7 +3411,7 @@ describe("config app route", () => {
       //49 calls of getFileContent - one additional user
       expectedGetFileContentCallNumber = 49;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 403 and not get the plant - if user has valid scope, exists in user service but does not exist in file service", async () => {
@@ -2734,7 +3472,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
@@ -2750,7 +3488,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 401 - if authorization token is invalid - invalid token", async () => {
@@ -2767,7 +3505,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     it("should return 401 - if authorization token is invalid - no token provided", async () => {
@@ -2783,14 +3521,14 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
     });
 
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
 
     //#region ========== MINDSPHERE SERVICE THROWS ==========
 
-    it("should return 500 and not get plant - if get all users throws", async () => {
+    it("should return 500 and not get config data - if get all users throws", async () => {
       getAllUsersThrows = true;
 
       //Outputs
@@ -2802,7 +3540,7 @@ describe("config app route", () => {
       expectedGetAssetsCallNumber = 1;
       expectedGetFileContentCallNumber = 48;
 
-      await testMeAppGet();
+      await testMeConfigGet();
 
       //#region ===== CHECKING LOGGING =====
 
@@ -2814,7 +3552,7 @@ describe("config app route", () => {
       //#endregion ===== CHECKING LOGGING =====
     });
 
-    it("should return 500 and not get plant - if plant does not exists in cache but in storage and getFileContent throws", async () => {
+    it("should return 500 and not get config data - if app's data does not exists in cache but in storage and getFileContent throws", async () => {
       let appId = getAppIdFromUserPaylad(userPayload);
 
       let oldAppData =
@@ -2835,11 +3573,11 @@ describe("config app route", () => {
       setFileServiceContent(fileServiceContent);
 
       MindSphereFileService.getInstance().getFileContent = jest.fn(async () => {
-        throw new Error("Test get all users error");
+        throw new Error("Test get file content error");
       });
 
       let result = await request(server)
-        .get(`/customApi/config/app/me`)
+        .get(`/customApi/config/me`)
         .set(requestHeaders)
         .send();
 
@@ -2876,169 +3614,127 @@ describe("config app route", () => {
       ] as any;
 
       //Testing app only if it exists
-      let storagePayload = app._appStorage._cacheData;
+      if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
 
-      let allAppsPayload: any = {};
+        let allPlantsPayload: any = {};
 
-      expect(storagePayload).toEqual(allAppsPayload);
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
 
-      //#endregion  =====  CHECKING STORAGE =====
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
+        let storagePayload = app._appStorage._cacheData;
+
+        let allAppsPayload: any = {};
+
+        expect(storagePayload).toEqual(allAppsPayload);
+      }
+
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
 
       //#region ===== CHECKING LOGGING =====
 
       expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
       expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
-        "Test get all users error"
+        "Test get file content error"
       );
 
       //#endregion ===== CHECKING LOGGING =====
     });
 
-    //#endregion ========== MINDSPHERE SERVICE THROWS ==========
-  });
+    it("should return 500 and not get config data - if plant's data does not exists in cache but in storage and getFileContent throws", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
 
-  describe("PUT /me/", () => {
-    let requestHeaders: any;
-    let requestBody: any;
-    let userPayload: MindSphereUserJWTData;
-    let getAllUsersThrows: boolean;
-    let setFileContentThrows: boolean;
+      let oldPlantData =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `testPlant5.plant.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ];
 
-    //Outputs
-    let expectedValidCall: boolean;
-    let expectedResponseCode: number;
-    let expectedErrorText: string | null;
-    let expectedGetAllUsersCallNumber: number;
-    let expectedGetAssetsCallNumber: number;
-    let expectedGetFileContentCallNumber: number;
-    let expectedSetFileContentCallNumber: number;
-
-    beforeEach(() => {
-      //Inputs
-      requestHeaders = {};
-      requestBody = {
-        data: {
-          "ten-testTenant2-sub-subtenant2-data":
-            "ten-testTenant2-sub-subtenant2-data-modified-value",
-        },
-        config: {
-          "ten-testTenant2-sub-subtenant2-config":
-            "ten-testTenant2-sub-subtenant2-config-modified-value",
-        },
-        maxNumberOfUsers: 5,
-        appId: "ten-testTenant2-sub-subtenant2",
-      };
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-      getAllUsersThrows = false;
-      setFileContentThrows = false;
-
-      //Outputs
-      expectedValidCall = true;
-      expectedResponseCode = 200;
-      expectedErrorText = null;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 1;
-    });
-
-    let exec = async () => {
       await beforeExec();
 
-      if (getAllUsersThrows) {
-        MindSphereUserService.getInstance().getAllUsers = jest.fn(async () => {
-          throw new Error("Test get all users error");
-        });
-      }
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testPlant5.plant.config.json`
+      ] = oldPlantData;
 
-      if (setFileContentThrows) {
-        MindSphereFileService.getInstance().setFileContent = jest.fn(
-          async () => {
-            throw new Error("Test set file content error");
-          }
-        );
-      }
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
 
-      return request(server)
-        .put(`/customApi/config/app/me`)
+      MindSphereFileService.getInstance().getFileContent = jest.fn(async () => {
+        throw new Error("Test get file content error");
+      });
+
+      let result = await request(server)
+        .get(`/customApi/config/me`)
         .set(requestHeaders)
-        .send(requestBody);
-    };
-
-    const testMeAppUpdate = async () => {
-      let result = await exec();
+        .send();
 
       //#region ===== CHECKING RESPONSE =====
-      expect(result.status).toEqual(expectedResponseCode);
 
-      if (expectedValidCall) {
-        let expectedPayload = {
-          ...requestBody,
-          appId: getAppIdFromUserPaylad(userPayload),
-        };
-        expect(result.body).toEqual(expectedPayload);
-      } else {
-        expect(result.text).toEqual(expectedErrorText);
-      }
+      expect(result.status).toEqual(500);
+      expect(result.text).toEqual(`Ups.. Something fails..`);
 
       //#endregion ===== CHECKING RESPONSE =====
 
       //#region ===== CHECKING API CALLS =====
 
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(expectedGetAllUsersCallNumber);
-      if (expectedGetAllUsersCallNumber > 0) {
-        expect(getAllUsers.mock.calls[0]).toEqual([
-          userPayload.ten,
-          userPayload.subtenant != null ? userPayload.subtenant : null,
-          null,
-          userPayload.user_name,
-        ]);
-      }
+      //GetAllUsers should have been called times 1 - fetching user's data based on jwt
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
 
       //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(expectedGetAssetsCallNumber);
-      if (expectedGetAssetsCallNumber > 0) {
-        expect(getAssets.mock.calls[0]).toEqual([
-          "hostTenant",
-          null,
-          "testAppContainerAssetId",
-          "testAppAssetType",
-        ]);
-      }
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
 
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(
-        expectedGetFileContentCallNumber
-      );
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(setFileContent).toHaveBeenCalledTimes(
-        expectedSetFileContentCallNumber
-      );
-      if (expectedSetFileContentCallNumber > 0) {
-        expect(setFileContent.mock.calls[0]).toEqual([
-          "hostTenant",
-          `${getAppIdFromUserPaylad(userPayload)}-asset-id`,
-          `main.app.config.json`,
-          {
-            data: requestBody.data,
-            config: requestBody.config,
-            maxNumberOfUsers: requestBody.maxNumberOfUsers,
-          },
-        ]);
-      }
+      //GetFileContent should be called 47 times - 48th time is a different mocked function that throws
+      expect(getFileContent).toHaveBeenCalledTimes(47);
 
       //#endregion ===== CHECKING API CALLS =====
 
@@ -3050,6 +3746,57 @@ describe("config app route", () => {
 
       //Testing app only if it exists
       if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        delete allPlantsPayload["testPlant5"];
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
         let storagePayload = app._appStorage._cacheData;
 
         let allAppsPayload: any = {};
@@ -3071,1154 +3818,170 @@ describe("config app route", () => {
           };
         }
 
-        //storagePayload should have changed
-        if (expectedValidCall) {
-          allAppsPayload["main"] = {
-            data: requestBody.data,
-            config: requestBody.config,
-            maxNumberOfUsers: requestBody.maxNumberOfUsers,
+        expect(storagePayload).toEqual(allAppsPayload);
+      }
+
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
+
+      //#region ===== CHECKING LOGGING =====
+
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test get file content error"
+      );
+
+      //#endregion ===== CHECKING LOGGING =====
+    });
+
+    it("should return 500 and not get config data - if user's data does not exists in cache but in storage and getFileContent throws", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      let oldUserData =
+        fileServiceContent["hostTenant"][`${appId}-asset-id`][
+          `testLocalAdmin22.user.config.json`
+        ];
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ] = oldUserData;
+
+      //Setting file service content again
+      setFileServiceContent(fileServiceContent);
+
+      MindSphereFileService.getInstance().getFileContent = jest.fn(async () => {
+        throw new Error("Test get file content error");
+      });
+
+      let result = await request(server)
+        .get(`/customApi/config/me`)
+        .set(requestHeaders)
+        .send();
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(500);
+      expect(result.text).toEqual(`Ups.. Something fails..`);
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //GetAllUsers should have been called times 1 - fetching user's data based on jwt
+      expect(getAllUsers).toHaveBeenCalledTimes(1);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //GetFileContent should be called 47 times - 48th time is a different mocked function that throws
+      expect(getFileContent).toHaveBeenCalledTimes(47);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let app = MindSphereAppsManager.getInstance().Apps[
+        getAppIdFromUserPaylad(userPayload)
+      ] as any;
+
+      //Testing app only if it exists
+      if (app != null) {
+        //CHECKING PLANT'S STORAGE
+        let plantsStorage = app._plantStorage._cacheData;
+
+        let allPlantsPayload: any = {};
+
+        let plantFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+        for (let plantFilePath of plantFilePaths) {
+          let plantFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][plantFilePath];
+          let plantId = plantFilePath.replace(".plant.config.json", "");
+          allPlantsPayload[plantId] = {
+            ...plantFileContent,
+          };
+        }
+
+        expect(plantsStorage).toEqual(allPlantsPayload);
+
+        //CHECKING USER'S STORAGE
+        let usersStorage = app._userStorage._cacheData;
+
+        let allUsersPayload: any = {};
+
+        let userFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".user.config.json"));
+
+        for (let userFilePath of userFilePaths) {
+          let userFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][userFilePath];
+          let userId = userFilePath.replace(".user.config.json", "");
+          allUsersPayload[userId] = {
+            ...userFileContent,
+          };
+        }
+
+        delete allUsersPayload["testLocalAdmin22"];
+
+        expect(usersStorage).toEqual(allUsersPayload);
+
+        //CHECKING APP'S STORAGE
+        let storagePayload = app._appStorage._cacheData;
+
+        let allAppsPayload: any = {};
+
+        let appFilePaths = Object.keys(
+          fileServiceContent["hostTenant"][
+            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+          ]
+        ).filter((filePath) => filePath.includes(".app.config.json"));
+
+        for (let appFilePath of appFilePaths) {
+          let appFileContent =
+            fileServiceContent["hostTenant"][
+              `${getAppIdFromUserPaylad(userPayload)}-asset-id`
+            ][appFilePath];
+          let appId = appFilePath.replace(".app.config.json", "");
+          allAppsPayload[appId] = {
+            ...appFileContent,
           };
         }
 
         expect(storagePayload).toEqual(allAppsPayload);
       }
 
-      //#endregion  =====  CHECKING STORAGE =====
-    };
-
-    it("should update app data and return 200", async () => {
-      await testMeAppUpdate();
-    });
-
-    it("should update app data and return 200 - if app is a subtenant app", async () => {
-      requestBody = {
-        data: {
-          "ten-testTenant2-sub-subtenant2-data":
-            "ten-testTenant2-sub-subtenant2-data-modified-value",
-        },
-        config: {
-          "ten-testTenant2-sub-subtenant2-config":
-            "ten-testTenant2-sub-subtenant2-config-modified-value",
-        },
-        maxNumberOfUsers: 5,
-        appId: "ten-testTenant2-sub-subtenant2",
-      };
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      await testMeAppUpdate();
-    });
-
-    it("should update app data and return 200 - if app is a tenant app", async () => {
-      requestBody = {
-        data: {
-          "ten-testTenant2-data": "ten-testTenant2-data-modified-value",
-        },
-        config: {
-          "ten-testTenant2-config": "ten-testTenant2-config-modified-value",
-        },
-        maxNumberOfUsers: 5,
-        appId: "ten-testTenant2",
-      };
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_21@user.name",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      await testMeAppUpdate();
-    });
-
-    it("should fetch the app's data, update it and return 200 - if app's data exists in storage but not in cache", async () => {
-      let appId = getAppIdFromUserPaylad(userPayload);
-
-      let oldAppData =
-        fileServiceContent["hostTenant"][`${appId}-asset-id`][
-          `main.app.config.json`
-        ];
-      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
-        `main.app.config.json`
-      ];
-
-      await beforeExec();
-
-      fileServiceContent["hostTenant"][`${appId}-asset-id`][
-        `main.app.config.json`
-      ] = oldAppData;
-
-      //Setting file service content again
-      setFileServiceContent(fileServiceContent);
-
-      let result = await request(server)
-        .put(`/customApi/config/app/me`)
-        .set(requestHeaders)
-        .send(requestBody);
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(200);
-
-      let expectedPayload = {
-        ...requestBody,
-        appId: getAppIdFromUserPaylad(userPayload),
-      };
-      expect(result.body).toEqual(expectedPayload);
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      //User id should be fetched - via getAllUsers with proper filtering
-      expect(getAllUsers).toHaveBeenCalledTimes(1);
-      expect(getAllUsers.mock.calls[0]).toEqual([
-        userPayload.ten,
-        userPayload.subtenant != null ? userPayload.subtenant : null,
-        null,
-        userPayload.user_name,
-      ]);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //getFileContent should have been called 47 times during initialization and 48th time during fetching app's data
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-      expect(getFileContent.mock.calls[47]).toEqual([
-        "hostTenant",
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`,
-        `main.app.config.json`,
-      ]);
-
-      expect(setFileContent).toHaveBeenCalledTimes(1);
-      expect(setFileContent.mock.calls[0]).toEqual([
-        "hostTenant",
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`,
-        `main.app.config.json`,
-        {
-          data: requestBody.data,
-          config: requestBody.config,
-          maxNumberOfUsers: requestBody.maxNumberOfUsers,
-        },
-      ]);
-
-      //#endregion ===== CHECKING API CALLS =====
-
-      //#region  =====  CHECKING STORAGE =====
-
-      let app = MindSphereAppsManager.getInstance().Apps[
-        getAppIdFromUserPaylad(userPayload)
-      ] as any;
-
-      let storagePayload = app._appStorage._cacheData;
-
-      let allAppsPayload: any = {};
-
-      let appFilePaths = Object.keys(
-        fileServiceContent["hostTenant"][
-          `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-        ]
-      ).filter((filePath) => filePath.includes(".app.config.json"));
-
-      for (let appFilePath of appFilePaths) {
-        let appFileContent =
-          fileServiceContent["hostTenant"][
-            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-          ][appFilePath];
-        let appId = appFilePath.replace(".app.config.json", "");
-        allAppsPayload[appId] = {
-          ...appFileContent,
-        };
-      }
-
-      //storagePayload should have changed
-      allAppsPayload["main"] = {
-        data: requestBody.data,
-        config: requestBody.config,
-        maxNumberOfUsers: requestBody.maxNumberOfUsers,
-      };
-
-      expect(storagePayload).toEqual(allAppsPayload);
-
-      //#endregion  =====  CHECKING STORAGE =====
-    });
-
-    //#region ========== BODY VALIDATION =========
-
-    it("should return 400 - if request is not a valid JSON", async () => {
-      requestBody = "fakeBody";
-
-      await beforeExec();
-
-      let result = await request(server)
-        .put(`/customApi/config/app/me`)
-        .send('{"invalid"}')
-        .type("json");
-
-      //#region ===== CHECKING RESPONSE =====
-
-      expect(result.status).toEqual(400);
-      expect(result.text).toEqual("Invalid request content");
-
-      //#endregion ===== CHECKING RESPONSE =====
-
-      //#region ===== CHECKING API CALLS =====
-
-      expect(getAllUsers).toHaveBeenCalledTimes(0);
-
-      //Checking if app exists - should be invoked only one time during initalization
-      expect(getAssets).toHaveBeenCalledTimes(1);
-      expect(getAssets.mock.calls[0]).toEqual([
-        "hostTenant",
-        null,
-        "testAppContainerAssetId",
-        "testAppAssetType",
-      ]);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(getFileContent).toHaveBeenCalledTimes(48);
-
-      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
-      expect(setFileContent).toHaveBeenCalledTimes(0);
-
-      //#endregion ===== CHECKING API CALLS =====
-
-      //#region  =====  CHECKING STORAGE =====
-
-      let app = MindSphereAppsManager.getInstance().Apps[
-        getAppIdFromUserPaylad(userPayload)
-      ] as any;
-
-      let storagePayload = app._appStorage._cacheData;
-
-      let allAppsPayload: any = {};
-
-      let appFilePaths = Object.keys(
-        fileServiceContent["hostTenant"][
-          `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-        ]
-      ).filter((filePath) => filePath.includes(".app.config.json"));
-
-      for (let appFilePath of appFilePaths) {
-        let appFileContent =
-          fileServiceContent["hostTenant"][
-            `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-          ][appFilePath];
-        let appId = appFilePath.replace(".app.config.json", "");
-        allAppsPayload[appId] = {
-          ...appFileContent,
-        };
-      }
-
-      expect(storagePayload).toEqual(allAppsPayload);
-
-      //#endregion  =====  CHECKING STORAGE =====
-    });
-
-    it("should return 400 and not update the app's data - if app id is not defined", async () => {
-      //Inputs
-      delete requestBody.appId;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"appId\" is required`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if app id is null", async () => {
-      //Inputs
-      requestBody.appId = null;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"appId\" must be a string`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if app id is invalid type - number", async () => {
-      //Inputs
-      requestBody.appId = 1234;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"appId\" must be a string`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if app id is an empty string", async () => {
-      //Inputs
-      requestBody.appId = "";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"appId\" is not allowed to be empty`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if app id in request body is different then appId of the user's app", async () => {
-      //Inputs
-      requestBody.appId = "ten-testTenant1-sub-subtenant1";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `App id cannot be changed!`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if data in payload is undefined", async () => {
-      //Inputs
-      delete requestBody.data;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"data\" is required`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if data in payload is null", async () => {
-      //Inputs
-      requestBody.data = null;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"data\" must be of type object`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if data in payload is not an object (string)", async () => {
-      //Inputs
-      requestBody.data = "abcd1234";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"data\" must be of type object`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 and update the app's data - if data in payload is not an empty object", async () => {
-      //Inputs
-      requestBody.data = {};
-
-      //Outputs
-      expectedValidCall = true;
-      expectedResponseCode = 200;
-      expectedErrorText = null;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 1;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 and update the app's data - if data in payload is a nested property", async () => {
-      //Inputs
-      requestBody.data = {
-        a: {
-          c: {
-            e: 1234,
-            f: 4321,
-          },
-          d: {
-            g: 1234,
-            h: 4321,
-          },
-        },
-        b: {
-          i: {
-            k: "abcd",
-            l: "dcba",
-          },
-          j: {
-            m: "abcd",
-            n: "dcba",
-          },
-        },
-      };
-
-      //Outputs
-      expectedValidCall = true;
-      expectedResponseCode = 200;
-      expectedErrorText = null;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 1;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if config in payload is undefined", async () => {
-      //Inputs
-      delete requestBody.config;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"config\" is required`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if config in payload is null", async () => {
-      //Inputs
-      requestBody.config = null;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"config\" must be of type object`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if config in payload is not an object (string)", async () => {
-      //Inputs
-      requestBody.config = "abcd1234";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"config\" must be of type object`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 and update the app's data - if config in payload is not an empty object", async () => {
-      //Inputs
-      requestBody.config = {};
-
-      //Outputs
-      expectedValidCall = true;
-      expectedResponseCode = 200;
-      expectedErrorText = null;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 1;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 and update the app's data - if config in payload is a nested property", async () => {
-      //Inputs
-      requestBody.config = {
-        a: {
-          c: {
-            e: 1234,
-            f: 4321,
-          },
-          d: {
-            g: 1234,
-            h: 4321,
-          },
-        },
-        b: {
-          i: {
-            k: "abcd",
-            l: "dcba",
-          },
-          j: {
-            m: "abcd",
-            n: "dcba",
-          },
-        },
-      };
-
-      //Outputs
-      expectedValidCall = true;
-      expectedResponseCode = 200;
-      expectedErrorText = null;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 1;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if maxNumberOfUsers is undefined", async () => {
-      //Inputs
-      delete requestBody.maxNumberOfUsers;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"maxNumberOfUsers\" is required`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if maxNumberOfUsers has invalid type (string)", async () => {
-      //Inputs
-      requestBody.maxNumberOfUsers = "abcd1234";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"maxNumberOfUsers\" must be a number`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if maxNumberOfUsers is invalid number (float)", async () => {
-      //Inputs
-      requestBody.maxNumberOfUsers = 1234.5678;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"maxNumberOfUsers\" must be an integer`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if maxNumberOfUsers is invalid number (negative)", async () => {
-      //Inputs
-      requestBody.maxNumberOfUsers = -1234;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = `\"maxNumberOfUsers\" must be greater than or equal to 0`;
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if there is an attempt to change max number of users (number to number)", async () => {
-      //Inputs
-      requestBody.maxNumberOfUsers = 123;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = "Max number of app users cannot be changed!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if there is an attempt to change max number of users (number to null)", async () => {
-      //Inputs
-      requestBody.maxNumberOfUsers = null;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = "Max number of app users cannot be changed!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 400 and not update the app's data - if there is an attempt to change max number of users (null to number)", async () => {
-      fileServiceContent["hostTenant"][
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-      ][`main.app.config.json`].maxNumberOfUsers = null;
-
-      //Inputs
-      requestBody.maxNumberOfUsers = 123;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 400;
-      expectedErrorText = "Max number of app users cannot be changed!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 and update the app's data - if there is an not an attempt to change max number of users (null to null)", async () => {
-      fileServiceContent["hostTenant"][
-        `${getAppIdFromUserPaylad(userPayload)}-asset-id`
-      ][`main.app.config.json`].maxNumberOfUsers = null;
-
-      //Inputs
-      requestBody.maxNumberOfUsers = null;
-
-      await testMeAppUpdate();
-    });
-
-    //#endregion ========== BODY VALIDATION =========
-
-    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
-
-    it("should return 403 - if user is a local user", async () => {
-      userPayload = {
-        client_id: "testLocalUserClientId",
-        email: "testLocalUserEmail",
-        scope: ["testLocalUserScope"],
-        ten: "testTenant2",
-        user_name: "test_local_user_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User must be a global admin!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 - if user is a local admin", async () => {
-      userPayload = {
-        client_id: "testLocalAdminClientId",
-        email: "testLocalAdminEmail",
-        scope: ["testLocalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_local_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User must be a global admin!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 - if user is a global user", async () => {
-      userPayload = {
-        client_id: "testGlobalUserClientId",
-        email: "testGlobalUserEmail",
-        scope: ["testGlobalUserScope"],
-        ten: "testTenant2",
-        user_name: "test_global_user_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User must be a global admin!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 200 - if user is a global admin", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user's jwt payload does not have tenant assigned", async () => {
-      delete (userPayload as any).ten;
-
-      //Assinging jwt to header
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. Invalid application id generated from user payload!";
-      //GetAllUser should not be called - call ended before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if there is no application of given id", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "fakeTen",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "fakeSub",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. Application of given id not found for the user!";
-      //GetAllUser should not be called - call ended before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      //GetAssets should be called x2 - try fetching fake app
-      expectedGetAssetsCallNumber = 2;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user has no access to given app", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant1",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant1",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User of given name not found!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if there is no application data for given app", async () => {
-      delete fileServiceContent["hostTenant"][
-        "ten-testTenant2-sub-subtenant2-asset-id"
-      ]["main.app.config.json"];
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. Main application settings not found for the user!";
-      //GetAllUser should not be called - call ended before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      //47 calls of getFileContent - no file containing one main app data
-      expectedGetFileContentCallNumber = 47;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user has invalid role", async () => {
-      let appId = getAppIdFromUserPaylad(userPayload);
-
-      //Adding user to file service for the app
-      fileServiceContent["hostTenant"][`${appId}-asset-id`][
-        `testGlobalAdmin22.user.config.json`
-      ].permissions.role = 99;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User must be a global admin!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user has invalid scope", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["fakeScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22_user_name",
-      };
-
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Forbidden access. No scope found to access the app!";
-      //0 calls of getAllUsers - not fetching user's data - checking scope before fetching
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user has valid scope, doest not exist in user service but exists in file service", async () => {
-      //Adding user to file service for the app
-      fileServiceContent["hostTenant"][
-        "ten-testTenant2-sub-subtenant2-asset-id"
-      ]["testFakeUser23.user.config.json"] = {
-        data: {
-          testPlant4: {
-            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
-          },
-          testPlant5: {
-            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
-          },
-        },
-        config: {
-          testPlant4: {
-            testFakeUser23TestPlant4Config:
-              "testFakeUser23TestPlant4ConfigValue",
-          },
-          testPlant5: {
-            testFakeUser23TestPlant5Config:
-              "testFakeUser23TestPlant5ConfigValue",
-          },
-        },
-        userName: "test_fake_user_23@user.name",
-        permissions: {
-          role: UserRole.GlobalAdmin,
-          plants: {
-            testPlant5: PlantPermissions.User,
-            testPlant6: PlantPermissions.User,
-          },
-        },
-      };
-
-      //Creating new user's jwt payload
-      userPayload = {
-        client_id: "testFakeUserClientId",
-        email: "testFakeUserEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_fake_user_23@user.name",
-        subtenant: "subtenant2",
-      };
-
-      //Assinging jwt to header
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText = "Access denied. User of given name not found!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      //49 calls of getFileContent - one additional user
-      expectedGetFileContentCallNumber = 49;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 403 and not update the app's data - if user has valid scope, exists in user service but does not exist in file service", async () => {
-      userServiceContent["testTenant2"]["testFakeUser23"] = {
-        active: true,
-        name: {
-          familyName: "testFakeUser23FamilyName",
-          givenName: "testFakeUser23GivenName",
-        },
-        userName: "test_fake_user_23@user.name",
-        emails: [
-          {
-            value: "testFakeUser23Email",
-          },
-        ],
-        groups: [],
-        externalId: "testFakeUser23ExternalId",
-        id: "testFakeUser23",
-        subtenants: [
-          {
-            id: "subtenant2",
-          },
-        ],
-      };
-
-      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
-        type: "USER",
-        value: "testFakeUser23",
-      });
-
-      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
-        type: "USER",
-        value: "testFakeUser23",
-      });
-
-      //Creating new user's jwt payload
-      userPayload = {
-        client_id: "testFakeUserClientId",
-        email: "testFakeUserEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_fake_user_23@user.name",
-        subtenant: "subtenant2",
-      };
-
-      //Assinging jwt to header
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 403;
-      expectedErrorText =
-        "Access denied. User does not exist for given app id!";
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
-      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 401;
-      expectedErrorText =
-        "Access denied. No token provided to fetch the user or token is invalid!";
-      //No calling getAllUsers - returning before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 401 - if authorization token is invalid - invalid token", async () => {
-      requestHeaders["authorization"] =
-        "Bearer thisIsTheFakeValueOfTheJWTToken";
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 401;
-      expectedErrorText =
-        "Access denied. No token provided to fetch the user or token is invalid!";
-      //No calling getAllUsers - returning before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    it("should return 401 - if authorization token is invalid - no token provided", async () => {
-      delete requestHeaders["authorization"];
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 401;
-      expectedErrorText =
-        "Access denied. No token provided to fetch the user or token is invalid!";
-      //No calling getAllUsers - returning before fetching user's data
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-    });
-
-    //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
-
-    //#region ========== MINDSPHERE SERVICE THROWS ==========
-
-    it("should return 500 and not update the plant - if get all users throws", async () => {
-      getAllUsersThrows = true;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 500;
-      expectedErrorText = `Ups.. Something fails..`;
-      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
-      expectedGetAllUsersCallNumber = 0;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
+      //#endregion  =====  CHECKING APP DATA STORAGE =====
 
       //#region ===== CHECKING LOGGING =====
 
       expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
       expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
-        "Test get all users error"
+        "Test get file content error"
       );
 
       //#endregion ===== CHECKING LOGGING =====
     });
-
-    it("should return 500 and not update the plant - if set file content throws", async () => {
-      setFileContentThrows = true;
-
-      //Outputs
-      expectedValidCall = false;
-      expectedResponseCode = 500;
-      expectedErrorText = `Ups.. Something fails..`;
-      //0 calls for getAllUsers - becouse getAllUsers mock is overridden with a different mocked method
-      expectedGetAllUsersCallNumber = 1;
-      expectedGetAssetsCallNumber = 1;
-      expectedGetFileContentCallNumber = 48;
-      //0 calls for setFileContent - becouse setFileContent mock is overridden with a different mocked method
-      expectedSetFileContentCallNumber = 0;
-
-      await testMeAppUpdate();
-
-      //#region ===== CHECKING LOGGING =====
-
-      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
-      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
-        "Test set file content error"
-      );
-
-      //#endregion ===== CHECKING LOGGING =====
-    });
-
     //#endregion ========== MINDSPHERE SERVICE THROWS ==========
   });
 });
