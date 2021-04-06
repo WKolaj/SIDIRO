@@ -2,6 +2,8 @@ import Joi from "joi";
 
 export const schemaContent = {
   maxNumberOfUsers: Joi.number()
+    .integer()
+    .min(0)
     .allow(null)
     .required(),
   data: Joi.object()

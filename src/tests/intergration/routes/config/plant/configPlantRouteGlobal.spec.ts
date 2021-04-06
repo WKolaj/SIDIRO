@@ -5322,6 +5322,71 @@ describe("config plant route", () => {
 
     //#region ========== BODY VALIDATION =========
 
+    it("should return 400 - if request is not a valid JSON", async () => {
+      requestBody = "fakeBody";
+
+      await beforeExec();
+
+      let result = await request(server)
+        .post(`/customApi/config/plant/global/${appId}`)
+        .send('{"invalid"}')
+        .type("json");
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(400);
+
+      expect(result.text).toEqual("Invalid request content");
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(0);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+
+      expect(setFileContent).toHaveBeenCalledTimes(0);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        appId
+      ] as any)._plantStorage._cacheData;
+
+      let allPlantsPayload: any = {};
+
+      let plantFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+      for (let plantFilePath of plantFilePaths) {
+        let plantFileContent =
+          fileServiceContent["hostTenant"][`${appId}-asset-id`][plantFilePath];
+        let plantId = plantFilePath.replace(".plant.config.json", "");
+        allPlantsPayload[plantId] = {
+          ...plantFileContent,
+        };
+      }
+
+      expect(storagePayload).toEqual(allPlantsPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
+
     it("should return 400 and not create new plant - if there is an attempt to create plant with appId", async () => {
       //Inputs
       requestBody.appId = appId;
@@ -8694,6 +8759,71 @@ describe("config plant route", () => {
     });
 
     //#region ========== BODY VALIDATION =========
+
+    it("should return 400 - if request is not a valid JSON", async () => {
+      requestBody = "fakeBody";
+
+      await beforeExec();
+
+      let result = await request(server)
+        .put(`/customApi/config/plant/global/${appId}/${plantId}`)
+        .send('{"invalid"}')
+        .type("json");
+
+      //#region ===== CHECKING RESPONSE =====
+
+      expect(result.status).toEqual(400);
+
+      expect(result.text).toEqual("Invalid request content");
+
+      //#endregion ===== CHECKING RESPONSE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      //User id should be fetched - via getAllUsers with proper filtering
+      expect(getAllUsers).toHaveBeenCalledTimes(0);
+
+      //Checking if app exists - should be invoked only one time during initalization
+      expect(getAssets).toHaveBeenCalledTimes(1);
+      expect(getAssets.mock.calls[0]).toEqual([
+        "hostTenant",
+        null,
+        "testAppContainerAssetId",
+        "testAppAssetType",
+      ]);
+
+      //Then users data should be fetched - without getFileContent - invoked during initialization - 6 (6 apps) x 8 files (1 main, 4 users, 3 plants) = 48
+      expect(getFileContent).toHaveBeenCalledTimes(48);
+
+      expect(setFileContent).toHaveBeenCalledTimes(0);
+
+      //#endregion ===== CHECKING API CALLS =====
+
+      //#region  =====  CHECKING STORAGE =====
+
+      let storagePayload = (MindSphereAppsManager.getInstance().Apps[
+        appId
+      ] as any)._plantStorage._cacheData;
+
+      let allPlantsPayload: any = {};
+
+      let plantFilePaths = Object.keys(
+        fileServiceContent["hostTenant"][`${appId}-asset-id`]
+      ).filter((filePath) => filePath.includes(".plant.config.json"));
+
+      for (let plantFilePath of plantFilePaths) {
+        let plantFileContent =
+          fileServiceContent["hostTenant"][`${appId}-asset-id`][plantFilePath];
+        let plantId = plantFilePath.replace(".plant.config.json", "");
+        allPlantsPayload[plantId] = {
+          ...plantFileContent,
+        };
+      }
+
+      expect(storagePayload).toEqual(allPlantsPayload);
+
+      //#endregion  =====  CHECKING STORAGE =====
+    });
 
     it("should return 400 and not update the plant - if there is an attempt to update plant with appId in body", async () => {
       //Inputs
