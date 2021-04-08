@@ -13,3 +13,11 @@ export function setPrivateProperty(
 ) {
   objectToSet[propertyName] = propertyValue;
 }
+
+export function invokePrivateMethod(
+  objectToInvoke: any,
+  methodName: string,
+  methodArguments: any[] = []
+) {
+  return objectToInvoke[methodName](...methodArguments);
+}
