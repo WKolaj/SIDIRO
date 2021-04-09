@@ -85,7 +85,7 @@ class Sampler {
   private async _onInternalTick() {
     //Invoking only if sampler is active
     if (this.Active) {
-      let tickNumber = Sampler.convertDateToTickNumber(Date.now());
+      let tickNumber = Sampler.getCurrentTickNumber();
       if (
         this._shouldExternalTickBeEmitted(tickNumber) &&
         this.ExternalTickHandler != null
@@ -134,6 +134,14 @@ class Sampler {
    */
   public static convertTickNumberToDate(tickNumber: number) {
     return tickNumber * 1000;
+  }
+
+  /**
+   * @description Mehtod for returning current tick number (unix)
+   */
+  public static getCurrentTickNumber() {
+    //TODO - test this method
+    return Sampler.convertDateToTickNumber(Date.now());
   }
 
   //#endregion ========= PUBLIC STATIC METHODS =========
