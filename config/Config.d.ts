@@ -37,6 +37,7 @@ declare module "node-config-ts" {
     appContainerAssetId: string
     appContainerAssetType: string
     appAssetType: string
+    serviceContainerAssetId: string
   }
   interface AppCredentials {
     clientId: string

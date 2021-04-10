@@ -5,10 +5,11 @@ import {
   CustomServiceType,
 } from "./CustomServiceManager";
 
-abstract class CustomService {
-  private _dataStorage: CachedDataStorage<CustomServicePayload>;
+abstract class CustomService<ServicePayload extends CustomServicePayload> {
+  private _dataStorage: CachedDataStorage<ServicePayload>;
   private _initialized: boolean = false;
   private _id: string;
+  private _type: CustomServiceType;
   private _appID: string | null = null;
   private _plantID: string | null = null;
   private _sampleTime: number | null = null;
@@ -17,6 +18,10 @@ abstract class CustomService {
 
   public get Initialized() {
     return this._initialized;
+  }
+
+  public get Type() {
+    return this._type;
   }
 
   public get ID() {
@@ -44,17 +49,21 @@ abstract class CustomService {
   }
 
   public constructor(
+    type: CustomServiceType,
     id: string,
-    dataStorage: CachedDataStorage<CustomServicePayload>
+    dataStorage: CachedDataStorage<ServicePayload>
   ) {
+    this._type = type;
     this._id = id;
     this._dataStorage = dataStorage;
   }
 
-  public async init(tickId: number, data: CustomServicePayload) {
+  public async init(tickId: number, data: ServicePayload) {
     if (!this.Initialized) {
       if (data?.appId != null) this._appID = data.appId;
       if (data?.plantId != null) this._plantID = data.plantId;
+
+      this._sampleTime = data.sampleTime;
 
       await this._onInit(tickId);
 
@@ -81,7 +90,7 @@ abstract class CustomService {
     return this._dataStorage.getData(this.ID);
   }
 
-  public async setStorageData(payload: CustomServicePayload) {
+  public async setStorageData(payload: ServicePayload) {
     return this._dataStorage.setData(this.ID, payload);
   }
 }

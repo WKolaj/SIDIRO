@@ -11,7 +11,7 @@ import { generateRandomString } from "../../utilities/utilities";
 const serviceFileExtension = "service.config.json";
 
 export enum CustomServiceType {
-  TestCustomService = 0,
+  TestCustomService = "TestCustomService",
 }
 
 export interface CustomServicePayload {
@@ -28,8 +28,8 @@ class CustomServiceManager {
   public static getInstance(): CustomServiceManager {
     if (CustomServiceManager._instance == null) {
       let newInstance = new CustomServiceManager(
-        config.appSettings.appContainerTenant,
-        config.appSettings.appContainerAssetId,
+        config.appSettings.appContainerTenant!,
+        config.appSettings.serviceContainerAssetId!,
         serviceFileExtension
       );
       CustomServiceManager._instance = newInstance;
@@ -38,7 +38,9 @@ class CustomServiceManager {
     return CustomServiceManager._instance;
   }
 
-  private _services: { [serviceID: string]: CustomService } = {};
+  private _services: {
+    [serviceID: string]: CustomService<CustomServicePayload>;
+  } = {};
   private _sampler: Sampler = new Sampler();
   private _dataStorage: CachedDataStorage<CustomServicePayload>;
   private _initialized: boolean = false;
@@ -74,6 +76,9 @@ class CustomServiceManager {
       await this._initDataStorage();
       await this._loadAndInitServices();
       await this._initSampler();
+
+      //Setting as initializied after all compoements were initialzied
+      this._initialized = true;
     }
   }
 
@@ -105,7 +110,7 @@ class CustomServiceManager {
   private _createServiceBasedOnType(
     id: string,
     type: CustomServiceType
-  ): CustomService {
+  ): CustomService<CustomServicePayload> {
     switch (type) {
       case CustomServiceType.TestCustomService: {
         return new TestCustomService(id, this._dataStorage);
@@ -118,11 +123,13 @@ class CustomServiceManager {
 
   private _initSampler() {
     this._sampler = new Sampler();
-    this._sampler.ExternalTickHandler = this.handleSamplerTick;
+    //binding handler to this object
+    const boundHandlerMethod = this._handleSamplerTick.bind(this);
+    this._sampler.ExternalTickHandler = boundHandlerMethod;
     this._sampler.start();
   }
 
-  private async handleSamplerTick(tickId: number) {
+  private async _handleSamplerTick(tickId: number) {
     if (this.Initialized) {
       await this._refreshAllServices(tickId);
     }
@@ -157,12 +164,14 @@ class CustomServiceManager {
 
   public async serviceExists(
     id: string,
+    type: CustomServiceType | null = null,
     appId: string | null = null,
     plantId: string | null = null
   ) {
     let service = this._services[id];
     if (service == null) return false;
 
+    if (type != null && service.Type !== appId) return false;
     if (appId != null && service.AppID !== appId) return false;
     if (plantId != null && service.PlantID !== plantId) return false;
 
@@ -170,10 +179,16 @@ class CustomServiceManager {
   }
 
   public async getAllServices(
+    type: CustomServiceType | null = null,
     appId: string | null = null,
     plantId: string | null = null
   ) {
     let filteredServices = Object.values(this._services);
+
+    if (type != null)
+      filteredServices = filteredServices.filter(
+        (service) => service.Type === type
+      );
 
     if (appId != null)
       filteredServices = filteredServices.filter(
@@ -216,6 +231,8 @@ class CustomServiceManager {
       payloadToCreate.id,
       payloadToCreate.serviceType
     );
+
+    await this._dataStorage.setData(payloadToCreate.id, payloadToCreate);
 
     let tickNumber = Sampler.getCurrentTickNumber();
 

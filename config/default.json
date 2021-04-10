@@ -11,7 +11,8 @@
     "appContainerTenant": "@@APP_CONTAINER_TENANT_NAME",
     "appContainerAssetId": "@@APP_ASSET_ID",
     "appContainerAssetType": "@@APP_CONTAINER_ASSET_TYPE",
-    "appAssetType": "@@APP_ASSET_TYPE"
+    "appAssetType": "@@APP_ASSET_TYPE",
+    "serviceContainerAssetId": "@@APP_SERVICE_CONTAINER_ASSET_ID"
   },
   "userPermissions": {
     "globalAdminScope": "@@GLOBAL_ADMIN_SCOPE",

@@ -22,6 +22,7 @@ export default async function() {
   throwIfConfigDoesNotExist("appSettings.appContainerAssetId");
   throwIfConfigDoesNotExist("appSettings.appContainerAssetType");
   throwIfConfigDoesNotExist("appSettings.appAssetType");
+  throwIfConfigDoesNotExist("appSettings.serviceContainerAssetId");
 
   throwIfConfigDoesNotExist("userPermissions.superAdminUserIds");
   throwIfConfigDoesNotExist("userPermissions.globalAdminScope");

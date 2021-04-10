@@ -4,6 +4,7 @@ import {
   setPrivateProperty,
   testPrivateProperty,
 } from "../../../utilities/utilities";
+import MockDate from "mockdate";
 
 describe("Sampler", () => {
   describe("constructor", () => {
@@ -421,6 +422,25 @@ describe("Sampler", () => {
     it("should return Active", () => {
       let result = exec();
       testPrivateProperty(sampler, "_active", result);
+    });
+  });
+
+  describe("getCurrentTickNumber", () => {
+    let actualDate: number;
+
+    beforeEach(() => {
+      actualDate = 123456789;
+    });
+
+    let exec = () => {
+      MockDate.set(actualDate);
+      return Sampler.getCurrentTickNumber();
+    };
+
+    it("should return valid tick id based on current date", () => {
+      let result = exec();
+      //123456789 -> 123456.789 -> 123457
+      expect(result).toEqual(123457);
     });
   });
 });
