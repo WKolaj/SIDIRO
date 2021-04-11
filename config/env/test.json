@@ -12,7 +12,8 @@
     "appContainerTenant": "hostTenant",
     "appContainerAssetId": "testAppContainerAssetId",
     "appContainerAssetType": "testAppContainerAssetType",
-    "appAssetType": "testAppAssetType"
+    "appAssetType": "testAppAssetType",
+    "serviceContainerAssetId": "testServiceContainerAssetId"
   },
   "userPermissions": {
     "globalAdminScope": "testGlobalAdminScope",

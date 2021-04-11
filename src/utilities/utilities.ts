@@ -138,8 +138,8 @@ export function generateRandomString(length: number) {
  * @description Method for cloning whole objects. NOTICE - Method uses JSON parsing and is very slow - use with caution!
  * @param object Object to clone
  */
-export function cloneObject(object: any) {
-  return JSON.parse(JSON.stringify(object));
+export function cloneObject<T>(object: T) {
+  return JSON.parse(JSON.stringify(object)) as T;
 }
 
 //#endregion ========== COMMON =========

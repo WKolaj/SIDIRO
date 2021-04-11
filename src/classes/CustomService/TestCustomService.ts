@@ -17,12 +17,21 @@ class TestCustomService extends CustomService<TestCustomServicePayload> {
     super(CustomServiceType.TestCustomService, id, dataStorage);
   }
 
-  public async _onInit(tickId: number): Promise<void> {
+  protected async _onInit(
+    tickId: number,
+    data: TestCustomServicePayload
+  ): Promise<void> {
     console.log(`${tickId} - ${this.ID}: service initialized!`);
   }
 
-  public async _onRefresh(tickId: number): Promise<void> {
+  protected async _onRefresh(tickId: number): Promise<void> {
     console.log(`${tickId} - ${this.ID}: service refreshed!`);
+  }
+
+  protected async _onSetStorageData(
+    payload: TestCustomServicePayload
+  ): Promise<void> {
+    console.log(`${this.ID}: new data set!`);
   }
 }
 

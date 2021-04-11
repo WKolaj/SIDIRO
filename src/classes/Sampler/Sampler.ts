@@ -140,7 +140,6 @@ class Sampler {
    * @description Mehtod for returning current tick number (unix)
    */
   public static getCurrentTickNumber() {
-    //TODO - test this method
     return Sampler.convertDateToTickNumber(Date.now());
   }
 
@@ -148,5 +147,3 @@ class Sampler {
 }
 
 export default Sampler;
-
-//TODO - test this class

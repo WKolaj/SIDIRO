@@ -60,18 +60,22 @@ abstract class CustomService<ServicePayload extends CustomServicePayload> {
 
   public async init(tickId: number, data: ServicePayload) {
     if (!this.Initialized) {
-      if (data?.appId != null) this._appID = data.appId;
-      if (data?.plantId != null) this._plantID = data.plantId;
+      if (data.appId != null) this._appID = data.appId;
+      if (data.plantId != null) this._plantID = data.plantId;
 
       this._sampleTime = data.sampleTime;
 
-      await this._onInit(tickId);
+      await this._onInit(tickId, data);
 
       this._initTickID = tickId;
       this._initialized = true;
     }
   }
-  public abstract _onInit(tickId: number): Promise<void>;
+
+  protected abstract _onInit(
+    tickId: number,
+    data: ServicePayload
+  ): Promise<void>;
 
   public async refresh(tickId: number) {
     //Refreshing only if service is initialized and sample time matches tick id
@@ -84,15 +88,19 @@ abstract class CustomService<ServicePayload extends CustomServicePayload> {
       this._lastRefreshTickID = tickId;
     }
   }
-  public abstract _onRefresh(tickId: number): Promise<void>;
+  protected abstract _onRefresh(tickId: number): Promise<void>;
 
   public async getStorageData() {
+    if (!this.Initialized) throw new Error("Service not initialized!");
     return this._dataStorage.getData(this.ID);
   }
 
   public async setStorageData(payload: ServicePayload) {
-    return this._dataStorage.setData(this.ID, payload);
+    if (!this.Initialized) throw new Error("Service not initialized!");
+    await this._dataStorage.setData(this.ID, payload);
+    return this._onSetStorageData(payload);
   }
+  protected abstract _onSetStorageData(payload: ServicePayload): Promise<void>;
 }
 
 export default CustomService;
