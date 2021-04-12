@@ -460,7 +460,7 @@ describe("CustomService", () => {
       expect(result).toEqual(null);
     });
 
-    it("should throw - if service has not been initialzied before", async () => {
+    it("should throw - if service has not been initialized before", async () => {
       initialize = false;
       await expect(exec()).rejects.toMatchObject({
         message: "Service not initialized!",

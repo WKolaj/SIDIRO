@@ -41,7 +41,7 @@ class CustomServiceManager {
   private _services: {
     [serviceID: string]: CustomService<CustomServicePayload>;
   } = {};
-  private _sampler: Sampler = new Sampler();
+  private _sampler: Sampler | null = null;
   private _dataStorage: CachedDataStorage<CustomServicePayload>;
   private _initialized: boolean = false;
   private _lastRefreshTickID: number | null = null;
@@ -64,6 +64,9 @@ class CustomServiceManager {
     assetID: string,
     fileExtension: string
   ) {
+    //binding handler to this object
+    this._handleSamplerTick = this._handleSamplerTick.bind(this);
+
     this._dataStorage = new MindSphereDataStorage<CustomServicePayload>(
       tenantID,
       assetID,
@@ -73,12 +76,15 @@ class CustomServiceManager {
 
   public async init() {
     if (!this.Initialized) {
+      let currentTick = Sampler.getCurrentTickNumber();
+
       await this._initDataStorage();
-      await this._loadAndInitServices();
+      await this._loadAndInitServices(currentTick);
       await this._initSampler();
 
       //Setting as initializied after all compoements were initialzied
       this._initialized = true;
+      this._initTickID = currentTick;
     }
   }
 
@@ -86,11 +92,10 @@ class CustomServiceManager {
     await this._dataStorage.init();
   }
 
-  private async _loadAndInitServices() {
+  private async _loadAndInitServices(tickNumber: number) {
     let allServiceData = await this._dataStorage.getAllData();
     for (let serviceId of Object.keys(allServiceData)) {
       try {
-        let tickNumber = Sampler.getCurrentTickNumber();
         let servicePayload = allServiceData[serviceId];
         let newService = this._createServiceBasedOnType(
           serviceId,
@@ -111,21 +116,21 @@ class CustomServiceManager {
     id: string,
     type: CustomServiceType
   ): CustomService<CustomServicePayload> {
+    //TODO - test this method after adding LoadMonitoringService
     switch (type) {
       case CustomServiceType.TestCustomService: {
         return new TestCustomService(id, this._dataStorage);
       }
       default: {
-        throw new Error(`Unrecognized service type! ${type}`);
+        throw new Error(`Unrecognized service type: ${type}`);
       }
     }
   }
 
   private _initSampler() {
     this._sampler = new Sampler();
-    //binding handler to this object
-    const boundHandlerMethod = this._handleSamplerTick.bind(this);
-    this._sampler.ExternalTickHandler = boundHandlerMethod;
+    //Method _handleSamplerTick bound in constructor
+    this._sampler.ExternalTickHandler = this._handleSamplerTick;
     this._sampler.start();
   }
 
@@ -160,6 +165,9 @@ class CustomServiceManager {
     } catch (err) {
       logger.error(`Error during refreshing services: ${err.message}`, err);
     }
+
+    //Setting last refresh tick id after the refreshing
+    this._lastRefreshTickID = tickId;
   }
 
   public async serviceExists(

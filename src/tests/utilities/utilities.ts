@@ -6,6 +6,10 @@ export function testPrivateProperty(
   expect(objectToTest[propertyName]).toEqual(expectedPropertyValue);
 }
 
+export function getPrivateProperty(objectToGet: any, propertyName: string) {
+  return objectToGet[propertyName];
+}
+
 export function setPrivateProperty(
   objectToSet: any,
   propertyName: string,
