@@ -236,7 +236,7 @@ class CustomServiceManager {
     await service.setStorageData(payload);
   }
 
-  public async createService(payload: CustomServicePayload) {
+  public async createService(payload: CustomServicePayload): Promise<string> {
     if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let serviceId = generateRandomString(16);
     let payloadToCreate = { ...payload, id: serviceId };
@@ -253,6 +253,8 @@ class CustomServiceManager {
     await service.init(tickNumber, payloadToCreate);
 
     this._services[serviceId] = service;
+
+    return serviceId;
   }
 }
 

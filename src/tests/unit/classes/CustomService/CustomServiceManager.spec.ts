@@ -23,15 +23,15 @@ import { cloneObject } from "../../../../utilities/utilities";
 import Sampler from "../../../../classes/Sampler/Sampler";
 import MockDate from "mockdate";
 
-interface TestCustomServicePayload extends CustomServicePayload {
+interface MockCustomServicePayload extends CustomServicePayload {
   testData: any;
 }
 
 //Creating mocked custom service class
-class MockedCustomService extends CustomService<TestCustomServicePayload> {
+class MockedCustomService extends CustomService<MockCustomServicePayload> {
   public constructor(
     id: string,
-    dataStorage: CachedDataStorage<TestCustomServicePayload>
+    dataStorage: CachedDataStorage<MockCustomServicePayload>
   ) {
     super("MockedCustomService" as any, id, dataStorage);
   }
@@ -39,7 +39,7 @@ class MockedCustomService extends CustomService<TestCustomServicePayload> {
   public __onInitMockFunc = jest.fn();
   public async _onInit(
     tickId: number,
-    data: TestCustomServicePayload
+    data: MockCustomServicePayload
   ): Promise<void> {
     return this.__onInitMockFunc(tickId, data);
   }
@@ -51,7 +51,7 @@ class MockedCustomService extends CustomService<TestCustomServicePayload> {
 
   public __onSetStorageDataMockFunc = jest.fn();
   public async _onSetStorageData(
-    payload: TestCustomServicePayload
+    payload: MockCustomServicePayload
   ): Promise<void> {
     return this.__onSetStorageDataMockFunc(payload);
   }
@@ -310,7 +310,7 @@ describe("CustomService", () => {
         let service = services[serviceId] as MockedCustomService;
         let servicePayload = fileServiceContent["hostTenant"][
           "testServiceContainerAssetId"
-        ][`${serviceId}.service.config.json`] as TestCustomServicePayload;
+        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
 
         //Checking if init was called properly
         expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
@@ -425,7 +425,7 @@ describe("CustomService", () => {
         let service = services[serviceId] as MockedCustomService;
         let servicePayload = fileServiceContent["hostTenant"][
           "testServiceContainerAssetId"
-        ][`${serviceId}.service.config.json`] as TestCustomServicePayload;
+        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
 
         //Checking if init was called properly
         expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
@@ -1316,5 +1316,465 @@ describe("CustomService", () => {
     });
   });
 
-  //TODO - add unit tests for creating service and updating it
+  describe("updateService", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let serviceId: string;
+    let setFileContentThrows: boolean;
+    let payload: MockCustomServicePayload;
+
+    beforeEach(() => {
+      serviceId = "testCustomServiceId5";
+      initServices = true;
+      setFileContentThrows = false;
+      payload = {
+        id: "testCustomServiceId5",
+        sampleTime: 1000,
+        serviceType: "MockedCustomService" as any,
+        testData: { oprs: "xyz" },
+        appId: "testAppId2Modified",
+        plantId: "testPlantId3Modified",
+      };
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      if (setFileContentThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      return customServiceManager.updateService(serviceId, payload);
+    };
+
+    it("should update service's data in storage and in service itself (call onStorageDataUpdate)", async () => {
+      await exec();
+
+      //#region ===== CHECKING SERVICES =====
+
+      let service = (await customServiceManager.getService(
+        serviceId
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onSetStorageDataMockFunc).toHaveBeenCalledTimes(1);
+      expect(service.__onSetStorageDataMockFunc.mock.calls[0]).toEqual([
+        payload,
+      ]);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      expect(storageData).toEqual(payload);
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        `${serviceId}.service.config.json`,
+        payload,
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not update any service - if service does not exist", async () => {
+      serviceId = "fakeServiceId";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service fakeServiceId not found!",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      let allServices = await customServiceManager.getAllServices();
+
+      //For every service, setStorageData should not have been called
+      for (let service of allServices) {
+        let mockService = service as MockedCustomService;
+        expect(mockService.__onSetStorageDataMockFunc).not.toHaveBeenCalled();
+      }
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not update any service - if service was not initialzied", async () => {
+      initServices = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not update any service - if setFileContent throws", async () => {
+      setFileContentThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test set file content error",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      let service = (await customServiceManager.getService(
+        serviceId
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onSetStorageDataMockFunc).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      let initialStorageContent =
+        fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+          "testCustomServiceId5.service.config.json"
+        ];
+
+      expect(storageData).toEqual(initialStorageContent);
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+  });
+
+  describe("createService", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let setFileContentThrows: boolean;
+    let payload: MockCustomServicePayload;
+    let currentDate: number;
+
+    beforeEach(() => {
+      initServices = true;
+      setFileContentThrows = false;
+      currentDate = 12345678;
+      payload = {
+        sampleTime: 1000,
+        serviceType: "MockedCustomService" as any,
+        testData: { oprs: "xyz" },
+        appId: "testAppId2Modified",
+        plantId: "testPlantId3Modified",
+      };
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      MockDate.set(currentDate);
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      if (setFileContentThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      return customServiceManager.createService(payload);
+    };
+
+    it("should create, initialize, set dataStorageContent of new service and return its id - based on payload", async () => {
+      let result = await exec();
+
+      expect(result).toBeDefined();
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should be accessible by getService
+      let service = (await customServiceManager.getService(
+        result
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
+      //12345678 -> 12345.678 -> 12346
+      expect(service.__onInitMockFunc.mock.calls[0]).toEqual([
+        12346,
+        { ...payload, id: result },
+      ]);
+      expect(service.Initialized).toEqual(true);
+      expect(service.InitTickID).toEqual(12346);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      expect(storageData).toEqual({ ...payload, id: result });
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        `${result}.service.config.json`,
+        { ...payload, id: result },
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should create services with different ids - every time method is called", async () => {
+      let id1 = await exec();
+      let id2 = await customServiceManager.createService(payload);
+      let id3 = await customServiceManager.createService(payload);
+
+      expect(id1 !== id2).toEqual(true);
+      expect(id2 !== id3).toEqual(true);
+      expect(id3 !== id1).toEqual(true);
+    });
+
+    it("should generate and override id, create, initialize, set dataStorageContent of new service and return its id - based on payload, if payload has id defined", async () => {
+      payload.id = "fakeId";
+
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result).not.toEqual(payload.id);
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should be accessible by getService
+      let service = (await customServiceManager.getService(
+        result
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
+      //12345678 -> 12345.678 -> 12346
+      expect(service.__onInitMockFunc.mock.calls[0]).toEqual([
+        12346,
+        { ...payload, id: result },
+      ]);
+      expect(service.Initialized).toEqual(true);
+      expect(service.InitTickID).toEqual(12346);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      expect(storageData).toEqual({ ...payload, id: result });
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        `${result}.service.config.json`,
+        { ...payload, id: result },
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should create, initialize, set dataStorageContent of new service and return its id - based on payload - if payload has no plantId", async () => {
+      delete payload.plantId;
+      let result = await exec();
+
+      expect(result).toBeDefined();
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should be accessible by getService
+      let service = (await customServiceManager.getService(
+        result
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
+      //12345678 -> 12345.678 -> 12346
+      expect(service.__onInitMockFunc.mock.calls[0]).toEqual([
+        12346,
+        { ...payload, id: result },
+      ]);
+      expect(service.Initialized).toEqual(true);
+      expect(service.InitTickID).toEqual(12346);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      expect(storageData).toEqual({ ...payload, id: result });
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        `${result}.service.config.json`,
+        { ...payload, id: result },
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should create, initialize, set dataStorageContent of new service and return its id - based on payload - if payload has no appId", async () => {
+      delete payload.appId;
+      let result = await exec();
+
+      expect(result).toBeDefined();
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should be accessible by getService
+      let service = (await customServiceManager.getService(
+        result
+      )) as MockedCustomService;
+      expect(service).toBeDefined();
+
+      expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
+      //12345678 -> 12345.678 -> 12346
+      expect(service.__onInitMockFunc.mock.calls[0]).toEqual([
+        12346,
+        { ...payload, id: result },
+      ]);
+      expect(service.Initialized).toEqual(true);
+      expect(service.InitTickID).toEqual(12346);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storageData = await service.getStorageData();
+
+      expect(storageData).toEqual({ ...payload, id: result });
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        `${result}.service.config.json`,
+        { ...payload, id: result },
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not create any service - if serviceManager is not initialized", async () => {
+      initServices = false;
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should be empty
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toEqual({});
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not create any service - if set file content throws", async () => {
+      setFileContentThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test set file content error",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Services should stay the same as in fileServiceContent
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toBeDefined();
+
+      let allServiceIdsFromManager = Object.keys(services).sort();
+      let allServiceIdsFromFileService = Object.keys(
+        fileServiceContent["hostTenant"]["testServiceContainerAssetId"]
+      )
+        .filter((filePath) => filePath.includes(".service.config.json"))
+        .map((filePath) => filePath.replace(".service.config.json", ""))
+        .sort();
+
+      //Services from Manager and in MindSphere file service should be identical
+      expect(allServiceIdsFromManager).toEqual(allServiceIdsFromFileService);
+
+      for (let serviceId of allServiceIdsFromManager) {
+        let service = services[serviceId] as MockedCustomService;
+        let servicePayload = fileServiceContent["hostTenant"][
+          "testServiceContainerAssetId"
+        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
+
+        let storageData = await service.getStorageData();
+        //Data should stay as it has been initialy
+        expect(storageData).toEqual(servicePayload);
+
+        //setStorageData should not have been called
+        expect(service.__onSetStorageDataMockFunc).not.toHaveBeenCalled();
+      }
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+  });
 });
