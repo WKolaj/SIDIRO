@@ -176,10 +176,11 @@ class CustomServiceManager {
     appId: string | null = null,
     plantId: string | null = null
   ) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let service = this._services[id];
     if (service == null) return false;
 
-    if (type != null && service.Type !== appId) return false;
+    if (type != null && service.Type !== type) return false;
     if (appId != null && service.AppID !== appId) return false;
     if (plantId != null && service.PlantID !== plantId) return false;
 
@@ -191,6 +192,7 @@ class CustomServiceManager {
     appId: string | null = null,
     plantId: string | null = null
   ) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let filteredServices = Object.values(this._services);
 
     if (type != null)
@@ -212,6 +214,7 @@ class CustomServiceManager {
   }
 
   public async getService(id: string) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let service = this._services[id];
     if (service == null) throw new Error(`Service ${id} not found!`);
 
@@ -219,12 +222,14 @@ class CustomServiceManager {
   }
 
   public async removeService(id: string) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     if (this._services[id] == null) throw new Error(`Service ${id} not found!`);
-    delete this._services[id];
     await this._dataStorage.deleteData(id);
+    delete this._services[id];
   }
 
   public async updateService(id: string, payload: CustomServicePayload) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let service = this._services[id];
     if (service == null) throw new Error(`Service ${id} not found!`);
 
@@ -232,6 +237,7 @@ class CustomServiceManager {
   }
 
   public async createService(payload: CustomServicePayload) {
+    if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let serviceId = generateRandomString(16);
     let payloadToCreate = { ...payload, id: serviceId };
 

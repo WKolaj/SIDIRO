@@ -1,6 +1,7 @@
 import CustomService from "../../../../classes/CustomService/CustomService";
 import { MindSphereFileService } from "../../../../classes/MindSphereService/MindSphereFileService";
 import {
+  deleteFile,
   getFileContent,
   MockedFileServiceContent,
   mockMsFileService,
@@ -814,4 +815,506 @@ describe("CustomService", () => {
       //#endregion ===== CHECKING LOGGER =====
     });
   });
+
+  describe("serviceExists", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let serviceId: string;
+    let appId: string | null;
+    let plantId: string | null;
+    let serviceType: string | null;
+
+    beforeEach(() => {
+      serviceId = "testCustomServiceId5";
+      appId = "testAppId2";
+      plantId = "testPlantId3";
+      serviceType = "MockedCustomService";
+      initServices = true;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      return customServiceManager.serviceExists(
+        serviceId,
+        serviceType as any,
+        appId,
+        plantId
+      );
+    };
+
+    it("return true if service of given id exists (with given appId, plantId and serviceType)", async () => {
+      let result = await exec();
+
+      expect(result).toEqual(true);
+    });
+
+    it("return true if service of given id exists and only id is given as parameter", async () => {
+      serviceId = "testCustomServiceId5";
+      appId = null;
+      plantId = null;
+      serviceType = null;
+
+      let result = await exec();
+
+      expect(result).toEqual(true);
+    });
+
+    it("return false if service of given id exists (with given appId, plantId but not serviceType)", async () => {
+      serviceType = "fakeServiceType";
+      let result = await exec();
+
+      expect(result).toEqual(false);
+    });
+
+    it("return false if service of given id exists (with given appId, serviceType but not plantId)", async () => {
+      plantId = "fakePlantId";
+      let result = await exec();
+
+      expect(result).toEqual(false);
+    });
+
+    it("return false if service of given id exists (with given plantId, serviceType but not appId)", async () => {
+      appId = "fakeAppId";
+      let result = await exec();
+
+      expect(result).toEqual(false);
+    });
+
+    it("return false if there is not service of given id", async () => {
+      serviceId = "fakeServiceId";
+      appId = null;
+      plantId = null;
+      serviceType = null;
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+    });
+
+    it("return throw - if manager is not initialized", async () => {
+      initServices = false;
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+    });
+  });
+
+  describe("getAllServices", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let appId: string | null;
+    let plantId: string | null;
+    let serviceType: string | null;
+
+    beforeEach(() => {
+      appId = "testAppId2";
+      plantId = "testPlantId3";
+      serviceType = "MockedCustomService";
+      initServices = true;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      return customServiceManager.getAllServices(
+        serviceType as any,
+        appId,
+        plantId
+      );
+    };
+
+    it("return all services of given type, appId and plantId ", async () => {
+      let result = await exec();
+
+      //Only services 5 and 6 should exists
+      expect(result.length).toEqual(2);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId5") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId6") != null
+      ).toEqual(true);
+    });
+
+    it("return all services of given type, appId - if plantId is null ", async () => {
+      plantId = null;
+      let result = await exec();
+
+      //Only services 4,5 and 6 should exists
+      expect(result.length).toEqual(3);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId4") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId5") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId6") != null
+      ).toEqual(true);
+    });
+
+    it("return all services of given type, plantId - if appId is null ", async () => {
+      appId = null;
+      let result = await exec();
+
+      //Only services 5 and 6 should exists
+      expect(result.length).toEqual(2);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId5") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId6") != null
+      ).toEqual(true);
+    });
+
+    it("return all services of given appId, plantId - if serviceType is null ", async () => {
+      serviceType = null;
+      let result = await exec();
+
+      //Only services 5 and 6 should exists
+      expect(result.length).toEqual(2);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId5") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId6") != null
+      ).toEqual(true);
+    });
+
+    it("return all services - if all filter parameters are null", async () => {
+      appId = null;
+      plantId = null;
+      serviceType = null;
+
+      let result = await exec();
+
+      //Only services 5 and 6 should exists
+      expect(result.length).toEqual(9);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId1") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId2") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId3") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId4") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId5") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId6") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId7") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId8") != null
+      ).toEqual(true);
+      expect(
+        result.find((service) => service.ID === "testCustomServiceId9") != null
+      ).toEqual(true);
+    });
+
+    it("return empty array services - if there are no services that corresponds to given filter parameters (invalid type)", async () => {
+      serviceType = "FakeCustomService";
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+    });
+
+    it("return empty array services - if there are no services that corresponds to given filter parameters (invalid type)", async () => {
+      appId = "fakeAppId";
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+    });
+
+    it("return empty array services - if there are no services that corresponds to given filter parameters (invalid type)", async () => {
+      plantId = "fakePlantId";
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+    });
+
+    it("return empty array services - if there are no services", async () => {
+      appId = null;
+      plantId = null;
+      serviceType = null;
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"] = [];
+
+      let result = await exec();
+
+      expect(result).toEqual([]);
+    });
+
+    it("return throw - if manager is not initialized", async () => {
+      initServices = false;
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+    });
+  });
+
+  describe("getService", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let serviceId: string;
+
+    beforeEach(() => {
+      serviceId = "testCustomServiceId5";
+      initServices = true;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      return customServiceManager.getService(serviceId);
+    };
+
+    it("return service of given id", async () => {
+      let result = await exec();
+
+      expect(result).toBeDefined();
+      expect(result.ID).toEqual(serviceId);
+    });
+
+    it("return throw - if there is no service of given id", async () => {
+      serviceId = "fakeServiceId";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service fakeServiceId not found!",
+      });
+    });
+
+    it("return throw - if service is not initialized", async () => {
+      initServices = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+    });
+  });
+
+  describe("removeService", () => {
+    let customServiceManager: CustomServiceManager;
+    let initServices: boolean;
+    let serviceId: string;
+    let deleteFileThrows: boolean;
+
+    beforeEach(() => {
+      serviceId = "testCustomServiceId5";
+      initServices = true;
+      deleteFileThrows = false;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      customServiceManager = CustomServiceManager.getInstance();
+      mockCreateServiceBasedOnTypeMockFunc(customServiceManager);
+
+      if (initServices) await customServiceManager.init();
+
+      if (deleteFileThrows) {
+        MindSphereFileService.getInstance().deleteFile = jest.fn(async () => {
+          throw new Error("Test delete file error");
+        });
+      }
+
+      return customServiceManager.removeService(serviceId);
+    };
+
+    it("should remove service of given id - from services and from file storage", async () => {
+      await exec();
+
+      //#region ===== CHECKING SERVICES =====
+
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toBeDefined();
+
+      let allServiceIdsFromManager = Object.keys(services).sort();
+
+      let expectedServiceIds = [
+        "testCustomServiceId1",
+        "testCustomServiceId2",
+        "testCustomServiceId3",
+        "testCustomServiceId4",
+        "testCustomServiceId6",
+        "testCustomServiceId7",
+        "testCustomServiceId8",
+        "testCustomServiceId9",
+      ];
+
+      expect(allServiceIdsFromManager).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let dataStorage = getPrivateProperty(
+        customServiceManager,
+        "_dataStorage"
+      ) as MindSphereDataStorage<CustomServicePayload>;
+
+      let dataStorageKeys = (await dataStorage.getAllIds()).sort();
+
+      expect(dataStorageKeys).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(deleteFile).toHaveBeenCalledTimes(1);
+      expect(deleteFile.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "testCustomServiceId5.service.config.json",
+      ]);
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not remove service from services - if deleteFile throws", async () => {
+      deleteFileThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test delete file error",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Service should not have been deleted from services
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toBeDefined();
+
+      let allServiceIdsFromManager = Object.keys(services).sort();
+
+      let expectedServiceIds = [
+        "testCustomServiceId1",
+        "testCustomServiceId2",
+        "testCustomServiceId3",
+        "testCustomServiceId4",
+        "testCustomServiceId5",
+        "testCustomServiceId6",
+        "testCustomServiceId7",
+        "testCustomServiceId8",
+        "testCustomServiceId9",
+      ];
+
+      expect(allServiceIdsFromManager).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let dataStorage = getPrivateProperty(
+        customServiceManager,
+        "_dataStorage"
+      ) as MindSphereDataStorage<CustomServicePayload>;
+
+      let dataStorageKeys = (await dataStorage.getAllIds()).sort();
+
+      expect(dataStorageKeys).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING STORAGE =====
+    });
+
+    it("should throw and not remove service from services or storage - if there is no service of given id", async () => {
+      serviceId = "fakeServiceId";
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service fakeServiceId not found!",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Any service should have been deleted from services
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toBeDefined();
+
+      let allServiceIdsFromManager = Object.keys(services).sort();
+
+      let expectedServiceIds = [
+        "testCustomServiceId1",
+        "testCustomServiceId2",
+        "testCustomServiceId3",
+        "testCustomServiceId4",
+        "testCustomServiceId5",
+        "testCustomServiceId6",
+        "testCustomServiceId7",
+        "testCustomServiceId8",
+        "testCustomServiceId9",
+      ];
+
+      expect(allServiceIdsFromManager).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let dataStorage = getPrivateProperty(
+        customServiceManager,
+        "_dataStorage"
+      ) as MindSphereDataStorage<CustomServicePayload>;
+
+      let dataStorageKeys = (await dataStorage.getAllIds()).sort();
+
+      expect(dataStorageKeys).toEqual(expectedServiceIds);
+
+      //#endregion ===== CHECKING STORAGE =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(deleteFile).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+
+    it("should throw and not remove service from services or storage - if service manager is not initialized", async () => {
+      initServices = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "ServiceManager not initialized!",
+      });
+
+      //#region ===== CHECKING SERVICES =====
+
+      //Any service should have been deleted from services
+      let services = getPrivateProperty(customServiceManager, "_services");
+      expect(services).toEqual({});
+
+      //#endregion ===== CHECKING SERVICES =====
+
+      //#region ===== CHECKING API CALLS =====
+
+      expect(deleteFile).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALLS =====
+    });
+  });
+
+  //TODO - add unit tests for creating service and updating it
 });
