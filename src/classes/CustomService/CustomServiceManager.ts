@@ -3,23 +3,32 @@ import { CachedDataStorage } from "../DataStorage/CachedDataStorage";
 import { config } from "node-config-ts";
 import CustomService from "./CustomService";
 import Sampler from "../Sampler/Sampler";
-import TestCustomService from "./TestCustomService";
 import logger from "../../logger/logger";
-import { reject } from "lodash";
 import { generateRandomString } from "../../utilities/utilities";
+import LoadmonitoringService, {
+  LoadmonitoringConfig,
+} from "./LoadmonitoringService";
 
 const serviceFileExtension = "service.config.json";
 
 export enum CustomServiceType {
-  TestCustomService = "TestCustomService",
+  LoadmonitoringService = "LoadmonitoringService",
 }
 
-export interface CustomServicePayload {
+//Schema for data stored in storage
+export interface CustomServiceConfig {
   id?: string;
   appId?: string;
   plantId?: string;
   sampleTime: number;
   serviceType: CustomServiceType;
+}
+
+//Schema for data returned as response
+export interface CustomServiceData {
+  lastRefreshTickId: number | null;
+  initTickId: number | null;
+  initialized: boolean;
 }
 
 class CustomServiceManager {
@@ -39,10 +48,10 @@ class CustomServiceManager {
   }
 
   private _services: {
-    [serviceID: string]: CustomService<CustomServicePayload>;
+    [serviceID: string]: CustomService<CustomServiceConfig, CustomServiceData>;
   } = {};
   private _sampler: Sampler | null = null;
-  private _dataStorage: CachedDataStorage<CustomServicePayload>;
+  private _dataStorage: CachedDataStorage<CustomServiceConfig>;
   private _initialized: boolean = false;
   private _lastRefreshTickID: number | null = null;
   private _initTickID: number | null = null;
@@ -67,7 +76,7 @@ class CustomServiceManager {
     //binding handler to this object
     this._handleSamplerTick = this._handleSamplerTick.bind(this);
 
-    this._dataStorage = new MindSphereDataStorage<CustomServicePayload>(
+    this._dataStorage = new MindSphereDataStorage<CustomServiceConfig>(
       tenantID,
       assetID,
       fileExtension
@@ -115,11 +124,14 @@ class CustomServiceManager {
   private _createServiceBasedOnType(
     id: string,
     type: CustomServiceType
-  ): CustomService<CustomServicePayload> {
+  ): CustomService<CustomServiceConfig, CustomServiceData> {
     //TODO - test this method after adding LoadMonitoringService
     switch (type) {
-      case CustomServiceType.TestCustomService: {
-        return new TestCustomService(id, this._dataStorage);
+      case CustomServiceType.LoadmonitoringService: {
+        return new LoadmonitoringService(
+          id,
+          this._dataStorage as MindSphereDataStorage<LoadmonitoringConfig>
+        );
       }
       default: {
         throw new Error(`Unrecognized service type: ${type}`);
@@ -228,15 +240,15 @@ class CustomServiceManager {
     delete this._services[id];
   }
 
-  public async updateService(id: string, payload: CustomServicePayload) {
+  public async updateService(id: string, payload: CustomServiceConfig) {
     if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let service = this._services[id];
     if (service == null) throw new Error(`Service ${id} not found!`);
 
-    await service.setStorageData(payload);
+    await service.setConfig(payload);
   }
 
-  public async createService(payload: CustomServicePayload): Promise<string> {
+  public async createService(payload: CustomServiceConfig): Promise<string> {
     if (!this.Initialized) throw new Error("ServiceManager not initialized!");
     let serviceId = generateRandomString(16);
     let payloadToCreate = { ...payload, id: serviceId };

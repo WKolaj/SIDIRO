@@ -1,12 +1,16 @@
 import { CachedDataStorage } from "../DataStorage/CachedDataStorage";
 import Sampler from "../Sampler/Sampler";
 import {
-  CustomServicePayload,
+  CustomServiceConfig,
+  CustomServiceData,
   CustomServiceType,
 } from "./CustomServiceManager";
 
-abstract class CustomService<ServicePayload extends CustomServicePayload> {
-  private _dataStorage: CachedDataStorage<ServicePayload>;
+abstract class CustomService<
+  ServiceConfig extends CustomServiceConfig,
+  ServiceData extends CustomServiceData
+> {
+  private _dataStorage: CachedDataStorage<ServiceConfig>;
   private _initialized: boolean = false;
   private _id: string;
   private _type: CustomServiceType;
@@ -51,14 +55,14 @@ abstract class CustomService<ServicePayload extends CustomServicePayload> {
   public constructor(
     type: CustomServiceType,
     id: string,
-    dataStorage: CachedDataStorage<ServicePayload>
+    dataStorage: CachedDataStorage<ServiceConfig>
   ) {
     this._type = type;
     this._id = id;
     this._dataStorage = dataStorage;
   }
 
-  public async init(tickId: number, data: ServicePayload) {
+  public async init(tickId: number, data: ServiceConfig) {
     if (!this.Initialized) {
       if (data.appId != null) this._appID = data.appId;
       if (data.plantId != null) this._plantID = data.plantId;
@@ -74,7 +78,7 @@ abstract class CustomService<ServicePayload extends CustomServicePayload> {
 
   protected abstract _onInit(
     tickId: number,
-    data: ServicePayload
+    data: ServiceConfig
   ): Promise<void>;
 
   public async refresh(tickId: number) {
@@ -90,17 +94,20 @@ abstract class CustomService<ServicePayload extends CustomServicePayload> {
   }
   protected abstract _onRefresh(tickId: number): Promise<void>;
 
-  public async getStorageData() {
+  public async getConfig() {
     if (!this.Initialized) throw new Error("Service not initialized!");
     return this._dataStorage.getData(this.ID);
   }
 
-  public async setStorageData(payload: ServicePayload) {
+  public async setConfig(payload: ServiceConfig) {
     if (!this.Initialized) throw new Error("Service not initialized!");
     await this._dataStorage.setData(this.ID, payload);
     return this._onSetStorageData(payload);
   }
-  protected abstract _onSetStorageData(payload: ServicePayload): Promise<void>;
+  protected abstract _onSetStorageData(payload: ServiceConfig): Promise<void>;
+
+  //TODO - test this method
+  public abstract getPayloadData(): Promise<ServiceData>;
 }
 
 export default CustomService;

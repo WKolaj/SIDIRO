@@ -9,7 +9,8 @@ import {
 } from "../../../utilities/mockMsFileService";
 import logger from "../../../../logger/logger";
 import CustomServiceManager, {
-  CustomServicePayload,
+  CustomServiceConfig,
+  CustomServiceData,
   CustomServiceType,
 } from "../../../../classes/CustomService/CustomServiceManager";
 import { CachedDataStorage } from "../../../../classes/DataStorage/CachedDataStorage";
@@ -23,15 +24,22 @@ import { cloneObject } from "../../../../utilities/utilities";
 import Sampler from "../../../../classes/Sampler/Sampler";
 import MockDate from "mockdate";
 
-interface MockCustomServicePayload extends CustomServicePayload {
+interface MockCustomServiceConfig extends CustomServiceConfig {
+  testConfig: any;
+}
+
+interface MockCustomServiceData extends CustomServiceData {
   testData: any;
 }
 
 //Creating mocked custom service class
-class MockedCustomService extends CustomService<MockCustomServicePayload> {
+class MockedCustomService extends CustomService<
+  MockCustomServiceConfig,
+  MockCustomServiceData
+> {
   public constructor(
     id: string,
-    dataStorage: CachedDataStorage<MockCustomServicePayload>
+    dataStorage: CachedDataStorage<MockCustomServiceConfig>
   ) {
     super("MockedCustomService" as any, id, dataStorage);
   }
@@ -39,7 +47,7 @@ class MockedCustomService extends CustomService<MockCustomServicePayload> {
   public __onInitMockFunc = jest.fn();
   public async _onInit(
     tickId: number,
-    data: MockCustomServicePayload
+    data: MockCustomServiceConfig
   ): Promise<void> {
     return this.__onInitMockFunc(tickId, data);
   }
@@ -51,9 +59,20 @@ class MockedCustomService extends CustomService<MockCustomServicePayload> {
 
   public __onSetStorageDataMockFunc = jest.fn();
   public async _onSetStorageData(
-    payload: MockCustomServicePayload
+    payload: MockCustomServiceConfig
   ): Promise<void> {
     return this.__onSetStorageDataMockFunc(payload);
+  }
+
+  public async getPayloadData(): Promise<MockCustomServiceData> {
+    return {
+      initTickId: this.InitTickID,
+      initialized: this.Initialized,
+      lastRefreshTickId: this.LastRefreshTickID,
+      testData: {
+        abcd: 1234,
+      },
+    };
   }
 }
 
@@ -102,7 +121,7 @@ describe("CustomService", () => {
           "testCustomServiceId1.service.config.json": {
             sampleTime: 100,
             serviceType: "MockedCustomService" as any,
-            testData: { ab12: "ef12" },
+            testConfig: { ab12: "ef12" },
             appId: "testAppId1",
             id: "testCustomServiceId1",
             plantId: "testPlantId1",
@@ -110,7 +129,7 @@ describe("CustomService", () => {
           "testCustomServiceId2.service.config.json": {
             sampleTime: 200,
             serviceType: "MockedCustomService" as any,
-            testData: { ab23: "ef23" },
+            testConfig: { ab23: "ef23" },
             appId: "testAppId1",
             id: "testCustomServiceId2",
             plantId: "testPlantId1",
@@ -118,7 +137,7 @@ describe("CustomService", () => {
           "testCustomServiceId3.service.config.json": {
             sampleTime: 300,
             serviceType: "MockedCustomService" as any,
-            testData: { ab45: "ef45" },
+            testConfig: { ab45: "ef45" },
             appId: "testAppId1",
             id: "testCustomServiceId3",
             plantId: "testPlantId2",
@@ -126,7 +145,7 @@ describe("CustomService", () => {
           "testCustomServiceId4.service.config.json": {
             sampleTime: 400,
             serviceType: "MockedCustomService" as any,
-            testData: { ab67: "ef67" },
+            testConfig: { ab67: "ef67" },
             appId: "testAppId2",
             id: "testCustomServiceId4",
             plantId: "testPlantId2",
@@ -134,7 +153,7 @@ describe("CustomService", () => {
           "testCustomServiceId5.service.config.json": {
             sampleTime: 500,
             serviceType: "MockedCustomService" as any,
-            testData: { ab89: "ef89" },
+            testConfig: { ab89: "ef89" },
             appId: "testAppId2",
             id: "testCustomServiceId5",
             plantId: "testPlantId3",
@@ -142,7 +161,7 @@ describe("CustomService", () => {
           "testCustomServiceId6.service.config.json": {
             sampleTime: 600,
             serviceType: "MockedCustomService" as any,
-            testData: { ab01: "ef01" },
+            testConfig: { ab01: "ef01" },
             appId: "testAppId2",
             id: "testCustomServiceId6",
             plantId: "testPlantId3",
@@ -150,7 +169,7 @@ describe("CustomService", () => {
           "testCustomServiceId7.service.config.json": {
             sampleTime: 700,
             serviceType: "MockedCustomService" as any,
-            testData: { ab23: "ef23" },
+            testConfig: { ab23: "ef23" },
             appId: "testAppId3",
             id: "testCustomServiceId7",
             plantId: "testPlantId4",
@@ -158,7 +177,7 @@ describe("CustomService", () => {
           "testCustomServiceId8.service.config.json": {
             sampleTime: 800,
             serviceType: "MockedCustomService" as any,
-            testData: { ab45: "ef45" },
+            testConfig: { ab45: "ef45" },
             appId: "testAppId3",
             id: "testCustomServiceId8",
             plantId: "testPlantId4",
@@ -166,7 +185,7 @@ describe("CustomService", () => {
           "testCustomServiceId9.service.config.json": {
             sampleTime: 900,
             serviceType: "MockedCustomService" as any,
-            testData: { ab67: "ef67" },
+            testConfig: { ab67: "ef67" },
             appId: "testAppId3",
             id: "testCustomServiceId9",
             plantId: "testPlantId5",
@@ -233,7 +252,7 @@ describe("CustomService", () => {
       let internalDataStorage = getPrivateProperty(
         result,
         "_dataStorage"
-      ) as MindSphereDataStorage<CustomServicePayload>;
+      ) as MindSphereDataStorage<CustomServiceConfig>;
 
       expect(internalDataStorage).toBeDefined();
       expect(internalDataStorage instanceof MindSphereDataStorage).toEqual(
@@ -310,7 +329,7 @@ describe("CustomService", () => {
         let service = services[serviceId] as MockedCustomService;
         let servicePayload = fileServiceContent["hostTenant"][
           "testServiceContainerAssetId"
-        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
+        ][`${serviceId}.service.config.json`] as MockCustomServiceConfig;
 
         //Checking if init was called properly
         expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
@@ -425,7 +444,7 @@ describe("CustomService", () => {
         let service = services[serviceId] as MockedCustomService;
         let servicePayload = fileServiceContent["hostTenant"][
           "testServiceContainerAssetId"
-        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
+        ][`${serviceId}.service.config.json`] as MockCustomServiceConfig;
 
         //Checking if init was called properly
         expect(service.__onInitMockFunc).toHaveBeenCalledTimes(1);
@@ -1177,7 +1196,7 @@ describe("CustomService", () => {
       let dataStorage = getPrivateProperty(
         customServiceManager,
         "_dataStorage"
-      ) as MindSphereDataStorage<CustomServicePayload>;
+      ) as MindSphereDataStorage<CustomServiceConfig>;
 
       let dataStorageKeys = (await dataStorage.getAllIds()).sort();
 
@@ -1233,7 +1252,7 @@ describe("CustomService", () => {
       let dataStorage = getPrivateProperty(
         customServiceManager,
         "_dataStorage"
-      ) as MindSphereDataStorage<CustomServicePayload>;
+      ) as MindSphereDataStorage<CustomServiceConfig>;
 
       let dataStorageKeys = (await dataStorage.getAllIds()).sort();
 
@@ -1278,7 +1297,7 @@ describe("CustomService", () => {
       let dataStorage = getPrivateProperty(
         customServiceManager,
         "_dataStorage"
-      ) as MindSphereDataStorage<CustomServicePayload>;
+      ) as MindSphereDataStorage<CustomServiceConfig>;
 
       let dataStorageKeys = (await dataStorage.getAllIds()).sort();
 
@@ -1321,7 +1340,7 @@ describe("CustomService", () => {
     let initServices: boolean;
     let serviceId: string;
     let setFileContentThrows: boolean;
-    let payload: MockCustomServicePayload;
+    let payload: MockCustomServiceConfig;
 
     beforeEach(() => {
       serviceId = "testCustomServiceId5";
@@ -1331,7 +1350,7 @@ describe("CustomService", () => {
         id: "testCustomServiceId5",
         sampleTime: 1000,
         serviceType: "MockedCustomService" as any,
-        testData: { oprs: "xyz" },
+        testConfig: { oprs: "xyz" },
         appId: "testAppId2Modified",
         plantId: "testPlantId3Modified",
       };
@@ -1375,7 +1394,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       expect(storageData).toEqual(payload);
 
@@ -1454,7 +1473,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       let initialStorageContent =
         fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
@@ -1477,7 +1496,7 @@ describe("CustomService", () => {
     let customServiceManager: CustomServiceManager;
     let initServices: boolean;
     let setFileContentThrows: boolean;
-    let payload: MockCustomServicePayload;
+    let payload: MockCustomServiceConfig;
     let currentDate: number;
 
     beforeEach(() => {
@@ -1487,7 +1506,7 @@ describe("CustomService", () => {
       payload = {
         sampleTime: 1000,
         serviceType: "MockedCustomService" as any,
-        testData: { oprs: "xyz" },
+        testConfig: { oprs: "xyz" },
         appId: "testAppId2Modified",
         plantId: "testPlantId3Modified",
       };
@@ -1540,7 +1559,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       expect(storageData).toEqual({ ...payload, id: result });
 
@@ -1598,7 +1617,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       expect(storageData).toEqual({ ...payload, id: result });
 
@@ -1644,7 +1663,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       expect(storageData).toEqual({ ...payload, id: result });
 
@@ -1690,7 +1709,7 @@ describe("CustomService", () => {
 
       //#region ===== CHECKING STORAGE =====
 
-      let storageData = await service.getStorageData();
+      let storageData = await service.getConfig();
 
       expect(storageData).toEqual({ ...payload, id: result });
 
@@ -1758,9 +1777,9 @@ describe("CustomService", () => {
         let service = services[serviceId] as MockedCustomService;
         let servicePayload = fileServiceContent["hostTenant"][
           "testServiceContainerAssetId"
-        ][`${serviceId}.service.config.json`] as MockCustomServicePayload;
+        ][`${serviceId}.service.config.json`] as MockCustomServiceConfig;
 
-        let storageData = await service.getStorageData();
+        let storageData = await service.getConfig();
         //Data should stay as it has been initialy
         expect(storageData).toEqual(servicePayload);
 
