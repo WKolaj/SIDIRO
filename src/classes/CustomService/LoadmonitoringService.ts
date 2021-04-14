@@ -179,15 +179,21 @@ class LoadmonitoringService extends CustomService<
       actualData
     );
 
-    this._predictedEnergy = this._caclulatePredictedEnergy(
+    let calculatedPredictedEnergy = this._calculatePredictedEnergy(
       this.HistoricalPoints,
       this.PredictedPoints
     );
 
-    this._predictedPower = this._caclulatePredictedPower(
+    if (calculatedPredictedEnergy != null)
+      this._predictedEnergy = calculatedPredictedEnergy;
+
+    let calculatedPredictedPower = this._calculatePredictedPower(
       this.HistoricalPoints,
       this.PredictedPoints
     );
+
+    if (calculatedPredictedPower != null)
+      this._predictedPower = calculatedPredictedPower;
 
     let shouldWarningBeActive = this._shouldWarningBeActive(
       this.PredictedPower
@@ -408,12 +414,13 @@ class LoadmonitoringService extends CustomService<
     return pointsToReturn;
   }
 
-  private _caclulatePredictedEnergy(
+  private _calculatePredictedEnergy(
     historicalPoints: EnergyPoint[],
     predictedPoints: EnergyPoint[]
-  ): number {
-    if (predictedPoints.length < 1) return 0;
-    if (historicalPoints.length < 1) return 0;
+  ): number | null {
+    //returning null in order to prevent taking this values into account
+    if (predictedPoints.length < 1) return null;
+    if (historicalPoints.length < 1) return null;
 
     let consumptionIncrease =
       predictedPoints[predictedPoints.length - 1].value -
@@ -422,12 +429,13 @@ class LoadmonitoringService extends CustomService<
     return consumptionIncrease;
   }
 
-  private _caclulatePredictedPower(
+  private _calculatePredictedPower(
     historicalPoints: EnergyPoint[],
     predictedPoints: EnergyPoint[]
-  ): number {
-    if (predictedPoints.length < 1) return 0;
-    if (historicalPoints.length < 1) return 0;
+  ): number | null {
+    //returning null in order to prevent taking this values into account
+    if (predictedPoints.length < 1) return null;
+    if (historicalPoints.length < 1) return null;
 
     let consumptionIncrease =
       predictedPoints[predictedPoints.length - 1].value -
