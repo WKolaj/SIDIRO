@@ -8,8 +8,8 @@ export type MindSphereTimeSeriesData = {
 };
 
 export type TimeSeriesData = {
-  [key: string]: {
-    [key: number]: {
+  [variableName: string]: {
+    [timestamp: number]: {
       value: number | boolean | string | null;
       qc?: number;
     };
