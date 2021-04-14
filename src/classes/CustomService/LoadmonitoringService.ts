@@ -154,11 +154,59 @@ class LoadmonitoringService extends CustomService<
   }
 
   protected async _onRefresh(tickId: number): Promise<void> {
-    console.log(`${tickId} - ${this.ID}: service refreshed!`);
+    await this._recalculate(tickId);
   }
 
-  //TODO change to private after testing
-  public _getActualTimeInterval(
+  private async _recalculate(tickId: number) {
+    let actualInterval = this._getActualTimeInterval(
+      Sampler.getCurrentTickNumber()
+    );
+
+    let actualData = await this._getActualData(
+      actualInterval.beginTickId,
+      actualInterval.endTickId
+    );
+
+    this._historicalPoints = this._calculateHistoricalPoints(
+      actualInterval.beginTickId,
+      actualInterval.endTickId,
+      actualData
+    );
+
+    this._predictedPoints = this._calculatePredictedPoints(
+      actualInterval.beginTickId,
+      actualInterval.endTickId,
+      actualData
+    );
+
+    this._predictedEnergy = this._caclulatePredictedEnergy(
+      this.HistoricalPoints,
+      this.PredictedPoints
+    );
+
+    this._predictedPower = this._caclulatePredictedPower(
+      this.HistoricalPoints,
+      this.PredictedPoints
+    );
+
+    let shouldWarningBeActive = this._shouldWarningBeActive(
+      this.PredictedPower
+    );
+
+    if (shouldWarningBeActive && !this.WarningActive)
+      await this._activateWarning(tickId, this.PredictedPower);
+    if (!shouldWarningBeActive && this.WarningActive)
+      await this._deactivateWarning(tickId, this.PredictedPower);
+
+    let shouldAlertBeActive = this._shouldAlertBeActive(this.PredictedPower);
+
+    if (shouldAlertBeActive && !this.AlertActive)
+      await this._activateAlert(tickId, this.PredictedPower);
+    if (!shouldAlertBeActive && this.AlertActive)
+      await this._deactivateAlert(tickId, this.PredictedPower);
+  }
+
+  private _getActualTimeInterval(
     tickId: number
   ): { beginTickId: number; endTickId: number } {
     let intervalInSeconds = this.Interval! * 60;
@@ -170,16 +218,22 @@ class LoadmonitoringService extends CustomService<
     };
   }
 
-  private async _getActualData(tickId: number): Promise<EnergyPoint[]> {
-    let energyPointsToReturn: EnergyPoint[] = [];
+  private async _getActualData(
+    beginTickId: number,
+    endTickId: number
+  ): Promise<EnergyPoint[]> {
+    let mindSphereData = await this._getMindSphereData(beginTickId, endTickId);
 
-    let currentPeriod = this._getActualTimeInterval(tickId);
+    let actualData = this._calculateActualDataBasedOnMindSphereData(
+      beginTickId,
+      endTickId,
+      mindSphereData
+    );
 
-    return energyPointsToReturn;
+    return actualData;
   }
 
-  //TODO change to private after testing
-  public async _getMindSphereData(
+  private async _getMindSphereData(
     beginIntervalTime: number,
     endIntervalTime: number
   ): Promise<
@@ -227,8 +281,7 @@ class LoadmonitoringService extends CustomService<
     return Promise.all(promisesToInvoke);
   }
 
-  //TODO change to private after testing
-  public _calculateActualDataBasedOnMindSphereData(
+  private _calculateActualDataBasedOnMindSphereData(
     beginIntervalTime: number,
     endIntervalTime: number,
     timeSeriesData: {
@@ -288,8 +341,22 @@ class LoadmonitoringService extends CustomService<
     return actualDataToReturn;
   }
 
-  //TODO change to private after testing
-  public _calculateHistoricalPoints(
+  private _getEnergyPointsTimeStamps(
+    beginIntervalTime: number,
+    endIntervalTime: number
+  ): number[] {
+    let points: number[] = [];
+
+    let actualPoint = beginIntervalTime;
+    while (actualPoint <= endIntervalTime) {
+      points.push(actualPoint);
+      actualPoint += 60000;
+    }
+
+    return points;
+  }
+
+  private _calculateHistoricalPoints(
     beginIntervalTime: number,
     endIntervalTime: number,
     actualData: EnergyPoint[]
@@ -297,8 +364,7 @@ class LoadmonitoringService extends CustomService<
     return [...actualData];
   }
 
-  //TODO change to private after testing
-  public _calculatePredictedPoints(
+  private _calculatePredictedPoints(
     beginIntervalTime: number,
     endIntervalTime: number,
     actualData: EnergyPoint[]
@@ -342,20 +408,64 @@ class LoadmonitoringService extends CustomService<
     return pointsToReturn;
   }
 
-  //TODO change to private after testing
-  public _getEnergyPointsTimeStamps(
-    beginIntervalTime: number,
-    endIntervalTime: number
-  ): number[] {
-    let points: number[] = [];
+  private _caclulatePredictedEnergy(
+    historicalPoints: EnergyPoint[],
+    predictedPoints: EnergyPoint[]
+  ): number {
+    if (predictedPoints.length < 1) return 0;
+    if (historicalPoints.length < 1) return 0;
 
-    let actualPoint = beginIntervalTime;
-    while (actualPoint <= endIntervalTime) {
-      points.push(actualPoint);
-      actualPoint += 60000;
-    }
+    let consumptionIncrease =
+      predictedPoints[predictedPoints.length - 1].value -
+      historicalPoints[0].value;
 
-    return points;
+    return consumptionIncrease;
+  }
+
+  private _caclulatePredictedPower(
+    historicalPoints: EnergyPoint[],
+    predictedPoints: EnergyPoint[]
+  ): number {
+    if (predictedPoints.length < 1) return 0;
+    if (historicalPoints.length < 1) return 0;
+
+    let consumptionIncrease =
+      predictedPoints[predictedPoints.length - 1].value -
+      historicalPoints[0].value;
+
+    let interval =
+      predictedPoints[predictedPoints.length - 1].tickId -
+      historicalPoints[0].tickId;
+
+    return (60 * 60 * 1000 * consumptionIncrease) / interval;
+  }
+
+  private _shouldWarningBeActive(predictedPower: number) {
+    return predictedPower >= this.WarningLimit!;
+  }
+
+  private async _activateWarning(tickId: number, predictedPower: number) {
+    console.log(`${tickId}:${predictedPower} - warning activated`);
+    this._warningActive = true;
+  }
+
+  private async _deactivateWarning(tickId: number, predictedPower: number) {
+    console.log(`${tickId}:${predictedPower} - warning deactivated`);
+    this._warningActive = false;
+  }
+
+  private _shouldAlertBeActive(predictedPower: number) {
+    return predictedPower >= this.AlertLimit!;
+  }
+
+  private async _activateAlert(tickId: number, predictedPower: number) {
+    console.log(`${tickId}:${predictedPower} - alert activated`);
+    this._alerActive = true;
+  }
+
+  private async _deactivateAlert(tickId: number, predictedPower: number) {
+    console.log(`${tickId}:${predictedPower} - alert deactivated`);
+    this._alerActive = false;
   }
 
   protected async _onSetStorageData(

@@ -36,37 +36,6 @@ let exec = async () => {
   let serviceManager = CustomServiceManager.getInstance();
 
   await serviceManager.init();
-
-  let service = (await serviceManager.getService(
-    "pGnApF7q10Uq0b23"
-  )) as LoadmonitoringService;
-
-  let interval = service._getActualTimeInterval(Sampler.getCurrentTickNumber());
-
-  let intervalData = await service._getMindSphereData(
-    interval.beginTickId,
-    interval.endTickId
-  );
-
-  let actualData = service._calculateActualDataBasedOnMindSphereData(
-    interval.beginTickId,
-    interval.endTickId,
-    intervalData
-  );
-
-  let historicalData = service._calculateHistoricalPoints(
-    interval.beginTickId,
-    interval.endTickId,
-    actualData
-  );
-  let predictedData = service._calculatePredictedPoints(
-    interval.beginTickId,
-    interval.endTickId,
-    actualData
-  );
-
-  console.log(historicalData);
-  console.log(predictedData);
 };
 
 exec();
