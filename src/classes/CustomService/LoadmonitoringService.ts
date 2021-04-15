@@ -154,7 +154,20 @@ class LoadmonitoringService extends CustomService<
   }
 
   protected async _onRefresh(tickId: number): Promise<void> {
-    await this._recalculate(tickId);
+    if (this.Enabled) {
+      await this._recalculate(tickId);
+    } else {
+      await this._disable();
+    }
+  }
+
+  private async _disable() {
+    this._historicalPoints = [];
+    this._predictedPoints = [];
+    this._alerActive = false;
+    this._alerActive = false;
+    this._predictedPower = 0;
+    this._predictedEnergy = 0;
   }
 
   private async _recalculate(tickId: number) {
