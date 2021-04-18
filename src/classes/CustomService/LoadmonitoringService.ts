@@ -65,7 +65,7 @@ class LoadmonitoringService extends CustomService<
   private _historicalPoints: EnergyPoint[] = [];
   private _predictedPower: number = 0;
   private _predictedEnergy: number = 0;
-  private _alerActive: boolean = false;
+  private _alertActive: boolean = false;
   private _warningActive: boolean = false;
 
   get Enabled() {
@@ -121,7 +121,7 @@ class LoadmonitoringService extends CustomService<
   }
 
   get AlertActive() {
-    return this._alerActive;
+    return this._alertActive;
   }
 
   get WarningActive() {
@@ -164,15 +164,23 @@ class LoadmonitoringService extends CustomService<
   private async _disable() {
     this._historicalPoints = [];
     this._predictedPoints = [];
-    this._alerActive = false;
-    this._alerActive = false;
+    this._alertActive = false;
+    this._alertActive = false;
     this._predictedPower = 0;
     this._predictedEnergy = 0;
   }
 
   private async _recalculate(tickId: number) {
-    let actualInterval = this._getActualTimeInterval(
-      Sampler.getCurrentTickNumber()
+    let actualInterval = this._getActualTimeInterval(tickId);
+
+    this._warningPoints = this._caclulateWarningPoints(
+      actualInterval.beginTickId,
+      actualInterval.endTickId
+    );
+
+    this._alertPoints = this._caclulateAlertPoints(
+      actualInterval.beginTickId,
+      actualInterval.endTickId
     );
 
     let actualData = await this._getActualData(
@@ -208,21 +216,7 @@ class LoadmonitoringService extends CustomService<
     if (calculatedPredictedPower != null)
       this._predictedPower = calculatedPredictedPower;
 
-    let shouldWarningBeActive = this._shouldWarningBeActive(
-      this.PredictedPower
-    );
-
-    if (shouldWarningBeActive && !this.WarningActive)
-      await this._activateWarning(tickId, this.PredictedPower);
-    if (!shouldWarningBeActive && this.WarningActive)
-      await this._deactivateWarning(tickId, this.PredictedPower);
-
-    let shouldAlertBeActive = this._shouldAlertBeActive(this.PredictedPower);
-
-    if (shouldAlertBeActive && !this.AlertActive)
-      await this._activateAlert(tickId, this.PredictedPower);
-    if (!shouldAlertBeActive && this.AlertActive)
-      await this._deactivateAlert(tickId, this.PredictedPower);
+    await this._refreshWarningAndAlertState(tickId, this.PredictedPower);
   }
 
   private _getActualTimeInterval(
@@ -235,6 +229,52 @@ class LoadmonitoringService extends CustomService<
       beginTickId: Sampler.convertTickNumberToDate(beginingOfInterval),
       endTickId: Sampler.convertTickNumberToDate(endOfInterval),
     };
+  }
+
+  private _caclulateAlertPoints(
+    beginTickId: number,
+    endTickId: number
+  ): EnergyPoint[] {
+    let energyPointTimeStamps = this._getEnergyPointsTimeStamps(
+      beginTickId,
+      endTickId
+    );
+    let energyStep = this.AlertLimit! / 60;
+
+    let energyPointsToReturn: EnergyPoint[] = [];
+    for (let i = 0; i < energyPointTimeStamps.length; i++) {
+      let energyPointTimestamp = energyPointTimeStamps[i];
+
+      energyPointsToReturn.push({
+        tickId: energyPointTimestamp,
+        value: energyStep * i,
+      });
+    }
+
+    return energyPointsToReturn;
+  }
+
+  private _caclulateWarningPoints(
+    beginTickId: number,
+    endTickId: number
+  ): EnergyPoint[] {
+    let energyPointTimeStamps = this._getEnergyPointsTimeStamps(
+      beginTickId,
+      endTickId
+    );
+    let energyStep = this.WarningLimit! / 60;
+
+    let energyPointsToReturn: EnergyPoint[] = [];
+    for (let i = 0; i < energyPointTimeStamps.length; i++) {
+      let energyPointTimestamp = energyPointTimeStamps[i];
+
+      energyPointsToReturn.push({
+        tickId: energyPointTimestamp,
+        value: energyStep * i,
+      });
+    }
+
+    return energyPointsToReturn;
   }
 
   private async _getActualData(
@@ -461,32 +501,71 @@ class LoadmonitoringService extends CustomService<
     return (60 * 60 * 1000 * consumptionIncrease) / interval;
   }
 
-  private _shouldWarningBeActive(predictedPower: number) {
-    return predictedPower >= this.WarningLimit!;
+  private async _refreshWarningAndAlertState(
+    tickId: number,
+    predictedPower: number
+  ) {
+    let predictedPowerAboveAlert = predictedPower > this.AlertLimit!;
+    let predictedPowerAboveWarning = predictedPower > this.WarningLimit!;
+
+    if (predictedPowerAboveAlert) {
+      //If going from warning to active - deactivating warning without notification but alert with notification
+      this._warningActive = false;
+      //Power above alert limit (and warning limit)
+      if (!this.AlertActive) {
+        this._alertActive = true;
+        await this._notifyAlertActivation(tickId, predictedPower);
+      }
+    } else if (predictedPowerAboveWarning) {
+      //Power above warning limit only
+
+      //If going from alert to warning - activating warning without sending notificatoin
+      if (this.AlertActive) {
+        this._alertActive = false;
+        this._warningActive = true;
+      }
+      //If going from normal state to warning - sending notification
+      else if (!this.WarningActive) {
+        this._warningActive = true;
+        await this._notifyWarningActivation(tickId, predictedPower);
+      }
+    } else {
+      //If alert is activate and warning is activate - deactivate alert with notification but warning without
+      if (this.AlertActive) {
+        this._warningActive = false;
+        this._alertActive = false;
+        await this._notifyAlertDeactivation(tickId, predictedPower);
+      } else if (this.WarningActive) {
+        //If only warning is active - deactivate warning with notification
+        this._warningActive = false;
+        await this._notifyWarningDeactivation(tickId, predictedPower);
+      }
+    }
   }
 
-  private async _activateWarning(tickId: number, predictedPower: number) {
-    console.log(`${tickId}:${predictedPower} - warning activated`);
-    this._warningActive = true;
+  private async _notifyAlertActivation(tickId: number, predictedPower: number) {
+    //TODO add sending email and push notifications
   }
 
-  private async _deactivateWarning(tickId: number, predictedPower: number) {
-    console.log(`${tickId}:${predictedPower} - warning deactivated`);
-    this._warningActive = false;
+  private async _notifyAlertDeactivation(
+    tickId: number,
+    predictedPower: number
+  ) {
+    //TODO add sending email and push notifications
   }
 
-  private _shouldAlertBeActive(predictedPower: number) {
-    return predictedPower >= this.AlertLimit!;
+  private async _notifyWarningActivation(
+    tickId: number,
+    predictedPower: number
+  ) {
+    //TODO add sending email and push notifications
   }
 
-  private async _activateAlert(tickId: number, predictedPower: number) {
-    console.log(`${tickId}:${predictedPower} - alert activated`);
-    this._alerActive = true;
-  }
-
-  private async _deactivateAlert(tickId: number, predictedPower: number) {
-    console.log(`${tickId}:${predictedPower} - alert deactivated`);
-    this._alerActive = false;
+  private async _notifyWarningDeactivation(
+    tickId: number,
+    predictedPower: number
+  ) {
+    //TODO add sending email and push notifications
   }
 
   protected async _onSetStorageData(

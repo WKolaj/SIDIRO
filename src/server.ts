@@ -1,41 +1,65 @@
 // import appStart from "./startup/app";
 
-import CustomServiceManager, {
-  CustomServiceType,
-} from "./classes/CustomService/CustomServiceManager";
-import LoadmonitoringService, {
-  LoadmonitoringConfig,
-} from "./classes/CustomService/LoadmonitoringService";
-import Sampler from "./classes/Sampler/Sampler";
+import { CalulculatePredictedPowerAndEnergy } from "./tests/utilities/loadmonitoringCalculationUtilities";
 
 // export default appStart(__dirname);
+let tickId: number = 1618474020000; // 2021-04-15T07:07:00.000Z
 
-let exec = async () => {
-  //   let loadmonitoringServicePayload: LoadmonitoringConfig = {
-  //     appId: "ten-sidivp-sub-4147f8f83d49a609943fa8875f9ae89b",
-  //     plantId: "zimna-wodka-plant",
-  //     sampleTime: 60,
-  //     serviceType: CustomServiceType.LoadmonitoringService,
-  //     enabled: true,
-  //     tenant: "sidivp",
-  //     assetIds: [
-  //       {
-  //         assetId: "453abff100514e52ab7d29542b550271",
-  //         aspectId: "DATA_1_MIN",
-  //         variableName: "Active_Energy_Import",
-  //         multiplier: 0.001,
-  //       },
-  //     ],
-  //     powerLosses: 10,
-  //     alertLimit: 250,
-  //     warningLimit: 200,
-  //     mailingList: ["wkolaj@gmail.com", "witold.kolaj@siemens.com"],
-  //     interval: 15,
-  //   };
+let interval: number = 10;
 
-  let serviceManager = CustomServiceManager.getInstance();
+let values: { [tickId: number]: { value: number } }[] = [
+  {
+    "1618473360000": { value: 100 }, //2021-04-15T07:56:00.000Z
+    "1618473420000": { value: 105 }, //2021-04-15T07:57:00.000Z
+    "1618473480000": { value: 120 }, //2021-04-15T07:58:00.000Z
+    "1618473540000": { value: 135 }, //2021-04-15T07:59:00.000Z
+    "1618473600000": { value: 140 }, //2021-04-15T08:00:00.000Z
+    "1618473660000": { value: 145 }, //2021-04-15T08:01:00.000Z
+    "1618473720000": { value: 160 }, //2021-04-15T08:02:00.000Z
+    "1618473780000": { value: 165 }, //2021-04-15T07:03:00.000Z
+    "1618473840000": { value: 180 }, //2021-04-15T07:04:00.000Z
+    "1618473900000": { value: 185 }, //2021-04-15T07:05:00.000Z
+    "1618473960000": { value: 200 }, //2021-04-15T07:06:00.000Z
+    "1618474020000": { value: 205 }, //2021-04-15T07:07:00.000Z
+  },
+  {
+    "1618473360000": { value: 100 }, //2021-04-15T07:56:00.000Z
+    "1618473420000": { value: 102 }, //2021-04-15T07:57:00.000Z
+    "1618473480000": { value: 103 }, //2021-04-15T07:58:00.000Z
+    "1618473540000": { value: 105 }, //2021-04-15T07:59:00.000Z
+    "1618473600000": { value: 106 }, //2021-04-15T08:00:00.000Z
+    "1618473660000": { value: 108 }, //2021-04-15T08:01:00.000Z
+    "1618473720000": { value: 109 }, //2021-04-15T08:02:00.000Z
+    "1618473780000": { value: 111 }, //2021-04-15T07:03:00.000Z
+    "1618473840000": { value: 112 }, //2021-04-15T07:04:00.000Z
+    "1618473900000": { value: 114 }, //2021-04-15T07:05:00.000Z
+    "1618473960000": { value: 115 }, //2021-04-15T07:06:00.000Z
+    "1618474020000": { value: 117 }, //2021-04-15T07:07:00.000Z
+  },
+  {
+    "1618473360000": { value: 102 }, //2021-04-15T07:56:00.000Z
+    "1618473420000": { value: 104 }, //2021-04-15T07:57:00.000Z
+    "1618473480000": { value: 116 }, //2021-04-15T07:58:00.000Z
+    "1618473540000": { value: 118 }, //2021-04-15T07:59:00.000Z
+    "1618473600000": { value: 120 }, //2021-04-15T08:00:00.000Z
+    "1618473660000": { value: 122 }, //2021-04-15T08:01:00.000Z
+    "1618473720000": { value: 134 }, //2021-04-15T08:02:00.000Z
+    "1618473780000": { value: 136 }, //2021-04-15T07:03:00.000Z
+    "1618473840000": { value: 148 }, //2021-04-15T07:04:00.000Z
+    "1618473900000": { value: 150 }, //2021-04-15T07:05:00.000Z
+    "1618473960000": { value: 162 }, //2021-04-15T07:06:00.000Z
+    "1618474020000": { value: 164 }, //2021-04-15T07:07:00.000Z
+  },
+];
 
-  await serviceManager.init();
-};
+let powerLosses: number = 120;
 
-exec();
+console.log(
+  CalulculatePredictedPowerAndEnergy(
+    tickId,
+    values,
+    [1, 2, 3],
+    powerLosses,
+    interval
+  )
+);
