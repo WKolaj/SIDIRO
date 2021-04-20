@@ -64,7 +64,7 @@ class MockedCustomService extends CustomService<
     return this.__onSetStorageDataMockFunc(payload);
   }
 
-  public async getPayloadData(): Promise<MockCustomServiceData> {
+  public async getData(): Promise<MockCustomServiceData> {
     return {
       initTickId: this.InitTickID,
       initialized: this.Initialized,

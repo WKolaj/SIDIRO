@@ -49,7 +49,7 @@ export interface LoadmonitoringData extends CustomServiceData {
   predictedPoints: EnergyPoint[];
   warningActive: boolean;
   alertActive: boolean;
-  predictedConsumption: number;
+  predictedEnergy: number;
   predictedPower: number;
 }
 
@@ -175,7 +175,6 @@ class LoadmonitoringService extends CustomService<
     this._warningLimit = data.warningLimit;
     this._mailingList = data.mailingList;
     this._interval = data.interval;
-    //TODO - test init email contents
     await this._initEmailContents();
   }
 
@@ -597,64 +596,104 @@ class LoadmonitoringService extends CustomService<
   }
 
   private async _notifyAlertActivation(tickId: number, predictedPower: number) {
-    try {
-      await this._sendEmails(tickId, predictedPower, "alert");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
-    try {
-      await this._sendNotifications(tickId, predictedPower, "alert");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
+    await Promise.all([
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendEmails(tickId, predictedPower, "alert");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendNotifications(tickId, predictedPower, "alert");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+    ]);
   }
 
   private async _notifyAlertDeactivation(
     tickId: number,
     predictedPower: number
   ) {
-    try {
-      await this._sendEmails(tickId, predictedPower, "returning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
-    try {
-      await this._sendNotifications(tickId, predictedPower, "returning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
+    await Promise.all([
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendEmails(tickId, predictedPower, "returning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendNotifications(tickId, predictedPower, "returning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+    ]);
   }
 
   private async _notifyWarningActivation(
     tickId: number,
     predictedPower: number
   ) {
-    try {
-      await this._sendEmails(tickId, predictedPower, "warning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
-    try {
-      await this._sendNotifications(tickId, predictedPower, "warning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
+    await Promise.all([
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendEmails(tickId, predictedPower, "warning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendNotifications(tickId, predictedPower, "warning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+    ]);
   }
 
   private async _notifyWarningDeactivation(
     tickId: number,
     predictedPower: number
   ) {
-    try {
-      await this._sendEmails(tickId, predictedPower, "returning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
-    try {
-      await this._sendNotifications(tickId, predictedPower, "returning");
-    } catch (err) {
-      logger.error(err.message, err);
-    }
+    await Promise.all([
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendEmails(tickId, predictedPower, "returning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+      new Promise<boolean>(async (resolve, reject) => {
+        try {
+          await this._sendNotifications(tickId, predictedPower, "returning");
+          return resolve(true);
+        } catch (err) {
+          logger.error(err.message, err);
+          return resolve(false);
+        }
+      }),
+    ]);
   }
 
   private async _sendEmails(
@@ -872,7 +911,7 @@ class LoadmonitoringService extends CustomService<
           case "returning": {
             content = {
               title: "Loadmonitoring info!",
-              body: `redicted power below limits again: ${powerText} kW`,
+              body: `Predicted power below limits again: ${powerText} kW`,
               icon: config.notificationSending.infoIcon,
             };
             break;
@@ -940,7 +979,7 @@ class LoadmonitoringService extends CustomService<
     this._interval = payload.interval;
   }
 
-  public async getPayloadData(): Promise<LoadmonitoringData> {
+  public async getData(): Promise<LoadmonitoringData> {
     if (!this.Initialized) throw new Error("Service not initialized!");
     return {
       initTickId: this.InitTickID,
@@ -952,7 +991,7 @@ class LoadmonitoringService extends CustomService<
       predictedPoints: this.PredictedPoints!,
       warningActive: this.WarningActive!,
       alertActive: this.AlertActive!,
-      predictedConsumption: this.PredictedEnergy!,
+      predictedEnergy: this.PredictedEnergy!,
       predictedPower: this.PredictedPower!,
     };
   }

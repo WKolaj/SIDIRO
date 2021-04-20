@@ -5,14 +5,14 @@ import { MailOptions } from "nodemailer/lib/json-transport";
 
 export default class MailSender {
   private static _instance: MailSender | null = null;
-  private transporter: Mail;
+  private _transporter: Mail;
   private constructor(
     host: string,
     port: number,
     user: string,
     password: string
   ) {
-    this.transporter = nodemailer.createTransport({
+    this._transporter = nodemailer.createTransport({
       pool: true,
       host: host,
       port: port,
@@ -43,6 +43,8 @@ export default class MailSender {
       html: html,
     };
 
-    return this.transporter.sendMail(mailOptions);
+    return this._transporter.sendMail(mailOptions);
   }
 }
+
+//TODO - test this class

@@ -9,10 +9,15 @@ import {
 import logger from "../../../../logger/logger";
 import { MindSphereDataStorage } from "../../../../classes/DataStorage/MindSphereDataStorage";
 import {
+  invokePrivateMethod,
   setPrivateProperty,
   testPrivateProperty,
 } from "../../../utilities/utilities";
-import { cloneObject } from "../../../../utilities/utilities";
+import {
+  cloneObject,
+  readDirAsync,
+  readFileAsync,
+} from "../../../../utilities/utilities";
 import { MindSphereTimeSeriesService } from "../../../../classes/MindSphereService/MindSphereTimeSeriesService";
 import {
   MockedTimeSeriesServiceContent,
@@ -23,6 +28,10 @@ import LoadmonitoringService, {
   LoadmonitoringConfig,
 } from "../../../../classes/CustomService/LoadmonitoringService";
 import { CustomServiceType } from "../../../../classes/CustomService/CustomServiceManager";
+import webpush from "web-push";
+import nodemailer from "nodemailer";
+import MailSender from "../../../../classes/MailSender/MailSender";
+import NotificationManager from "../../../../classes/NotificationManager/NotificationManager";
 
 describe("LoadmonitoringService", () => {
   let fileServiceContent: MockedFileServiceContent;
@@ -33,6 +42,14 @@ describe("LoadmonitoringService", () => {
     //Clearing MindSphereServices
     (MindSphereFileService as any)._instance = null;
     (MindSphereTimeSeriesService as any)._instance = null;
+
+    //Clearing sending mails and notification
+    (MailSender as any)._instance = null;
+    (NotificationManager as any)._instance = null;
+
+    //Reseting throwing by webpush and nodemailer
+    (webpush as any).__setThrowOnNotification(null);
+    (nodemailer as any).__setThrowOnEmail(null);
 
     fileServiceContent = {
       hostTenant: {
@@ -68,11 +85,60 @@ describe("LoadmonitoringService", () => {
             powerLosses: 123,
             alertLimit: 500,
             warningLimit: 600,
-            mailingList: [],
+            mailingList: [
+              {
+                email: "testEmail1@test.mail.com",
+                language: "en",
+              },
+              {
+                email: "testEmail2@test.mail.com",
+                language: "pl",
+              },
+              {
+                email: "testEmail3@test.mail.com",
+                language: "en",
+              },
+            ],
             interval: 600,
           },
         },
-        notificationsAssetId: {},
+        notificationsAssetId: {
+          "testLoadmonitoringServiceId1.sub.json": [
+            {
+              language: "pl",
+              subscriptionData: {
+                endpoint: "testEndpoint1",
+                expirationTime: null,
+                keys: {
+                  p256dh: "testKey1",
+                  auth: "testAuth1",
+                },
+              },
+            },
+            {
+              language: "en",
+              subscriptionData: {
+                endpoint: "testEndpoint2",
+                expirationTime: null,
+                keys: {
+                  p256dh: "testKey2",
+                  auth: "testAuth2",
+                },
+              },
+            },
+            {
+              language: "pl",
+              subscriptionData: {
+                endpoint: "testEndpoint3",
+                expirationTime: null,
+                keys: {
+                  p256dh: "testKey3",
+                  auth: "testAuth3",
+                },
+              },
+            },
+          ],
+        },
       },
     };
 
@@ -4103,6 +4169,14 @@ describe("LoadmonitoringService", () => {
     (MindSphereFileService as any)._instance = null;
     (MindSphereTimeSeriesService as any)._instance = null;
 
+    //Clearing sending mails and notification
+    (MailSender as any)._instance = null;
+    (NotificationManager as any)._instance = null;
+
+    //Reseting throwing by webpush and nodemailer
+    (webpush as any).__setThrowOnNotification(null);
+    (nodemailer as any).__setThrowOnEmail(null);
+
     jest.clearAllMocks();
   });
 
@@ -4120,7 +4194,7 @@ describe("LoadmonitoringService", () => {
       dataStorage = new MindSphereDataStorage(
         "hostTenant",
         "testServiceContainerAssetId",
-        ".service.config.json"
+        "service.config.json"
       );
     });
 
@@ -4220,7 +4294,7 @@ describe("LoadmonitoringService", () => {
       dataStorage = new MindSphereDataStorage(
         "hostTenant",
         "testServiceContainerAssetId",
-        ".service.config.json"
+        "service.config.json"
       );
     });
 
@@ -4279,6 +4353,77 @@ describe("LoadmonitoringService", () => {
 
       //Loadmonitoring should not have been refreshed
       expect(loadmonitoringService.LastRefreshTickID).toEqual(null);
+    });
+
+    it("should email content properties", async () => {
+      await exec();
+
+      const alertEmailContentPLPath = "emailTemplates/alertActivation_pl.html";
+      const alertEmailContentENPath = "emailTemplates/alertActivation_en.html";
+      const warningEmailContentPLPath =
+        "emailTemplates/warningActivation_pl.html";
+      const warningEmailContentENPath =
+        "emailTemplates/warningActivation_en.html";
+      const returnEmailContentPLPath =
+        "emailTemplates/returnToNormalState_pl.html";
+      const returnEmailContentENPath =
+        "emailTemplates/returnToNormalState_en.html";
+
+      let alertEmailContentEN = await readFileAsync(
+        alertEmailContentENPath,
+        "utf8"
+      );
+      let alertEmailContentPL = await readFileAsync(
+        alertEmailContentPLPath,
+        "utf8"
+      );
+      let warningEmailContentEN = await readFileAsync(
+        warningEmailContentENPath,
+        "utf8"
+      );
+      let warningEmailContentPL = await readFileAsync(
+        warningEmailContentPLPath,
+        "utf8"
+      );
+      let returnEmailContentEN = await readFileAsync(
+        returnEmailContentENPath,
+        "utf8"
+      );
+      let returnEmailContentPL = await readFileAsync(
+        returnEmailContentPLPath,
+        "utf8"
+      );
+
+      testPrivateProperty(
+        loadmonitoringService,
+        "_alertEmailContentPL",
+        alertEmailContentPL
+      );
+      testPrivateProperty(
+        loadmonitoringService,
+        "_alertEmailContentEN",
+        alertEmailContentEN
+      );
+      testPrivateProperty(
+        loadmonitoringService,
+        "_warningEmailContentPL",
+        warningEmailContentPL
+      );
+      testPrivateProperty(
+        loadmonitoringService,
+        "_warningEmailContentEN",
+        warningEmailContentEN
+      );
+      testPrivateProperty(
+        loadmonitoringService,
+        "_returnEmailContentPL",
+        returnEmailContentPL
+      );
+      testPrivateProperty(
+        loadmonitoringService,
+        "_returnEmailContentEN",
+        returnEmailContentEN
+      );
     });
 
     it("should not change id - even if there is different id in payload", async () => {
@@ -4426,7 +4571,7 @@ describe("LoadmonitoringService", () => {
       dataStorage = new MindSphereDataStorage(
         "hostTenant",
         "testServiceContainerAssetId",
-        ".service.config.json"
+        "service.config.json"
       );
       getTimeSeriesThrows = false;
 
@@ -6707,6 +6852,2608 @@ describe("LoadmonitoringService", () => {
       expectedErrorText = null;
 
       await testRefresh();
+    });
+  });
+
+  describe("_notifyAlertActivation", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let tickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialize: boolean;
+    let predictedPower: number;
+    let nodemailerSendMailFunc: jest.Mock;
+    let webpushSendNotificationFunc: jest.Mock;
+    let alertEmailContentPL: string;
+    let alertEmailContentEN: string;
+    let alertEmailSubjectPL: string;
+    let alertEmailSubjectEN: string;
+    let alertNotificationContentPL: string;
+    let alertNotificationContentEN: string;
+    let initNotificationManager: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialize = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      initNotificationManager = true;
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+
+      nodemailerSendMailFunc = (nodemailer as any).__sendMailTransportFunc;
+      webpushSendNotificationFunc = webpush.sendNotification as jest.Mock;
+
+      predictedPower = 1234;
+      tickId = 1618474020; //* 1000 = 2021-04-15T07:07:00.000Z
+
+      alertEmailContentPL = await readFileAsync(
+        "emailTemplates/alertActivation_pl.html",
+        "utf-8"
+      );
+      alertEmailContentPL = alertEmailContentPL
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      alertEmailContentEN = await readFileAsync(
+        "emailTemplates/alertActivation_en.html",
+        "utf-8"
+      );
+      alertEmailContentEN = alertEmailContentEN
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      alertEmailSubjectPL = `Alarm! - Przewidywane przekrocznie mocy!: ${predictedPower.toFixed(
+        2
+      )}`;
+      alertEmailSubjectEN = `Alert! - Incoming power exceeding: ${predictedPower.toFixed(
+        2
+      )}`;
+
+      alertNotificationContentEN = JSON.stringify({
+        title: "Loadmonitoring alert!",
+        body: `Incoming power exceeding: ${predictedPower.toFixed(2)} kW`,
+        icon: "testAlertIconPath",
+      });
+
+      alertNotificationContentPL = JSON.stringify({
+        title: "Strażnik mocy - alarm!",
+        body: `Nadchodzące przekroczenie mocy: ${predictedPower.toFixed(2)} kW`,
+        icon: "testAlertIconPath",
+      });
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialize)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      if (initNotificationManager)
+        await NotificationManager.getInstance().init();
+
+      return invokePrivateMethod(
+        loadmonitoringService,
+        "_notifyAlertActivation",
+        [tickId, predictedPower]
+      );
+    };
+
+    it("should send emails to all registers user from mailingList", async () => {
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: alertEmailSubjectPL,
+          html: alertEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should send notifications to all registers user from notificationList", async () => {
+      await exec();
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        alertNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any email - if mailing list is emtpy", async () => {
+      initPayload.mailingList = [];
+
+      await exec();
+
+      //Any email should not have been send
+      expect(nodemailerSendMailFunc).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if notification object is empty in fileService", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"][
+        "testLoadmonitoringServiceId1.sub.json"
+      ] = [];
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if there is no notification file for given service", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"] = {};
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification but not throw and send all emails - if notification service was not initialized", async () => {
+      initNotificationManager = false;
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: alertEmailSubjectPL,
+          html: alertEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "NotificationManager not initialized!"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one email throws", async () => {
+      (nodemailer as any).__setThrowOnEmail("testEmail1@test.mail.com");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: alertEmailSubjectPL,
+          html: alertEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        alertNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "TestSendMailTransportError"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one notification throws", async () => {
+      (webpush as any).__setThrowOnNotification("testEndpoint1");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: alertEmailSubjectPL,
+          html: alertEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: alertEmailSubjectEN,
+          html: alertEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        alertNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        alertNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test send notification error"
+      );
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("_notifyWarningActivation", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let tickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialize: boolean;
+    let predictedPower: number;
+    let nodemailerSendMailFunc: jest.Mock;
+    let webpushSendNotificationFunc: jest.Mock;
+    let warningEmailContentPL: string;
+    let warningEmailContentEN: string;
+    let warningEmailSubjectPL: string;
+    let warningEmailSubjectEN: string;
+    let warningNotificationContentPL: string;
+    let warningNotificationContentEN: string;
+    let initNotificationManager: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialize = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      initNotificationManager = true;
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+
+      nodemailerSendMailFunc = (nodemailer as any).__sendMailTransportFunc;
+      webpushSendNotificationFunc = webpush.sendNotification as jest.Mock;
+
+      predictedPower = 1234;
+      tickId = 1618474020; //* 1000 = 2021-04-15T07:07:00.000Z
+
+      warningEmailContentPL = await readFileAsync(
+        "emailTemplates/warningActivation_pl.html",
+        "utf-8"
+      );
+      warningEmailContentPL = warningEmailContentPL
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      warningEmailContentEN = await readFileAsync(
+        "emailTemplates/warningActivation_en.html",
+        "utf-8"
+      );
+      warningEmailContentEN = warningEmailContentEN
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      warningEmailSubjectPL = `Ostrzeżenie! - Przewidywana moc ponad progiem ostrzeżenia: ${predictedPower.toFixed(
+        2
+      )}`;
+      warningEmailSubjectEN = `Warning! - Predicted power above warning limit: ${predictedPower.toFixed(
+        2
+      )}`;
+
+      warningNotificationContentEN = JSON.stringify({
+        title: "Loadmonitoring warning!",
+        body: `Predicted power above warning limit: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testWarningIconPath",
+      });
+
+      warningNotificationContentPL = JSON.stringify({
+        title: "Strażnik mocy - ostrzeżenie!",
+        body: `Przewidywana moc ponad progiem ostrzeżenia: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testWarningIconPath",
+      });
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialize)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      if (initNotificationManager)
+        await NotificationManager.getInstance().init();
+
+      return invokePrivateMethod(
+        loadmonitoringService,
+        "_notifyWarningActivation",
+        [tickId, predictedPower]
+      );
+    };
+
+    it("should send emails to all registers user from mailingList", async () => {
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: warningEmailSubjectPL,
+          html: warningEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should send notifications to all registers user from notificationList", async () => {
+      await exec();
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        warningNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any email - if mailing list is emtpy", async () => {
+      initPayload.mailingList = [];
+
+      await exec();
+
+      //Any email should not have been send
+      expect(nodemailerSendMailFunc).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if notification object is empty in fileService", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"][
+        "testLoadmonitoringServiceId1.sub.json"
+      ] = [];
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if there is no notification file for given service", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"] = {};
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification but not throw and send all emails - if notification service was not initialized", async () => {
+      initNotificationManager = false;
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: warningEmailSubjectPL,
+          html: warningEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "NotificationManager not initialized!"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one email throws", async () => {
+      (nodemailer as any).__setThrowOnEmail("testEmail1@test.mail.com");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: warningEmailSubjectPL,
+          html: warningEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        warningNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "TestSendMailTransportError"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one notification throws", async () => {
+      (webpush as any).__setThrowOnNotification("testEndpoint1");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: warningEmailSubjectPL,
+          html: warningEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: warningEmailSubjectEN,
+          html: warningEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        warningNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        warningNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test send notification error"
+      );
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("_notifyAlertDeactivation", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let tickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialize: boolean;
+    let predictedPower: number;
+    let nodemailerSendMailFunc: jest.Mock;
+    let webpushSendNotificationFunc: jest.Mock;
+    let returnEmailContentPL: string;
+    let returnEmailContentEN: string;
+    let returnEmailSubjectPL: string;
+    let returnEmailSubjectEN: string;
+    let returnNotificationContentPL: string;
+    let returnNotificationContentEN: string;
+    let initNotificationManager: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialize = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      initNotificationManager = true;
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+
+      nodemailerSendMailFunc = (nodemailer as any).__sendMailTransportFunc;
+      webpushSendNotificationFunc = webpush.sendNotification as jest.Mock;
+
+      predictedPower = 1234;
+      tickId = 1618474020; //* 1000 = 2021-04-15T07:07:00.000Z
+
+      returnEmailContentPL = await readFileAsync(
+        "emailTemplates/returnToNormalState_pl.html",
+        "utf-8"
+      );
+      returnEmailContentPL = returnEmailContentPL
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      returnEmailContentEN = await readFileAsync(
+        "emailTemplates/returnToNormalState_en.html",
+        "utf-8"
+      );
+      returnEmailContentEN = returnEmailContentEN
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      returnEmailSubjectPL = `Informacja! - Przewidywana moc poniżej progów ostrzeżeniowych: ${predictedPower.toFixed(
+        2
+      )}`;
+      returnEmailSubjectEN = `Information! - Predicted power below limits: ${predictedPower.toFixed(
+        2
+      )}`;
+
+      returnNotificationContentEN = JSON.stringify({
+        title: "Loadmonitoring info!",
+        body: `Predicted power below limits again: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testInfoIconPath",
+      });
+
+      returnNotificationContentPL = JSON.stringify({
+        title: "Strażnik mocy - info!",
+        body: `Powrót mocy ponizej progów alarmowych: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testInfoIconPath",
+      });
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialize)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      if (initNotificationManager)
+        await NotificationManager.getInstance().init();
+
+      return invokePrivateMethod(
+        loadmonitoringService,
+        "_notifyAlertDeactivation",
+        [tickId, predictedPower]
+      );
+    };
+
+    it("should send emails to all registers user from mailingList", async () => {
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should send notifications to all registers user from notificationList", async () => {
+      await exec();
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any email - if mailing list is emtpy", async () => {
+      initPayload.mailingList = [];
+
+      await exec();
+
+      //Any email should not have been send
+      expect(nodemailerSendMailFunc).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if notification object is empty in fileService", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"][
+        "testLoadmonitoringServiceId1.sub.json"
+      ] = [];
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if there is no notification file for given service", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"] = {};
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification but not throw and send all emails - if notification service was not initialized", async () => {
+      initNotificationManager = false;
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "NotificationManager not initialized!"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one email throws", async () => {
+      (nodemailer as any).__setThrowOnEmail("testEmail1@test.mail.com");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "TestSendMailTransportError"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one notification throws", async () => {
+      (webpush as any).__setThrowOnNotification("testEndpoint1");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test send notification error"
+      );
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("_notifyWarningDeactivation", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let tickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialize: boolean;
+    let predictedPower: number;
+    let nodemailerSendMailFunc: jest.Mock;
+    let webpushSendNotificationFunc: jest.Mock;
+    let returnEmailContentPL: string;
+    let returnEmailContentEN: string;
+    let returnEmailSubjectPL: string;
+    let returnEmailSubjectEN: string;
+    let returnNotificationContentPL: string;
+    let returnNotificationContentEN: string;
+    let initNotificationManager: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialize = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      initNotificationManager = true;
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+
+      nodemailerSendMailFunc = (nodemailer as any).__sendMailTransportFunc;
+      webpushSendNotificationFunc = webpush.sendNotification as jest.Mock;
+
+      predictedPower = 1234;
+      tickId = 1618474020; //* 1000 = 2021-04-15T07:07:00.000Z
+
+      returnEmailContentPL = await readFileAsync(
+        "emailTemplates/returnToNormalState_pl.html",
+        "utf-8"
+      );
+      returnEmailContentPL = returnEmailContentPL
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      returnEmailContentEN = await readFileAsync(
+        "emailTemplates/returnToNormalState_en.html",
+        "utf-8"
+      );
+      returnEmailContentEN = returnEmailContentEN
+        .replace("$PREDICTED_POWER", predictedPower.toFixed(2))
+        .replace("$ACTUAL_DATE", new Date(tickId).toISOString());
+
+      returnEmailSubjectPL = `Informacja! - Przewidywana moc poniżej progów ostrzeżeniowych: ${predictedPower.toFixed(
+        2
+      )}`;
+      returnEmailSubjectEN = `Information! - Predicted power below limits: ${predictedPower.toFixed(
+        2
+      )}`;
+
+      returnNotificationContentEN = JSON.stringify({
+        title: "Loadmonitoring info!",
+        body: `Predicted power below limits again: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testInfoIconPath",
+      });
+
+      returnNotificationContentPL = JSON.stringify({
+        title: "Strażnik mocy - info!",
+        body: `Powrót mocy ponizej progów alarmowych: ${predictedPower.toFixed(
+          2
+        )} kW`,
+        icon: "testInfoIconPath",
+      });
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialize)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      if (initNotificationManager)
+        await NotificationManager.getInstance().init();
+
+      return invokePrivateMethod(
+        loadmonitoringService,
+        "_notifyWarningDeactivation",
+        [tickId, predictedPower]
+      );
+    };
+
+    it("should send emails to all registers user from mailingList", async () => {
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should send notifications to all registers user from notificationList", async () => {
+      await exec();
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any email - if mailing list is emtpy", async () => {
+      initPayload.mailingList = [];
+
+      await exec();
+
+      //Any email should not have been send
+      expect(nodemailerSendMailFunc).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if notification object is empty in fileService", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"][
+        "testLoadmonitoringServiceId1.sub.json"
+      ] = [];
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification - if there is no notification file for given service", async () => {
+      fileServiceContent["hostTenant"]["notificationsAssetId"] = {};
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not send any notification but not throw and send all emails - if notification service was not initialized", async () => {
+      initNotificationManager = false;
+
+      await exec();
+
+      //Notifications should not have been called
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "NotificationManager not initialized!"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one email throws", async () => {
+      (nodemailer as any).__setThrowOnEmail("testEmail1@test.mail.com");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "TestSendMailTransportError"
+      );
+    });
+
+    it("should not throw and send other emails and notifications - if sending one notification throws", async () => {
+      (webpush as any).__setThrowOnNotification("testEndpoint1");
+
+      await exec();
+
+      //Nodemailer's transport should be created properly
+      expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+      expect((nodemailer.createTransport as jest.Mock).mock.calls[0]).toEqual([
+        {
+          pool: true,
+          host: "testEmail@test.email.com",
+          port: 1234,
+          secure: true,
+          auth: {
+            user: "testUserName",
+            pass: "testUserPassword",
+          },
+        },
+      ]);
+
+      //Email should have been send to every registered mail
+      expect(nodemailerSendMailFunc).toHaveBeenCalledTimes(3);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail1@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail2@test.mail.com",
+          subject: returnEmailSubjectPL,
+          html: returnEmailContentPL,
+        },
+      ]);
+      expect(nodemailerSendMailFunc.mock.calls).toContainEqual([
+        {
+          from: "testUserName",
+          to: "testEmail3@test.mail.com",
+          subject: returnEmailSubjectEN,
+          html: returnEmailContentEN,
+        },
+      ]);
+
+      //Webpush vapid keys should be applied properly
+      expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+      expect((webpush.setVapidDetails as jest.Mock).mock.calls[0]).toEqual([
+        `mailto:<testNotification@test.email.com>`,
+        "testNotificationPublicKey",
+        "testNotificationPrivateKey",
+      ]);
+
+      //Email should have been send to every registered user
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][0].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][1].subscriptionData,
+        returnNotificationContentEN,
+      ]);
+      expect(webpushSendNotificationFunc.mock.calls).toContainEqual([
+        fileServiceContent["hostTenant"]["notificationsAssetId"][
+          "testLoadmonitoringServiceId1.sub.json"
+        ][2].subscriptionData,
+        returnNotificationContentPL,
+      ]);
+
+      //there should be no error registered by log
+      expect(logErrorMockFunc).toHaveBeenCalledTimes(1);
+      expect(logErrorMockFunc.mock.calls[0][0]).toEqual(
+        "Test send notification error"
+      );
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("getData", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialized: boolean;
+    let warningPoints: EnergyPoint[];
+    let alertPoints: EnergyPoint[];
+    let predictedPoints: EnergyPoint[];
+    let historicalPoints: EnergyPoint[];
+    let predictedPower: number;
+    let predictedEnergy: number;
+    let alertActive: boolean;
+    let warningActive: boolean;
+    let lastRefreshTickId: number | null;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialized = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+
+      historicalPoints = [
+        {
+          tickId: 1618473600000,
+          value: 0,
+        },
+        {
+          tickId: 1618473660000,
+          value: 17,
+        },
+        {
+          tickId: 1618473720000,
+          value: 72,
+        },
+        {
+          tickId: 1618473780000,
+          value: 89,
+        },
+        {
+          tickId: 1618473840000,
+          value: 144,
+        },
+        {
+          tickId: 1618473900000,
+          value: 161,
+        },
+        {
+          tickId: 1618473960000,
+          value: 216,
+        },
+        {
+          tickId: 1618474020000,
+          value: 233,
+        },
+      ];
+      predictedPoints = [
+        {
+          tickId: 1618474020000,
+          value: 233,
+        },
+        {
+          tickId: 1618474080000,
+          value: 250,
+        },
+        {
+          tickId: 1618474140000,
+          value: 267,
+        },
+        {
+          tickId: 1618474200000,
+          value: 284,
+        },
+      ];
+      predictedEnergy = 284;
+      predictedPower = 1704;
+      warningPoints = [
+        {
+          tickId: 1618473600000,
+          value: 0,
+        },
+        {
+          tickId: 1618473660000,
+          value: 25,
+        },
+        {
+          tickId: 1618473720000,
+          value: 50,
+        },
+        {
+          tickId: 1618473780000,
+          value: 75,
+        },
+        {
+          tickId: 1618473840000,
+          value: 100,
+        },
+        {
+          tickId: 1618473900000,
+          value: 125,
+        },
+        {
+          tickId: 1618473960000,
+          value: 150,
+        },
+        {
+          tickId: 1618474020000,
+          value: 175,
+        },
+        {
+          tickId: 1618474080000,
+          value: 200,
+        },
+        {
+          tickId: 1618474140000,
+          value: 225,
+        },
+        {
+          tickId: 1618474200000,
+          value: 250,
+        },
+      ];
+      alertPoints = [
+        {
+          tickId: 1618473600000,
+          value: 0,
+        },
+        {
+          tickId: 1618473660000,
+          value: 35,
+        },
+        {
+          tickId: 1618473720000,
+          value: 70,
+        },
+        {
+          tickId: 1618473780000,
+          value: 105,
+        },
+        {
+          tickId: 1618473840000,
+          value: 140,
+        },
+        {
+          tickId: 1618473900000,
+          value: 175,
+        },
+        {
+          tickId: 1618473960000,
+          value: 210,
+        },
+        {
+          tickId: 1618474020000,
+          value: 245,
+        },
+        {
+          tickId: 1618474080000,
+          value: 280,
+        },
+        {
+          tickId: 1618474140000,
+          value: 315,
+        },
+        {
+          tickId: 1618474200000,
+          value: 350,
+        },
+      ];
+      warningActive = true;
+      alertActive = false;
+      lastRefreshTickId = 4321;
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialized)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      setPrivateProperty(
+        loadmonitoringService,
+        "_historicalPoints",
+        historicalPoints
+      );
+      setPrivateProperty(
+        loadmonitoringService,
+        "_predictedPoints",
+        predictedPoints
+      );
+      setPrivateProperty(
+        loadmonitoringService,
+        "_predictedEnergy",
+        predictedEnergy
+      );
+      setPrivateProperty(
+        loadmonitoringService,
+        "_predictedPower",
+        predictedPower
+      );
+      setPrivateProperty(
+        loadmonitoringService,
+        "_warningPoints",
+        warningPoints
+      );
+      setPrivateProperty(loadmonitoringService, "_alertPoints", alertPoints);
+      setPrivateProperty(
+        loadmonitoringService,
+        "_warningActive",
+        warningActive
+      );
+      setPrivateProperty(loadmonitoringService, "_alertActive", alertActive);
+      setPrivateProperty(
+        loadmonitoringService,
+        "_lastRefreshTickID",
+        lastRefreshTickId
+      );
+
+      return loadmonitoringService.getData();
+    };
+
+    it("should return valid payload of loadmonitoring service", async () => {
+      let result = await exec();
+
+      let expectedResult = {
+        historicalPoints,
+        predictedPoints,
+        predictedEnergy,
+        predictedPower,
+        warningPoints,
+        alertPoints,
+        warningActive,
+        alertActive,
+        lastRefreshTickId,
+        initTickId,
+        initialized,
+      };
+
+      expect(result).toEqual(expectedResult);
+    });
+
+    it("should throw - if service was not iniialzied", async () => {
+      initialized = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service not initialized!",
+      });
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("getConfig", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let initialized: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialized = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialized)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      return loadmonitoringService.getConfig();
+    };
+
+    it("should return valid payload of loadmonitoring service", async () => {
+      let result = await exec();
+
+      expect(result).toEqual(
+        fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+          "testLoadmonitoringServiceId1.service.config.json"
+        ]
+      );
+    });
+
+    it("should throw - if service was not iniialzied", async () => {
+      initialized = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service not initialized!",
+      });
+    });
+
+    //TODO -add test for:
+    // throws while sending email
+    // throws while sending push notification
+  });
+
+  describe("setConfig", () => {
+    //Inputs
+    let id: string;
+    let dataStorage: MindSphereDataStorage<LoadmonitoringConfig>;
+    let loadmonitoringService: LoadmonitoringService;
+    let initTickId: number;
+    let initPayload: LoadmonitoringConfig;
+    let newPayload: LoadmonitoringConfig;
+    let setFileContentThrows: boolean;
+    let initialized: boolean;
+
+    beforeEach(async () => {
+      id = "testLoadmonitoringServiceId1";
+      initialized = true;
+      initTickId = 1234;
+      initPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: true,
+        tenant: "testTenant2",
+        assetIds: [
+          {
+            assetId: "asset21",
+            aspectId: "aspect211",
+            variableName: "variable2111",
+            multiplier: 1,
+          },
+          {
+            assetId: "asset22",
+            aspectId: "aspect221",
+            variableName: "variable2211",
+            multiplier: 2,
+          },
+          {
+            assetId: "asset23",
+            aspectId: "aspect231",
+            variableName: "variable2311",
+            multiplier: 3,
+          },
+        ],
+        powerLosses: 120,
+        alertLimit: 2100,
+        warningLimit: 1500,
+        mailingList: [
+          {
+            email: "testEmail1@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2@test.mail.com",
+            language: "pl",
+          },
+          {
+            email: "testEmail3@test.mail.com",
+            language: "en",
+          },
+        ],
+        interval: 10,
+      };
+      dataStorage = new MindSphereDataStorage(
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "service.config.json"
+      );
+      setFileContentThrows = false;
+      newPayload = {
+        sampleTime: 60,
+        serviceType: CustomServiceType.LoadmonitoringService,
+        id: "testLoadmonitoringServiceId1",
+        appId: "testAppId",
+        plantId: "testPlantId",
+        enabled: false,
+        tenant: "testTenant2Modified",
+        assetIds: [
+          {
+            assetId: "asset21Modified",
+            aspectId: "aspect211Modified",
+            variableName: "variable2111Modified",
+            multiplier: 3,
+          },
+          {
+            assetId: "asset22Modified",
+            aspectId: "aspect221Modified",
+            variableName: "variable2211Modified",
+            multiplier: 4,
+          },
+        ],
+        powerLosses: 123,
+        alertLimit: 2103,
+        warningLimit: 1503,
+        mailingList: [
+          {
+            email: "testEmail1Modified@test.mail.com",
+            language: "en",
+          },
+          {
+            email: "testEmail2Modified@test.mail.com",
+            language: "pl",
+          },
+        ],
+        interval: 12,
+      };
+    });
+
+    let exec = async () => {
+      await beforeExec();
+
+      loadmonitoringService = new LoadmonitoringService(id, dataStorage);
+
+      let payloadToInitialize = cloneObject(initPayload);
+      if (initialized)
+        await loadmonitoringService.init(initTickId, payloadToInitialize);
+
+      if (setFileContentThrows) {
+        MindSphereFileService.getInstance().setFileContent = jest.fn(
+          async () => {
+            throw new Error("Test set file content error");
+          }
+        );
+      }
+
+      return loadmonitoringService.setConfig(newPayload);
+    };
+
+    it("should set new storage content in fileService", async () => {
+      await exec();
+
+      expect(setFileContent).toHaveBeenCalledTimes(1);
+      expect(setFileContent.mock.calls[0]).toEqual([
+        "hostTenant",
+        "testServiceContainerAssetId",
+        "testLoadmonitoringServiceId1.service.config.json",
+        newPayload,
+      ]);
+
+      //New payload should be accessible via get
+      let newPayloadFromGet = await loadmonitoringService.getConfig();
+
+      expect(newPayloadFromGet).toEqual(newPayload);
+    });
+
+    it("should set new properties of loadmonitroingService", async () => {
+      await exec();
+
+      expect(loadmonitoringService.SampleTime).toEqual(newPayload.sampleTime);
+      expect(loadmonitoringService.Type).toEqual(newPayload.serviceType);
+      expect(loadmonitoringService.ID).toEqual(newPayload.id);
+      expect(loadmonitoringService.AppID).toEqual(newPayload.appId);
+      expect(loadmonitoringService.PlantID).toEqual(newPayload.plantId);
+      expect(loadmonitoringService.Enabled).toEqual(newPayload.enabled);
+      expect(loadmonitoringService.Tenant).toEqual(newPayload.tenant);
+      expect(loadmonitoringService.AssetIds).toEqual(newPayload.assetIds);
+      expect(loadmonitoringService.PowerLosses).toEqual(newPayload.powerLosses);
+      expect(loadmonitoringService.AlertLimit).toEqual(newPayload.alertLimit);
+      expect(loadmonitoringService.WarningLimit).toEqual(
+        newPayload.warningLimit
+      );
+      expect(loadmonitoringService.MailingList).toEqual(newPayload.mailingList);
+      expect(loadmonitoringService.Interval).toEqual(newPayload.interval);
+    });
+
+    it("should throw and not set new storage content in fileService or properties in loadmonitoringService - if it is not initialzied", async () => {
+      initialized = false;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Service not initialized!",
+      });
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      expect(loadmonitoringService.Type).toEqual(
+        CustomServiceType.LoadmonitoringService
+      );
+      expect(loadmonitoringService.ID).toEqual("testLoadmonitoringServiceId1");
+      expect(loadmonitoringService.SampleTime).toEqual(null);
+      expect(loadmonitoringService.AppID).toEqual(null);
+      expect(loadmonitoringService.PlantID).toEqual(null);
+      expect(loadmonitoringService.Enabled).toEqual(null);
+      expect(loadmonitoringService.Tenant).toEqual(null);
+      expect(loadmonitoringService.AssetIds).toEqual(null);
+      expect(loadmonitoringService.PowerLosses).toEqual(null);
+      expect(loadmonitoringService.AlertLimit).toEqual(null);
+      expect(loadmonitoringService.WarningLimit).toEqual(null);
+      expect(loadmonitoringService.MailingList).toEqual(null);
+      expect(loadmonitoringService.Interval).toEqual(null);
+    });
+
+    it("should throw and not set new storage content in fileService or properties in loadmonitoringService - if setFileContent throws", async () => {
+      setFileContentThrows = true;
+
+      await expect(exec()).rejects.toMatchObject({
+        message: "Test set file content error",
+      });
+
+      expect(loadmonitoringService.SampleTime).toEqual(initPayload.sampleTime);
+      expect(loadmonitoringService.Type).toEqual(initPayload.serviceType);
+      expect(loadmonitoringService.ID).toEqual(initPayload.id);
+      expect(loadmonitoringService.AppID).toEqual(initPayload.appId);
+      expect(loadmonitoringService.PlantID).toEqual(initPayload.plantId);
+      expect(loadmonitoringService.Enabled).toEqual(initPayload.enabled);
+      expect(loadmonitoringService.Tenant).toEqual(initPayload.tenant);
+      expect(loadmonitoringService.AssetIds).toEqual(initPayload.assetIds);
+      expect(loadmonitoringService.PowerLosses).toEqual(
+        initPayload.powerLosses
+      );
+      expect(loadmonitoringService.AlertLimit).toEqual(initPayload.alertLimit);
+      expect(loadmonitoringService.WarningLimit).toEqual(
+        initPayload.warningLimit
+      );
+      expect(loadmonitoringService.MailingList).toEqual(
+        initPayload.mailingList
+      );
+      expect(loadmonitoringService.Interval).toEqual(initPayload.interval);
     });
   });
 });

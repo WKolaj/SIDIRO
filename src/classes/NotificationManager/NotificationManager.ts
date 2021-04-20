@@ -111,3 +111,5 @@ export default class NotificationManager {
     return this._subscribersStorage.setData(serviceId, data);
   }
 }
+
+//TODO - test this class

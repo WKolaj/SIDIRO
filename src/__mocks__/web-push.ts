@@ -1,3 +1,9 @@
+let throwOnNotificationEndpoint: string | null = null;
+
+const __setThrowOnNotification = (notification: string | null) => {
+  throwOnNotificationEndpoint = notification;
+};
+
 export interface PushSubscription {
   endpoint: string;
   keys: {
@@ -7,9 +13,13 @@ export interface PushSubscription {
 }
 
 const setVapidDetails = jest.fn();
-const sendNotification = jest.fn();
+const sendNotification = jest.fn(async (notification: PushSubscription) => {
+  if (notification.endpoint === throwOnNotificationEndpoint)
+    throw new Error("Test send notification error");
+});
 
 export default {
+  __setThrowOnNotification: __setThrowOnNotification,
   setVapidDetails: setVapidDetails,
   sendNotification: sendNotification,
 };

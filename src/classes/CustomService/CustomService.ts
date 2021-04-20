@@ -106,8 +106,7 @@ abstract class CustomService<
   }
   protected abstract _onSetStorageData(payload: ServiceConfig): Promise<void>;
 
-  //TODO - test this method
-  public abstract getPayloadData(): Promise<ServiceData>;
+  public abstract getData(): Promise<ServiceData>;
 }
 
 export default CustomService;
