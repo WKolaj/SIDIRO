@@ -1943,6 +1943,8 @@ describe("user route", () => {
             },
           },
         },
+        notificationsAssetId: {},
+        testServiceContainerAssetId: {},
       },
     };
 

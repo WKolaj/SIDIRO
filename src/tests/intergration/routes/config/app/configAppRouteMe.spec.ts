@@ -1982,6 +1982,8 @@ describe("config app route", () => {
             },
           },
         },
+        notificationsAssetId: {},
+        testServiceContainerAssetId: {},
       },
     };
 

@@ -1978,6 +1978,8 @@ describe("config plant route", () => {
             },
           },
         },
+        notificationsAssetId: {},
+        testServiceContainerAssetId: {},
       },
     };
 

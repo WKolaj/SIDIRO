@@ -11,6 +11,12 @@ import {
   CustomServiceData,
   CustomServiceType,
 } from "./CustomServiceManager";
+import MailSender from "../MailSender/MailSender";
+import webpush from "web-push";
+import { readFileAsync } from "../../utilities/utilities";
+import { config } from "node-config-ts";
+import NotificationManager from "../NotificationManager/NotificationManager";
+import { MindSphereDataStorage } from "../DataStorage/MindSphereDataStorage";
 
 export interface AssetData {
   assetId: string;
@@ -27,7 +33,7 @@ export interface LoadmonitoringConfig extends CustomServiceConfig {
   powerLosses: number;
   alertLimit: number;
   warningLimit: number;
-  mailingList: string[];
+  mailingList: { email: string; language: "pl" | "en" }[];
   interval: number;
 }
 
@@ -47,6 +53,16 @@ export interface LoadmonitoringData extends CustomServiceData {
   predictedPower: number;
 }
 
+const alertEmailContentPLPath = "emailTemplates/alertActivation_pl.html";
+const alertEmailContentENPath = "emailTemplates/alertActivation_en.html";
+const warningEmailContentPLPath = "emailTemplates/warningActivation_pl.html";
+const warningEmailContentENPath = "emailTemplates/warningActivation_en.html";
+const returnEmailContentPLPath = "emailTemplates/returnToNormalState_pl.html";
+const returnEmailContentENPath = "emailTemplates/returnToNormalState_en.html";
+
+const predictedPowerEmailPhrase = "$PREDICTED_POWER";
+const actualDateEmailPhrase = "$ACTUAL_DATE";
+
 class LoadmonitoringService extends CustomService<
   LoadmonitoringConfig,
   LoadmonitoringData
@@ -57,7 +73,9 @@ class LoadmonitoringService extends CustomService<
   private _powerLosses: number | null = null;
   private _alertLimit: number | null = null;
   private _warningLimit: number | null = null;
-  private _mailingList: string[] | null = null;
+  private _mailingList:
+    | { email: string; language: "pl" | "en" }[]
+    | null = null;
   private _interval: number | null = null;
   private _warningPoints: EnergyPoint[] = [];
   private _alertPoints: EnergyPoint[] = [];
@@ -67,6 +85,12 @@ class LoadmonitoringService extends CustomService<
   private _predictedEnergy: number = 0;
   private _alertActive: boolean = false;
   private _warningActive: boolean = false;
+  private _alertEmailContentPL: string | null = null;
+  private _alertEmailContentEN: string | null = null;
+  private _warningEmailContentPL: string | null = null;
+  private _warningEmailContentEN: string | null = null;
+  private _returnEmailContentPL: string | null = null;
+  private _returnEmailContentEN: string | null = null;
 
   get Enabled() {
     return this._enabled;
@@ -151,6 +175,35 @@ class LoadmonitoringService extends CustomService<
     this._warningLimit = data.warningLimit;
     this._mailingList = data.mailingList;
     this._interval = data.interval;
+    //TODO - test init email contents
+    await this._initEmailContents();
+  }
+
+  private async _initEmailContents() {
+    this._alertEmailContentEN = await readFileAsync(
+      alertEmailContentENPath,
+      "utf8"
+    );
+    this._alertEmailContentPL = await readFileAsync(
+      alertEmailContentPLPath,
+      "utf8"
+    );
+    this._warningEmailContentEN = await readFileAsync(
+      warningEmailContentENPath,
+      "utf8"
+    );
+    this._warningEmailContentPL = await readFileAsync(
+      warningEmailContentPLPath,
+      "utf8"
+    );
+    this._returnEmailContentEN = await readFileAsync(
+      returnEmailContentENPath,
+      "utf8"
+    );
+    this._returnEmailContentPL = await readFileAsync(
+      returnEmailContentPLPath,
+      "utf8"
+    );
   }
 
   protected async _onRefresh(tickId: number): Promise<void> {
@@ -544,28 +597,334 @@ class LoadmonitoringService extends CustomService<
   }
 
   private async _notifyAlertActivation(tickId: number, predictedPower: number) {
-    //TODO add sending email and push notifications
+    try {
+      await this._sendEmails(tickId, predictedPower, "alert");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
+    try {
+      await this._sendNotifications(tickId, predictedPower, "alert");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
   }
 
   private async _notifyAlertDeactivation(
     tickId: number,
     predictedPower: number
   ) {
-    //TODO add sending email and push notifications
+    try {
+      await this._sendEmails(tickId, predictedPower, "returning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
+    try {
+      await this._sendNotifications(tickId, predictedPower, "returning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
   }
 
   private async _notifyWarningActivation(
     tickId: number,
     predictedPower: number
   ) {
-    //TODO add sending email and push notifications
+    try {
+      await this._sendEmails(tickId, predictedPower, "warning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
+    try {
+      await this._sendNotifications(tickId, predictedPower, "warning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
   }
 
   private async _notifyWarningDeactivation(
     tickId: number,
     predictedPower: number
   ) {
-    //TODO add sending email and push notifications
+    try {
+      await this._sendEmails(tickId, predictedPower, "returning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
+    try {
+      await this._sendNotifications(tickId, predictedPower, "returning");
+    } catch (err) {
+      logger.error(err.message, err);
+    }
+  }
+
+  private async _sendEmails(
+    tickId: number,
+    predictedPower: number,
+    severity: "warning" | "alert" | "returning"
+  ) {
+    let self = this;
+    let promisesToInvoke: Promise<boolean>[] = [];
+
+    for (let recipient of this.MailingList!) {
+      promisesToInvoke.push(
+        new Promise(async (resolve, reject) => {
+          //Ensuring that sending email will not throw in case of sending data to a recipient throws
+          try {
+            let emailContent = self._getEmailContent(
+              recipient.language,
+              severity,
+              predictedPower,
+              tickId
+            );
+            await MailSender.getInstance().sendEmail(
+              recipient.email,
+              emailContent.subject,
+              emailContent.content
+            );
+            return resolve(true);
+          } catch (err) {
+            logger.error(err.message, err);
+            return resolve(false);
+          }
+        })
+      );
+    }
+
+    await Promise.all(promisesToInvoke);
+  }
+
+  private _getEmailContent(
+    lanugage: "en" | "pl",
+    severity: "alert" | "warning" | "returning",
+    predictedPower: number,
+    tickId: number
+  ): { subject: string; content: string } {
+    let powerText = predictedPower.toFixed(2);
+    let dateText = new Date(
+      Sampler.convertTickNumberToDate(tickId)
+    ).toISOString();
+
+    switch (lanugage) {
+      case "en": {
+        let subject: string;
+        let content: string;
+
+        switch (severity) {
+          case "alert": {
+            subject = `Alert! - Incoming power exceeding: ${powerText}`;
+            content = this._alertEmailContentEN!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          case "warning": {
+            subject = `Warning! - Predicted power above warning limit: ${powerText}`;
+            content = this._warningEmailContentEN!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          case "returning": {
+            subject = `Information! - Predicted power below limits: ${powerText}`;
+            content = this._returnEmailContentEN!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          default:
+            throw new Error("Severity not recognized!");
+        }
+
+        return {
+          subject,
+          content,
+        };
+      }
+      case "pl": {
+        let subject: string;
+        let content: string;
+
+        switch (severity) {
+          case "alert": {
+            subject = `Alarm! - Przewidywane przekrocznie mocy!: ${powerText}`;
+            content = this._alertEmailContentPL!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          case "warning": {
+            subject = `Ostrzeżenie! - Przewidywana moc ponad progiem ostrzeżenia: ${powerText}`;
+            content = this._warningEmailContentPL!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          case "returning": {
+            subject = `Informacja! - Przewidywana moc poniżej progów ostrzeżeniowych: ${powerText}`;
+            content = this._returnEmailContentPL!.replace(
+              predictedPowerEmailPhrase,
+              powerText
+            ).replace(actualDateEmailPhrase, dateText);
+            break;
+          }
+
+          default:
+            throw new Error("Severity not recognized!");
+        }
+
+        return {
+          subject,
+          content,
+        };
+      }
+      default:
+        throw new Error("Language not recognized!");
+    }
+  }
+
+  private async _sendNotifications(
+    tickId: number,
+    predictedPower: number,
+    severity: "warning" | "alert" | "returning"
+  ) {
+    let self = this;
+    let promisesToInvoke: Promise<boolean>[] = [];
+
+    let allSubscribers = await NotificationManager.getInstance().getSubscribers(
+      this.ID
+    );
+
+    //If there are no subscribers there is no point to continue
+    if (allSubscribers == null) return;
+
+    for (let subscriber of allSubscribers) {
+      promisesToInvoke.push(
+        new Promise(async (resolve, reject) => {
+          //Ensuring that sending email will not throw in case of sending data to a recipient throws
+          try {
+            let notificationContent = self._getNotificationContent(
+              subscriber.language,
+              severity,
+              predictedPower,
+              tickId
+            );
+            await NotificationManager.getInstance().sendNotification(
+              subscriber.subscriptionData,
+              JSON.stringify(notificationContent)
+            );
+            return resolve(true);
+          } catch (err) {
+            logger.error(err.message, err);
+            return resolve(false);
+          }
+        })
+      );
+    }
+
+    await Promise.all(promisesToInvoke);
+  }
+
+  private _getNotificationContent(
+    lanugage: "en" | "pl",
+    severity: "alert" | "warning" | "returning",
+    predictedPower: number,
+    tickId: number
+  ): { title: string; body: string; icon: string } {
+    let powerText = predictedPower.toFixed(2);
+    let dateText = new Date(
+      Sampler.convertTickNumberToDate(tickId)
+    ).toISOString();
+
+    switch (lanugage) {
+      case "en": {
+        let content: { title: string; body: string; icon: string };
+
+        switch (severity) {
+          case "alert": {
+            content = {
+              title: "Loadmonitoring alert!",
+              body: `Incoming power exceeding: ${powerText} kW`,
+              icon: config.notificationSending.alertIcon,
+            };
+            break;
+          }
+
+          case "warning": {
+            content = {
+              title: "Loadmonitoring warning!",
+              body: `Predicted power above warning limit: ${powerText} kW`,
+              icon: config.notificationSending.warningIcon,
+            };
+
+            break;
+          }
+
+          case "returning": {
+            content = {
+              title: "Loadmonitoring info!",
+              body: `redicted power below limits again: ${powerText} kW`,
+              icon: config.notificationSending.infoIcon,
+            };
+            break;
+          }
+
+          default:
+            throw new Error("Severity not recognized!");
+        }
+
+        return content;
+      }
+      case "pl": {
+        let content: { title: string; body: string; icon: string };
+
+        switch (severity) {
+          case "alert": {
+            content = {
+              title: "Strażnik mocy - alarm!",
+              body: `Nadchodzące przekroczenie mocy: ${powerText} kW`,
+              icon: config.notificationSending.alertIcon,
+            };
+            break;
+          }
+
+          case "warning": {
+            content = {
+              title: "Strażnik mocy - ostrzeżenie!",
+              body: `Przewidywana moc ponad progiem ostrzeżenia: ${powerText} kW`,
+              icon: config.notificationSending.warningIcon,
+            };
+
+            break;
+          }
+
+          case "returning": {
+            content = {
+              title: "Strażnik mocy - info!",
+              body: `Powrót mocy ponizej progów alarmowych: ${powerText} kW`,
+              icon: config.notificationSending.infoIcon,
+            };
+            break;
+          }
+
+          default:
+            throw new Error("Severity not recognized!");
+        }
+
+        return content;
+      }
+      default:
+        throw new Error("Language not recognized!");
+    }
   }
 
   protected async _onSetStorageData(

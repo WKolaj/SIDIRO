@@ -27,6 +27,22 @@
     "msSubtenantUserGroup": "@@MS_SUBTENANT_USER_GROUP",
     "superAdminUserIds": "@@SUPER_ADMIN_IDS"
   },
+  "emailSending": {
+    "host": "pricelist.nazwa.pl",
+    "port": 465,
+    "user": "@@EMAIL_USER",
+    "pass": "@@EMAIL_PASSWORD"
+  },
+  "notificationSending": {
+    "email": "sidiro@sidiro.pl",
+    "privateKey": "@@NOTIFICATION_PRIVATE_KEY",
+    "publicKey": "@@NOTIFICATION_PUBLIC_KEY",
+    "warningIcon": "images/SIDIRO_WARNING.png",
+    "alertIcon": "images/SIDIRO_ALERT.png",
+    "infoIcon": "images/SIDIRO_INFO.png",
+    "tenant": "@@NOTIFICATION_SUBSCRIBERS_STORAGE_TENANT",
+    "assetId": "@@NOTIFICATION_SUBSCRIBERS_STORAGE_ASSET_ID"
+  },
   "port": 5000,
   "tokenExpireAdditionalTime": 100000,
   "logging": {

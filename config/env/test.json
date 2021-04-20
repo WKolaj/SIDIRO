@@ -28,5 +28,21 @@
     "msSubtenantUserGroup": "subtenantUserGroupDisplayName",
     "superAdminUserIds": "testSuperAdmin1 testSuperAdmin2 testSuperAdmin3 testSuperAdmin4"
   },
+  "emailSending": {
+    "host": "testEmail@test.email.com",
+    "port": 1234,
+    "user": "testUserName",
+    "pass": "testUserPassword"
+  },
+  "notificationSending": {
+    "email": "testNotification@test.email.com",
+    "privateKey": "testNotificationPrivateKey",
+    "publicKey": "testNotificationPublicKey",
+    "warningIcon": "testWarningIconPath",
+    "alertIcon": "testAlertIconPath",
+    "infoIcon": "testInfoIconPath",
+    "tenant": "hostTenant",
+    "assetId": "notificationsAssetId"
+  },
   "port": 5000
 }

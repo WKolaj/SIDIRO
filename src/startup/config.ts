@@ -36,6 +36,18 @@ export default async function() {
   throwIfConfigDoesNotExist("userPermissions.msStandardUserGroup");
   throwIfConfigDoesNotExist("userPermissions.msSubtenantUserGroup");
 
+  throwIfConfigDoesNotExist("emailSending.host");
+  throwIfConfigDoesNotExist("emailSending.port");
+  throwIfConfigDoesNotExist("emailSending.user");
+  throwIfConfigDoesNotExist("emailSending.pass");
+
+  throwIfConfigDoesNotExist("notificationSending.email");
+  throwIfConfigDoesNotExist("notificationSending.privateKey");
+  throwIfConfigDoesNotExist("notificationSending.publicKey");
+  throwIfConfigDoesNotExist("notificationSending.warningIcon");
+  throwIfConfigDoesNotExist("notificationSending.alertIcon");
+  throwIfConfigDoesNotExist("notificationSending.infoIcon");
+
   throwIfConfigDoesNotExist("tokenExpireAdditionalTime");
 
   throwIfConfigDoesNotExist("port");

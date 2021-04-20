@@ -72,6 +72,7 @@ describe("LoadmonitoringService", () => {
             interval: 600,
           },
         },
+        notificationsAssetId: {},
       },
     };
 

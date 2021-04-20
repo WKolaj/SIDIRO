@@ -5,6 +5,8 @@ declare module "node-config-ts" {
     appCredentials: AppCredentials
     appSettings: AppSettings
     userPermissions: UserPermissions
+    emailSending: EmailSending
+    notificationSending: NotificationSending
     port: number
     tokenExpireAdditionalTime: number
     logging: Logging
@@ -18,6 +20,22 @@ declare module "node-config-ts" {
     path: string
     maxsize: number
     maxFiles: number
+  }
+  interface NotificationSending {
+    email: string
+    privateKey: string
+    publicKey: string
+    warningIcon: string
+    alertIcon: string
+    infoIcon: string
+    tenant: string
+    assetId: string
+  }
+  interface EmailSending {
+    host: string
+    port: number
+    user: string
+    pass: string
   }
   interface UserPermissions {
     globalAdminScope: string

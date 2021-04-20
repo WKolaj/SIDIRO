@@ -20,7 +20,7 @@ export default async function(app: Express) {
   logger.info("Config plant route initialized");
 
   app.use("/customApi/config/app", configAppRoute);
-  logger.info("Config plant route initialized");
+  logger.info("Config app route initialized");
 
   app.use("/customApi/config", configRoute);
   logger.info("Config route initialized");

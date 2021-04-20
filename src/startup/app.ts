@@ -7,7 +7,9 @@ import logger from "../logger/logger";
 import configStartFunc from "./config";
 import logsStartFunc from "./logs";
 import routeStartFunc from "./route";
-import appDataStartFunction from "./appData";
+import appDataStartFunc from "./appData";
+import notificationsStartFunc from "./notifications";
+import customServicesStartFunc from "./customServices";
 
 const app = express();
 
@@ -17,7 +19,9 @@ export default async function(workingDirName: string | null) {
   //Startup of application
   await configStartFunc();
   await logsStartFunc();
-  await appDataStartFunction();
+  await appDataStartFunc();
+  await notificationsStartFunc();
+  await customServicesStartFunc();
 
   const port = process.env.PORT || config.port;
 

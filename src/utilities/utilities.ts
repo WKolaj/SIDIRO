@@ -142,6 +142,10 @@ export function cloneObject<T>(object: T) {
   return JSON.parse(JSON.stringify(object)) as T;
 }
 
+export function compareObjectsByValue(object1: any, object2: any) {
+  return JSON.stringify(object1) === JSON.stringify(object2);
+}
+
 //#endregion ========== COMMON =========
 
 //#region ========== EXPRESS ROUTES =========

@@ -1975,6 +1975,8 @@ describe("config user route", () => {
             },
           },
         },
+        notificationsAssetId: {},
+        testServiceContainerAssetId: {},
       },
     };
 

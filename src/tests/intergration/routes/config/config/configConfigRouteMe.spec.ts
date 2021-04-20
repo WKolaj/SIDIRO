@@ -1982,6 +1982,8 @@ describe("config config route", () => {
             },
           },
         },
+        notificationsAssetId: {},
+        testServiceContainerAssetId: {},
       },
     };
 
