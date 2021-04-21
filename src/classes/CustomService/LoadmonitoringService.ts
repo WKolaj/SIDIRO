@@ -998,5 +998,3 @@ class LoadmonitoringService extends CustomService<
 }
 
 export default LoadmonitoringService;
-
-//TODO - test this class

@@ -46,5 +46,3 @@ export default class MailSender {
     return this._transporter.sendMail(mailOptions);
   }
 }
-
-//TODO - test this class

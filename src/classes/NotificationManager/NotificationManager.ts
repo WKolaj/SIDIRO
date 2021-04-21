@@ -18,35 +18,30 @@ export default class NotificationManager {
     return this._initialized;
   }
 
-  private constructor(
-    tenantName: string,
-    storageAssetId: string,
-    email: string,
-    publicKey: string,
-    privateKey: string
-  ) {
+  private constructor(tenantName: string, storageAssetId: string) {
     this._subscribersStorage = new MindSphereDataStorage(
       tenantName,
       storageAssetId,
       "sub.json"
     );
-    webpush.setVapidDetails(`mailto:<${email}>`, publicKey, privateKey);
   }
 
   public static getInstance(): NotificationManager {
     if (NotificationManager._instance == null)
       NotificationManager._instance = new NotificationManager(
         config.notificationSending.tenant,
-        config.notificationSending.assetId,
-        config.notificationSending.email,
-        config.notificationSending.publicKey,
-        config.notificationSending.privateKey
+        config.notificationSending.assetId
       );
     return NotificationManager._instance;
   }
 
   public async init() {
     await this._subscribersStorage.init();
+    webpush.setVapidDetails(
+      `mailto:<${config.notificationSending.email}>`,
+      config.notificationSending.publicKey,
+      config.notificationSending.privateKey
+    );
     this._initialized = true;
   }
 
@@ -89,9 +84,9 @@ export default class NotificationManager {
       throw new Error("NotificationManager not initialized!");
     let serviceData = await this._subscribersStorage.getData(serviceId);
     if (serviceData == null) serviceData = [];
-    serviceData.push(subscriber);
+    let newServiceData = [...serviceData, subscriber];
 
-    return this._subscribersStorage.setData(serviceId, serviceData);
+    return this._subscribersStorage.setData(serviceId, newServiceData);
   }
 
   public async removeSubscriber(
@@ -100,16 +95,23 @@ export default class NotificationManager {
   ) {
     if (!this.Initialized)
       throw new Error("NotificationManager not initialized!");
+
+    //Checking if service exists in notification
     let data = await this._subscribersStorage.getData(serviceId);
     if (data == null) return;
 
-    data = data.filter(
+    //Checking if subscriber exists
+    let subscriberExists =
+      data.find((subscriber) =>
+        compareObjectsByValue(subscriber.subscriptionData, subscriptionData)
+      ) != null;
+    if (!subscriberExists) return;
+
+    let newData = data.filter(
       (subscriber) =>
         !compareObjectsByValue(subscriber.subscriptionData, subscriptionData)
     );
 
-    return this._subscribersStorage.setData(serviceId, data);
+    return this._subscribersStorage.setData(serviceId, newData);
   }
 }
-
-//TODO - test this class

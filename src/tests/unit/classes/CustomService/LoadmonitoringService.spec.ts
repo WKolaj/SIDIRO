@@ -108,7 +108,6 @@ describe("LoadmonitoringService", () => {
               language: "pl",
               subscriptionData: {
                 endpoint: "testEndpoint1",
-                expirationTime: null,
                 keys: {
                   p256dh: "testKey1",
                   auth: "testAuth1",
@@ -119,7 +118,6 @@ describe("LoadmonitoringService", () => {
               language: "en",
               subscriptionData: {
                 endpoint: "testEndpoint2",
-                expirationTime: null,
                 keys: {
                   p256dh: "testKey2",
                   auth: "testAuth2",
@@ -130,7 +128,6 @@ describe("LoadmonitoringService", () => {
               language: "pl",
               subscriptionData: {
                 endpoint: "testEndpoint3",
-                expirationTime: null,
                 keys: {
                   p256dh: "testKey3",
                   auth: "testAuth3",
@@ -7339,10 +7336,6 @@ describe("LoadmonitoringService", () => {
         "Test send notification error"
       );
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("_notifyWarningActivation", () => {
@@ -7833,10 +7826,6 @@ describe("LoadmonitoringService", () => {
         "Test send notification error"
       );
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("_notifyAlertDeactivation", () => {
@@ -8327,10 +8316,6 @@ describe("LoadmonitoringService", () => {
         "Test send notification error"
       );
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("_notifyWarningDeactivation", () => {
@@ -8821,10 +8806,6 @@ describe("LoadmonitoringService", () => {
         "Test send notification error"
       );
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("getData", () => {
@@ -9130,10 +9111,6 @@ describe("LoadmonitoringService", () => {
         message: "Service not initialized!",
       });
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("getConfig", () => {
@@ -9232,10 +9209,6 @@ describe("LoadmonitoringService", () => {
         message: "Service not initialized!",
       });
     });
-
-    //TODO -add test for:
-    // throws while sending email
-    // throws while sending push notification
   });
 
   describe("setConfig", () => {

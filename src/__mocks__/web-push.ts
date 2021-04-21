@@ -12,7 +12,7 @@ export interface PushSubscription {
   };
 }
 
-const setVapidDetails = jest.fn();
+const setVapidDetails = jest.fn(() => {});
 const sendNotification = jest.fn(async (notification: PushSubscription) => {
   if (notification.endpoint === throwOnNotificationEndpoint)
     throw new Error("Test send notification error");
