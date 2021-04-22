@@ -6,6 +6,7 @@ import configUserRoute from "../routes/config/user";
 import configPlantRoute from "../routes/config/plant";
 import configAppRoute from "../routes/config/app";
 import configRoute from "../routes/config/config";
+import serviceRoute from "../routes/service/service";
 
 export default async function(app: Express) {
   logger.info("initializing routes...");
@@ -24,6 +25,9 @@ export default async function(app: Express) {
 
   app.use("/customApi/config", configRoute);
   logger.info("Config route initialized");
+
+  app.use("/customApi/service", serviceRoute);
+  logger.info("Service route initialized");
 
   app.use(error);
   logger.info("Route error handler initialized");

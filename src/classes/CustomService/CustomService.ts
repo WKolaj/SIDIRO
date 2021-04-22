@@ -107,6 +107,18 @@ abstract class CustomService<
   protected abstract _onSetStorageData(payload: ServiceConfig): Promise<void>;
 
   public abstract getData(): Promise<ServiceData>;
+
+  public validateNewConfig(newConfig: ServiceConfig): string | null {
+    //TODO - test this method
+
+    if (newConfig.id !== this.ID) return "ID cannot be changed";
+    if (newConfig.serviceType !== this.Type)
+      return "ServiceType cannot be changed";
+    if (newConfig.appId !== this.AppID) return "AppID cannot be changed";
+    if (newConfig.plantId !== this.PlantID) return "AppID cannot be changed";
+
+    return null;
+  }
 }
 
 export default CustomService;

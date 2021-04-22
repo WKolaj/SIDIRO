@@ -12,9 +12,9 @@ import fetchUserAndAppData, {
   AppDataRequest,
 } from "../../middleware/appData/fetchUserAndAppData";
 import isNotSubtenant from "../../middleware/authorization/isNotSubtenant";
-import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamUserOrAdmin";
+import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamLocalUserAccess";
 import isLocalOrGlobalAdmin from "../../middleware/authorization/isLocalOrGlobalAdmin";
-import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamAdmin";
+import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamLocalAdminAccess";
 import {
   applyJSONParsingToRoute,
   areObjectsIdentical,

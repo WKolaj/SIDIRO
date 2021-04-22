@@ -10,13 +10,15 @@ import fetchUserAndAppData, {
 } from "../../middleware/appData/fetchUserAndAppData";
 import { applyJSONParsingToRoute } from "../../utilities/utilities";
 import isUserOrAdmin from "../../middleware/authorization/isUserOrAdmin";
-import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamUserOrAdmin";
+import checkPlantIdParamUserOrAdmin from "../../middleware/checkParams/checkPlantIdParamLocalUserAccess";
 import isGlobalAdmin from "../../middleware/authorization/isGlobalAdmin";
 import { joiValidator } from "../../middleware/validation/joiValidate";
 import { validatePlant } from "../../models/App/Plant/Plant";
 import isLocalOrGlobalAdmin from "../../middleware/authorization/isLocalOrGlobalAdmin";
-import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamAdmin";
+import checkPlantIdParamAdmin from "../../middleware/checkParams/checkPlantIdParamLocalAdminAccess";
 import isGlobalUserOrAdmin from "../../middleware/authorization/isGlobalUserOrAdmin";
+import checkPlantIdParamUserAccess from "../../middleware/checkParams/checkPlantIdParamUserAccess";
+import checkPlantIdParamAdminAccess from "../../middleware/checkParams/checkPlantIdParamAdminAccess";
 
 const router = express.Router();
 
@@ -64,6 +66,7 @@ router.get(
   fetchTokenData,
   fetchUserAndAppData,
   isUserOrAdmin,
+  checkPlantIdParamUserAccess,
   async function(
     req: express.Request<{ plantId: string }>,
     res: express.Response
@@ -73,27 +76,6 @@ router.get(
       any,
       PlantPayload
     >;
-
-    //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN/USER OR BY LOCAL PERMISSIONS ==========
-
-    let hasGlobalPermissions =
-      MindSphereApp.hasGlobalAdminRole(appDataReq.userData!) ||
-      MindSphereApp.hasGlobalUserRole(appDataReq.userData!);
-
-    let hasLocalPermissions =
-      MindSphereApp.isLocalAdminOfPlant(
-        req.params.plantId,
-        appDataReq.userData!
-      ) ||
-      MindSphereApp.isLocalUserOfPlant(
-        req.params.plantId,
-        appDataReq.userData!
-      );
-
-    if (!hasGlobalPermissions && !hasLocalPermissions)
-      return res.status(404).send("Plant does not exist!");
-
-    //#endregion ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
 
     //#region ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
 
@@ -122,6 +104,7 @@ router.put(
   fetchTokenData,
   fetchUserAndAppData,
   isLocalOrGlobalAdmin,
+  checkPlantIdParamAdminAccess,
   joiValidator(validatePlant),
   async function(
     req: express.Request<{ plantId: string }>,
@@ -132,19 +115,6 @@ router.put(
       any,
       PlantPayload
     >;
-
-    //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
-
-    if (
-      !MindSphereApp.hasGlobalAdminRole(appDataReq.userData!) &&
-      !MindSphereApp.isLocalAdminOfPlant(
-        req.params.plantId,
-        appDataReq.userData!
-      )!
-    )
-      return res.status(404).send("Plant does not exist!");
-
-    //#endregion ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
 
     //#region ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
 
