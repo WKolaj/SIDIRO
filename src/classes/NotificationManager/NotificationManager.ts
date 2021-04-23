@@ -7,8 +7,10 @@ import { compareObjectsByValue } from "../../utilities/utilities";
 export interface SubscriberPayload {
   subscriptionData: webpush.PushSubscription;
   language: "pl" | "en";
+  userId: string;
 }
 
+//TODO - test this class again with userId in subscricption payload
 export default class NotificationManager {
   private _subscribersStorage: MindSphereDataStorage<SubscriberPayload[]>;
   private _initialized: boolean = false;
@@ -64,7 +66,8 @@ export default class NotificationManager {
 
   public async checkIfSubscriberExists(
     serviceId: string,
-    subscriptionData: webpush.PushSubscription
+    subscriptionData: webpush.PushSubscription,
+    userId: string
   ): Promise<boolean> {
     if (!this.Initialized)
       throw new Error("NotificationManager not initialized!");
@@ -73,8 +76,10 @@ export default class NotificationManager {
     if (data == null) return false;
 
     //checking subscription data by value by stringifying
-    let subscriber = data.find((subscriber) =>
-      compareObjectsByValue(subscriber.subscriptionData, subscriptionData)
+    let subscriber = data.find(
+      (subscriber) =>
+        compareObjectsByValue(subscriber.subscriptionData, subscriptionData) &&
+        subscriber.userId === userId
     );
     return subscriber != null;
   }
@@ -91,7 +96,8 @@ export default class NotificationManager {
 
   public async removeSubscriber(
     serviceId: string,
-    subscriptionData: webpush.PushSubscription
+    subscriptionData: webpush.PushSubscription,
+    userId: string
   ) {
     if (!this.Initialized)
       throw new Error("NotificationManager not initialized!");
@@ -101,15 +107,15 @@ export default class NotificationManager {
     if (data == null) return;
 
     //Checking if subscriber exists
-    let subscriberExists =
-      data.find((subscriber) =>
-        compareObjectsByValue(subscriber.subscriptionData, subscriptionData)
-      ) != null;
-    if (!subscriberExists) return;
+    let subscriberToDelete = data.find(
+      (subscriber) =>
+        compareObjectsByValue(subscriber.subscriptionData, subscriptionData) &&
+        subscriber.userId === userId
+    );
+    if (subscriberToDelete == null) return;
 
     let newData = data.filter(
-      (subscriber) =>
-        !compareObjectsByValue(subscriber.subscriptionData, subscriptionData)
+      (subscriber) => subscriber !== subscriberToDelete
     );
 
     return this._subscribersStorage.setData(serviceId, newData);

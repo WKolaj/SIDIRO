@@ -39,6 +39,7 @@ describe("LoadmonitoringService", () => {
           "testLoadmonitoringServiceId1.sub.json": [
             {
               language: "pl",
+              userId: "testUser1ID",
               subscriptionData: {
                 endpoint: "testEndpoint11",
                 keys: {
@@ -49,6 +50,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "en",
+              userId: "testUser2ID",
               subscriptionData: {
                 endpoint: "testEndpoint12",
                 keys: {
@@ -59,6 +61,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "pl",
+              userId: "testUser3ID",
               subscriptionData: {
                 endpoint: "testEndpoint13",
                 keys: {
@@ -71,6 +74,7 @@ describe("LoadmonitoringService", () => {
           "testLoadmonitoringServiceId2.sub.json": [
             {
               language: "pl",
+              userId: "testUser1ID",
               subscriptionData: {
                 endpoint: "testEndpoint21",
                 keys: {
@@ -81,6 +85,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "en",
+              userId: "testUser2ID",
               subscriptionData: {
                 endpoint: "testEndpoint22",
                 keys: {
@@ -91,6 +96,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "pl",
+              userId: "testUser3ID",
               subscriptionData: {
                 endpoint: "testEndpoint23",
                 keys: {
@@ -103,6 +109,7 @@ describe("LoadmonitoringService", () => {
           "testLoadmonitoringServiceId3.sub.json": [
             {
               language: "pl",
+              userId: "testUser1ID",
               subscriptionData: {
                 endpoint: "testEndpoint31",
                 keys: {
@@ -113,6 +120,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "en",
+              userId: "testUser2ID",
               subscriptionData: {
                 endpoint: "testEndpoint32",
                 keys: {
@@ -123,6 +131,7 @@ describe("LoadmonitoringService", () => {
             },
             {
               language: "pl",
+              userId: "testUser3ID",
               subscriptionData: {
                 endpoint: "testEndpoint33",
                 keys: {
@@ -287,6 +296,7 @@ describe("LoadmonitoringService", () => {
         testLoadmonitoringServiceId1: [
           {
             language: "pl",
+            userId: "testUser1ID",
             subscriptionData: {
               endpoint: "testEndpoint11",
               keys: {
@@ -297,6 +307,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "en",
+            userId: "testUser2ID",
             subscriptionData: {
               endpoint: "testEndpoint12",
               keys: {
@@ -307,6 +318,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "pl",
+            userId: "testUser3ID",
             subscriptionData: {
               endpoint: "testEndpoint13",
               keys: {
@@ -319,6 +331,7 @@ describe("LoadmonitoringService", () => {
         testLoadmonitoringServiceId2: [
           {
             language: "pl",
+            userId: "testUser1ID",
             subscriptionData: {
               endpoint: "testEndpoint21",
               keys: {
@@ -329,6 +342,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "en",
+            userId: "testUser2ID",
             subscriptionData: {
               endpoint: "testEndpoint22",
               keys: {
@@ -339,6 +353,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "pl",
+            userId: "testUser3ID",
             subscriptionData: {
               endpoint: "testEndpoint23",
               keys: {
@@ -351,6 +366,7 @@ describe("LoadmonitoringService", () => {
         testLoadmonitoringServiceId3: [
           {
             language: "pl",
+            userId: "testUser1ID",
             subscriptionData: {
               endpoint: "testEndpoint31",
               keys: {
@@ -361,6 +377,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "en",
+            userId: "testUser2ID",
             subscriptionData: {
               endpoint: "testEndpoint32",
               keys: {
@@ -371,6 +388,7 @@ describe("LoadmonitoringService", () => {
           },
           {
             language: "pl",
+            userId: "testUser3ID",
             subscriptionData: {
               endpoint: "testEndpoint33",
               keys: {
@@ -532,10 +550,12 @@ describe("LoadmonitoringService", () => {
     let initNotificationManager: boolean;
     let serviceId: string;
     let subscriptionData: webpush.PushSubscription;
+    let userId: string;
 
     beforeEach(() => {
       initNotificationManager = true;
       serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "testEndpoint22",
         keys: {
@@ -554,12 +574,14 @@ describe("LoadmonitoringService", () => {
 
       return notificationManager.checkIfSubscriberExists(
         serviceId,
-        subscriptionData
+        subscriptionData,
+        userId
       );
     };
 
     it("should return true - if subscriber exists for given service", async () => {
       serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "testEndpoint22",
         keys: {
@@ -575,6 +597,7 @@ describe("LoadmonitoringService", () => {
 
     it("should return false - if subscriber does not exist for given service but exists for different service", async () => {
       serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "testEndpoint12",
         keys: {
@@ -590,6 +613,23 @@ describe("LoadmonitoringService", () => {
 
     it("should return false - if subscriber does not exist", async () => {
       serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser2ID";
+      subscriptionData = {
+        endpoint: "fakeEndpoint",
+        keys: {
+          p256dh: "fakeKey",
+          auth: "fakeAuth",
+        },
+      };
+
+      let result = await exec();
+
+      expect(result).toEqual(false);
+    });
+
+    it("should return false - if there is no such user in service", async () => {
+      serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser3ID";
       subscriptionData = {
         endpoint: "fakeEndpoint",
         keys: {
@@ -605,6 +645,7 @@ describe("LoadmonitoringService", () => {
 
     it("should return false - if service does not exists but subscriber do exists", async () => {
       serviceId = "fakeServiceId";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "testEndpoint12",
         keys: {
@@ -620,6 +661,7 @@ describe("LoadmonitoringService", () => {
 
     it("should return false - if service does not exists and subscriber does not exist", async () => {
       serviceId = "fakeServiceId";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "fakeEndpoint",
         keys: {
@@ -652,8 +694,10 @@ describe("LoadmonitoringService", () => {
     beforeEach(() => {
       initNotificationManager = true;
       serviceId = "testLoadmonitoringServiceId2";
+
       subscriptionData = {
         language: "pl",
+        userId: "testUser2ID",
         subscriptionData: {
           endpoint: "testEndpoint24",
           keys: {
@@ -686,6 +730,7 @@ describe("LoadmonitoringService", () => {
     it("should add subscriber to storage", async () => {
       serviceId = "testLoadmonitoringServiceId2";
       subscriptionData = {
+        userId: "testUser2ID",
         language: "pl",
         subscriptionData: {
           endpoint: "testEndpoint24",
@@ -752,6 +797,7 @@ describe("LoadmonitoringService", () => {
       serviceId = "testLoadmonitoringServiceId2";
       subscriptionData = {
         language: "pl",
+        userId: "testUser2ID",
         subscriptionData: {
           endpoint: "testEndpoint22",
           keys: {
@@ -816,6 +862,7 @@ describe("LoadmonitoringService", () => {
     it("should not throw, create new service instorage and add subscription to it - if service of given id does not exist", async () => {
       serviceId = "testLoadmonitoringServiceId4";
       subscriptionData = {
+        userId: "testUser2ID",
         language: "pl",
         subscriptionData: {
           endpoint: "testEndpoint42",
@@ -945,6 +992,7 @@ describe("LoadmonitoringService", () => {
     let serviceId: string;
     let subscriptionData: webpush.PushSubscription;
     let setFileContentThrows: boolean;
+    let userId: string;
 
     beforeEach(() => {
       initNotificationManager = true;
@@ -957,6 +1005,7 @@ describe("LoadmonitoringService", () => {
         },
       };
       setFileContentThrows = false;
+      userId = "testUser2ID";
     });
 
     let exec = async () => {
@@ -974,11 +1023,16 @@ describe("LoadmonitoringService", () => {
         );
       }
 
-      return notificationManager.removeSubscriber(serviceId, subscriptionData);
+      return notificationManager.removeSubscriber(
+        serviceId,
+        subscriptionData,
+        userId
+      );
     };
 
     it("should remove subscriber from storage", async () => {
       serviceId = "testLoadmonitoringServiceId2";
+      userId = "testUser2ID";
       subscriptionData = {
         endpoint: "testEndpoint22",
         keys: {
@@ -1099,6 +1153,62 @@ describe("LoadmonitoringService", () => {
 
     it("should not remove subscriber from storage - if there is no service of given id", async () => {
       serviceId = "testLoadmonitoringServiceId4";
+      userId = "testUser2ID";
+      subscriptionData = {
+        endpoint: "testEndpoint22",
+        keys: {
+          p256dh: "testKey22",
+          auth: "testAuth22",
+        },
+      };
+
+      await exec();
+
+      //#region ===== CHECKING API CALL =====
+
+      expect(setFileContent).not.toHaveBeenCalled();
+
+      //#endregion ===== CHECKING API CALL =====
+
+      //#region ===== CHECKING STORAGE =====
+
+      let storage = getPrivateProperty(
+        notificationManager,
+        "_subscribersStorage"
+      ) as MindSphereDataStorage<SubscriberPayload[]>;
+
+      let expectedCache = {
+        testLoadmonitoringServiceId1: [
+          ...fileServiceContent["hostTenant"]["notificationsAssetId"][
+            "testLoadmonitoringServiceId1.sub.json"
+          ],
+        ],
+        testLoadmonitoringServiceId2: [
+          fileServiceContent["hostTenant"]["notificationsAssetId"][
+            "testLoadmonitoringServiceId2.sub.json"
+          ][0],
+          fileServiceContent["hostTenant"]["notificationsAssetId"][
+            "testLoadmonitoringServiceId2.sub.json"
+          ][1],
+          fileServiceContent["hostTenant"]["notificationsAssetId"][
+            "testLoadmonitoringServiceId2.sub.json"
+          ][2],
+        ],
+        testLoadmonitoringServiceId3: [
+          ...fileServiceContent["hostTenant"]["notificationsAssetId"][
+            "testLoadmonitoringServiceId3.sub.json"
+          ],
+        ],
+      };
+
+      testPrivateProperty(storage, "_cacheData", expectedCache);
+
+      //#endregion ===== CHECKING STORAGE =====
+    });
+
+    it("should not remove subscriber from storage - if user id is differnt than user in subscription", async () => {
+      serviceId = "testLoadmonitoringServiceId4";
+      userId = "testUser3ID";
       subscriptionData = {
         endpoint: "testEndpoint22",
         keys: {
