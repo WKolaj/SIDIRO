@@ -6,49 +6,6 @@
     <title>Document</title>
 </head>
 <body>
-    <script type="text/javascript">
-       
-function urlBase64ToUint8Array(base64String) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, "+")
-    .replace(/_/g, "/");
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-async function register() {
-  // Check for service worker
-  if ("serviceWorker" in navigator) {
-    try {
-      const register = await navigator.serviceWorker.register("/worker.js", {
-        scope: "/"
-      });
-
-      await navigator.serviceWorker.ready;
-
-      // Register Push
-      const subscription = await register.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array("BNko5cJqNEYyTIBl3ydohj-XUhk3qg74Rq_ELD4p1vlY4aj5Wl4X45yHR4YUhBnHL7BKdg3cDrMOWzu7eadIIhU")
-      });
-
-      console.log(JSON.stringify(subscription))
-
-      return result.data;
-    } catch (err) {
-      console.error(err.message, err);
-    }
-  }
-}
-register();
-      </script>
-
     SIDIRO - version 0.0.9
 </body>
 </html>
