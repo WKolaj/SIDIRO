@@ -38,8 +38,8 @@ applyJSONParsingToRoute(router);
 
 //#region ========== ME ROUTES ==========
 
-router.get(
-  "/me/:plantId/:serviceId",
+router.post(
+  "/isRegistered/:plantId/:serviceId",
   fetchTokenData,
   fetchUserAndAppData,
   isUserOrAdmin,

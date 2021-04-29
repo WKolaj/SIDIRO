@@ -216,6 +216,8 @@ class LoadmonitoringService extends CustomService<
   private async _disable() {
     this._historicalPoints = [];
     this._predictedPoints = [];
+    this._warningPoints = [];
+    this._alertPoints = [];
     this._alertActive = false;
     this._alertActive = false;
     this._predictedPower = 0;
