@@ -28,6 +28,10 @@ import appStart from "../../../../startup/app";
 import { Server } from "http";
 import jwt from "jsonwebtoken";
 import { MindSphereUserJWTData } from "../../../../middleware/tokenData/fetchTokenData";
+import {
+  clearMindSphereTokenManagerInstanceMock,
+  mockMindSphereTokenManager,
+} from "../../../utilities/mockMindSphereTokenManager";
 
 describe("user route", () => {
   let userServiceContent: MockedUserServiceContent;
@@ -37,6 +41,9 @@ describe("user route", () => {
   let server: Server;
 
   beforeEach(async () => {
+    //Clear MindSphere token manager
+    clearMindSphereTokenManagerInstanceMock();
+
     //Clearing MindSphereServices
     (MindSphereUserService as any)._instance = null;
     (MindSphereUserGroupService as any)._instance = null;
@@ -2013,6 +2020,9 @@ describe("user route", () => {
   });
 
   afterEach(async () => {
+    //Clear MindSphere token manager
+    clearMindSphereTokenManagerInstanceMock();
+
     //Clearing MindSphereServices
     (MindSphereUserService as any)._instance = null;
     (MindSphereUserGroupService as any)._instance = null;
@@ -2029,6 +2039,7 @@ describe("user route", () => {
   });
 
   const beforeExec = async () => {
+    await mockMindSphereTokenManager();
     await mockMsUserGroupService(userGroupServiceContent);
     await mockMsUserService(userServiceContent);
     await mockMsFileService(fileServiceContent);

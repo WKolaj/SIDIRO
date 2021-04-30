@@ -62,6 +62,7 @@ import { MindSphereUserJWTData } from "../../../../../middleware/tokenData/fetch
 import logger from "../../../../../logger/logger";
 import { cloneObject } from "../../../../../utilities/utilities";
 import { config } from "node-config-ts";
+import { clearMindSphereTokenManagerInstanceMock, mockMindSphereTokenManager } from "../../../../utilities/mockMindSphereTokenManager";
 
 describe("config plant route", () => {
   let userServiceContent: MockedUserServiceContent;
@@ -72,6 +73,9 @@ describe("config plant route", () => {
   let server: Server;
 
   beforeEach(async () => {
+    //Clear MindSphere token manager
+    clearMindSphereTokenManagerInstanceMock();
+
     //Clearing MindSphereServices
     (MindSphereUserService as any)._instance = null;
     (MindSphereUserGroupService as any)._instance = null;
@@ -2052,6 +2056,9 @@ describe("config plant route", () => {
   });
 
   afterEach(async () => {
+    //Clear MindSphere token manager
+    clearMindSphereTokenManagerInstanceMock();
+
     //Clearing MindSphereServices
     (MindSphereUserService as any)._instance = null;
     (MindSphereUserGroupService as any)._instance = null;
@@ -2068,6 +2075,7 @@ describe("config plant route", () => {
   });
 
   const beforeExec = async () => {
+    await mockMindSphereTokenManager();
     await mockMsUserGroupService(userGroupServiceContent);
     await mockMsUserService(userServiceContent);
     await mockMsFileService(fileServiceContent);
