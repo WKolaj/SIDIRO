@@ -109,8 +109,6 @@ abstract class CustomService<
   public abstract getData(): Promise<ServiceData>;
 
   public validateNewConfig(newConfig: ServiceConfig): string | null {
-    //TODO - test this method
-
     if (newConfig.id !== this.ID) return "ID cannot be changed";
     if (newConfig.serviceType !== this.Type)
       return "ServiceType cannot be changed";

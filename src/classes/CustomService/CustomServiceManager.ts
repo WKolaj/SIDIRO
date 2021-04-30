@@ -125,7 +125,6 @@ class CustomServiceManager {
     id: string,
     type: CustomServiceType
   ): CustomService<CustomServiceConfig, CustomServiceData> {
-    //TODO - test this method after adding LoadMonitoringService
     switch (type) {
       case CustomServiceType.LoadmonitoringService: {
         return new LoadmonitoringService(

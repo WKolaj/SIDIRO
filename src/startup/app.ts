@@ -10,18 +10,24 @@ import routeStartFunc from "./route";
 import appDataStartFunc from "./appData";
 import notificationsStartFunc from "./notifications";
 import customServicesStartFunc from "./customServices";
+import tokenStartFunc from "./tokenManager";
 
 const app = express();
 
 export default async function(workingDirName: string | null) {
   if (!workingDirName) workingDirName = __dirname;
 
-  //Startup of application
-  await configStartFunc();
-  await logsStartFunc();
-  await appDataStartFunc();
-  await notificationsStartFunc();
-  await customServicesStartFunc();
+  //App has to start in case bad credentials - in order to be able to update in mindsphere
+  let tokenFetched = await tokenStartFunc();
+
+  if (tokenFetched) {
+    //Startup of application
+    await configStartFunc();
+    await logsStartFunc();
+    await appDataStartFunc();
+    await notificationsStartFunc();
+    await customServicesStartFunc();
+  }
 
   const port = process.env.PORT || config.port;
 
