@@ -29,5 +29,12 @@ export default async function(
   )
     return res.status(404).send("Plant of given id not found!");
 
+  //Checking id plant exists
+  let plantData = await appDataRequest.appInstance!.getPlantData(
+    req.params.plantId
+  );
+
+  if (plantData == null) return res.status(404).send("Plant does not exist!");
+
   next();
 }

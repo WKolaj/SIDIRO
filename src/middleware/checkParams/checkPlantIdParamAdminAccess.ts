@@ -28,5 +28,12 @@ export default async function(
 
   //#endregion ========== CHECKING IF ADMIN HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
 
+  //Checking id plant exists
+  let plantData = await appDataRequest.appInstance!.getPlantData(
+    req.params.plantId
+  );
+
+  if (plantData == null) return res.status(404).send("Plant does not exist!");
+
   next();
 }

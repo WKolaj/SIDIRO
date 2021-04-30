@@ -28,7 +28,9 @@ import LoadmonitoringService, {
   EnergyPoint,
   LoadmonitoringConfig,
 } from "../../../../classes/CustomService/LoadmonitoringService";
-import { CustomServiceType } from "../../../../classes/CustomService/CustomServiceManager";
+import CustomServiceManager, {
+  CustomServiceType,
+} from "../../../../classes/CustomService/CustomServiceManager";
 import webpush from "web-push";
 import nodemailer from "nodemailer";
 import MailSender from "../../../../classes/MailSender/MailSender";
@@ -60,6 +62,13 @@ import {
   clearMindSphereTokenManagerInstanceMock,
   mockMindSphereTokenManager,
 } from "../../../utilities/mockMindSphereTokenManager";
+import MockDate from "mockdate";
+
+const getAppIdFromUserPaylad = (userPayload: MindSphereUserJWTData) => {
+  return userPayload.subtenant != null
+    ? `ten-${userPayload.ten}-sub-${userPayload.subtenant}`
+    : `ten-${userPayload.ten}`;
+};
 
 describe("service route", () => {
   let fileServiceContent: MockedFileServiceContent;
@@ -70,6 +79,7 @@ describe("service route", () => {
 
   let logErrorMockFunc: jest.Mock;
   let server: Server;
+  let tickId: number;
 
   beforeEach(async () => {
     //Clear MindSphere token manager
@@ -81,6 +91,9 @@ describe("service route", () => {
     (MindSphereUserService as any)._instance = null;
     (MindSphereUserGroupService as any)._instance = null;
     (MindSphereAssetService as any)._instance = null;
+
+    //Clearing all services
+    (CustomServiceManager as any)._instance = null;
 
     //Clearing sending mails and notification
     (MailSender as any)._instance = null;
@@ -101,7 +114,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin11FamilyName",
             givenName: "testGlobalAdmin11GivenName",
           },
-          userName: "test_global_admin_11_user_name",
+          userName: "test_global_admin_11@user.name",
           emails: [
             {
               value: "testGlobalAdmin11Email",
@@ -117,7 +130,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin11FamilyName",
             givenName: "testLocalAdmin11GivenName",
           },
-          userName: "test_local_admin_11_user_name",
+          userName: "test_local_admin_11@user.name",
           emails: [
             {
               value: "testLocalAdmin11Email",
@@ -133,7 +146,7 @@ describe("service route", () => {
             familyName: "testGlobalUser11FamilyName",
             givenName: "testGlobalUser11GivenName",
           },
-          userName: "test_global_user_11_user_name",
+          userName: "test_global_user_11@user.name",
           emails: [
             {
               value: "testGlobalUser11Email",
@@ -149,7 +162,7 @@ describe("service route", () => {
             familyName: "testLocalUser11FamilyName",
             givenName: "testLocalUser11GivenName",
           },
-          userName: "test_local_user_11_user_name",
+          userName: "test_local_user_11@user.name",
           emails: [
             {
               value: "testLocalUser11Email",
@@ -165,7 +178,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin12FamilyName",
             givenName: "testGlobalAdmin12GivenName",
           },
-          userName: "test_global_admin_12_user_name",
+          userName: "test_global_admin_12@user.name",
           emails: [
             {
               value: "testGlobalAdmin12Email",
@@ -186,7 +199,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin12FamilyName",
             givenName: "testLocalAdmin12GivenName",
           },
-          userName: "test_local_admin_12_user_name",
+          userName: "test_local_admin_12@user.name",
           emails: [
             {
               value: "testLocalAdmin12Email",
@@ -207,7 +220,7 @@ describe("service route", () => {
             familyName: "testGlobalUser12FamilyName",
             givenName: "testGlobalUser12GivenName",
           },
-          userName: "test_global_user_12_user_name",
+          userName: "test_global_user_12@user.name",
           emails: [
             {
               value: "testGlobalUser12Email",
@@ -228,7 +241,7 @@ describe("service route", () => {
             familyName: "testLocalUser12FamilyName",
             givenName: "testLocalUser12GivenName",
           },
-          userName: "test_local_user_12_user_name",
+          userName: "test_local_user_12@user.name",
           emails: [
             {
               value: "testLocalUser12Email",
@@ -251,7 +264,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin21FamilyName",
             givenName: "testGlobalAdmin21GivenName",
           },
-          userName: "test_global_admin_21_user_name",
+          userName: "test_global_admin_21@user.name",
           emails: [
             {
               value: "testGlobalAdmin21Email",
@@ -267,7 +280,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin21FamilyName",
             givenName: "testLocalAdmin21GivenName",
           },
-          userName: "test_local_admin_21_user_name",
+          userName: "test_local_admin_21@user.name",
           emails: [
             {
               value: "testLocalAdmin21Email",
@@ -283,7 +296,7 @@ describe("service route", () => {
             familyName: "testGlobalUser21FamilyName",
             givenName: "testGlobalUser21GivenName",
           },
-          userName: "test_global_user_21_user_name",
+          userName: "test_global_user_21@user.name",
           emails: [
             {
               value: "testGlobalUser21Email",
@@ -299,7 +312,7 @@ describe("service route", () => {
             familyName: "testLocalUser21FamilyName",
             givenName: "testLocalUser21GivenName",
           },
-          userName: "test_local_user_21_user_name",
+          userName: "test_local_user_21@user.name",
           emails: [
             {
               value: "testLocalUser21Email",
@@ -315,7 +328,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin22FamilyName",
             givenName: "testGlobalAdmin22GivenName",
           },
-          userName: "test_global_admin_22_user_name",
+          userName: "test_global_admin_22@user.name",
           emails: [
             {
               value: "testGlobalAdmin22Email",
@@ -336,7 +349,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin22FamilyName",
             givenName: "testLocalAdmin22GivenName",
           },
-          userName: "test_local_admin_22_user_name",
+          userName: "test_local_admin_22@user.name",
           emails: [
             {
               value: "testLocalAdmin22Email",
@@ -357,7 +370,7 @@ describe("service route", () => {
             familyName: "testGlobalUser22FamilyName",
             givenName: "testGlobalUser22GivenName",
           },
-          userName: "test_global_user_22_user_name",
+          userName: "test_global_user_22@user.name",
           emails: [
             {
               value: "testGlobalUser22Email",
@@ -378,7 +391,7 @@ describe("service route", () => {
             familyName: "testLocalUser22FamilyName",
             givenName: "testLocalUser22GivenName",
           },
-          userName: "test_local_user_22_user_name",
+          userName: "test_local_user_22@user.name",
           emails: [
             {
               value: "testLocalUser22Email",
@@ -401,7 +414,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin31FamilyName",
             givenName: "testGlobalAdmin31GivenName",
           },
-          userName: "test_global_admin_31_user_name",
+          userName: "test_global_admin_31@user.name",
           emails: [
             {
               value: "testGlobalAdmin31Email",
@@ -417,7 +430,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin31FamilyName",
             givenName: "testLocalAdmin31GivenName",
           },
-          userName: "test_local_admin_31_user_name",
+          userName: "test_local_admin_31@user.name",
           emails: [
             {
               value: "testLocalAdmin31Email",
@@ -433,7 +446,7 @@ describe("service route", () => {
             familyName: "testGlobalUser31FamilyName",
             givenName: "testGlobalUser31GivenName",
           },
-          userName: "test_global_user_31_user_name",
+          userName: "test_global_user_31@user.name",
           emails: [
             {
               value: "testGlobalUser31Email",
@@ -449,7 +462,7 @@ describe("service route", () => {
             familyName: "testLocalUser31FamilyName",
             givenName: "testLocalUser31GivenName",
           },
-          userName: "test_local_user_31_user_name",
+          userName: "test_local_user_31@user.name",
           emails: [
             {
               value: "testLocalUser31Email",
@@ -465,7 +478,7 @@ describe("service route", () => {
             familyName: "testGlobalAdmin32FamilyName",
             givenName: "testGlobalAdmin32GivenName",
           },
-          userName: "test_global_admin_32_user_name",
+          userName: "test_global_admin_32@user.name",
           emails: [
             {
               value: "testGlobalAdmin32Email",
@@ -486,7 +499,7 @@ describe("service route", () => {
             familyName: "testLocalAdmin32FamilyName",
             givenName: "testLocalAdmin32GivenName",
           },
-          userName: "test_local_admin_32_user_name",
+          userName: "test_local_admin_32@user.name",
           emails: [
             {
               value: "testLocalAdmin32Email",
@@ -507,7 +520,7 @@ describe("service route", () => {
             familyName: "testGlobalUser32FamilyName",
             givenName: "testGlobalUser32GivenName",
           },
-          userName: "test_global_user_32_user_name",
+          userName: "test_global_user_32@user.name",
           emails: [
             {
               value: "testGlobalUser32Email",
@@ -528,7 +541,7 @@ describe("service route", () => {
             familyName: "testLocalUser32FamilyName",
             givenName: "testLocalUser32GivenName",
           },
-          userName: "test_local_user_32_user_name",
+          userName: "test_local_user_32@user.name",
           emails: [
             {
               value: "testLocalUser32Email",
@@ -551,7 +564,7 @@ describe("service route", () => {
             familyName: "testSuperAdmin1FamilyName",
             givenName: "testSuperAdmin1GivenName",
           },
-          userName: "test_super_admin_1_user_name",
+          userName: "test_super_admin_1@user.name",
           emails: [
             {
               value: "testSuperAdmin1Email",
@@ -567,7 +580,7 @@ describe("service route", () => {
             familyName: "testSuperAdmin2FamilyName",
             givenName: "testSuperAdmin2GivenName",
           },
-          userName: "test_super_admin_2_user_name",
+          userName: "test_super_admin_2@user.name",
           emails: [
             {
               value: "testSuperAdmin2Email",
@@ -583,7 +596,7 @@ describe("service route", () => {
             familyName: "testSuperAdmin3FamilyName",
             givenName: "testSuperAdmin3GivenName",
           },
-          userName: "test_super_admin_3_user_name",
+          userName: "test_super_admin_3@user.name",
           emails: [
             {
               value: "testSuperAdmin3Email",
@@ -604,7 +617,7 @@ describe("service route", () => {
             familyName: "testSuperAdmin4FamilyName",
             givenName: "testSuperAdmin4GivenName",
           },
-          userName: "test_super_admin_4_user_name",
+          userName: "test_super_admin_4@user.name",
           emails: [
             {
               value: "testSuperAdmin4Email",
@@ -1015,7 +1028,7 @@ describe("service route", () => {
                   "testGlobalAdmin11TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_11_user_name",
+            userName: "test_global_admin_11@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               permissions: {
@@ -1054,7 +1067,7 @@ describe("service route", () => {
                   "testGlobalUser11TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_11_user_name",
+            userName: "test_global_user_11@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               permissions: {
@@ -1085,7 +1098,7 @@ describe("service route", () => {
                   "testLocalAdmin11TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_11_user_name",
+            userName: "test_local_admin_11@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               permissions: {
@@ -1115,7 +1128,7 @@ describe("service route", () => {
                   "testLocalUser11TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_user_11_user_name",
+            userName: "test_local_user_11@user.name",
             permissions: {
               role: UserRole.LocalUser,
               permissions: {
@@ -1188,7 +1201,7 @@ describe("service route", () => {
                   "testGlobalAdmin12TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_12_user_name",
+            userName: "test_global_admin_12@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1227,7 +1240,7 @@ describe("service route", () => {
                   "testGlobalUser12TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_12_user_name",
+            userName: "test_global_user_12@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1258,7 +1271,7 @@ describe("service route", () => {
                   "testLocalAdmin12TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_12_user_name",
+            userName: "test_local_admin_12@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1288,7 +1301,7 @@ describe("service route", () => {
                   "testLocalUser12TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_user_12_user_name",
+            userName: "test_local_user_12@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1361,7 +1374,7 @@ describe("service route", () => {
                   "testGlobalAdmin21TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_21_user_name",
+            userName: "test_global_admin_21@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1400,7 +1413,7 @@ describe("service route", () => {
                   "testGlobalUser21TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_21_user_name",
+            userName: "test_global_user_21@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1431,7 +1444,7 @@ describe("service route", () => {
                   "testLocalAdmin21TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_21_user_name",
+            userName: "test_local_admin_21@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1461,7 +1474,7 @@ describe("service route", () => {
                   "testLocalUser21TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_user_21_user_name",
+            userName: "test_local_user_21@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1534,7 +1547,7 @@ describe("service route", () => {
                   "testGlobalAdmin22TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_22_user_name",
+            userName: "test_global_admin_22@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1573,7 +1586,7 @@ describe("service route", () => {
                   "testGlobalUser22TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_22_user_name",
+            userName: "test_global_user_22@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1604,7 +1617,7 @@ describe("service route", () => {
                   "testLocalAdmin22TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_22_user_name",
+            userName: "test_local_admin_22@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1634,7 +1647,7 @@ describe("service route", () => {
                   "testLocalUser22TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_user_22_user_name",
+            userName: "test_local_user_22@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1707,7 +1720,7 @@ describe("service route", () => {
                   "testGlobalAdmin31TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_admin_31_user_name",
+            userName: "test_global_admin_31@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               plants: {
@@ -1746,7 +1759,7 @@ describe("service route", () => {
                   "testGlobalUser31TestPlant3ConfigValue",
               },
             },
-            userName: "test_global_user_31_user_name",
+            userName: "test_global_user_31@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               plants: {
@@ -1777,7 +1790,7 @@ describe("service route", () => {
                   "testLocalAdmin31TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_admin_31_user_name",
+            userName: "test_local_admin_31@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               plants: {
@@ -1807,7 +1820,7 @@ describe("service route", () => {
                   "testLocalUser31TestPlant2ConfigValue",
               },
             },
-            userName: "test_local_user_31_user_name",
+            userName: "test_local_user_31@user.name",
             permissions: {
               role: UserRole.LocalUser,
               plants: {
@@ -1880,7 +1893,7 @@ describe("service route", () => {
                   "testGlobalAdmin32TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_admin_32_user_name",
+            userName: "test_global_admin_32@user.name",
             permissions: {
               role: UserRole.GlobalAdmin,
               permissions: {
@@ -1919,7 +1932,7 @@ describe("service route", () => {
                   "testGlobalUser32TestPlant6ConfigValue",
               },
             },
-            userName: "test_global_user_32_user_name",
+            userName: "test_global_user_32@user.name",
             permissions: {
               role: UserRole.GlobalUser,
               permissions: {
@@ -1950,7 +1963,7 @@ describe("service route", () => {
                   "testLocalAdmin32TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_admin_32_user_name",
+            userName: "test_local_admin_32@user.name",
             permissions: {
               role: UserRole.LocalAdmin,
               permissions: {
@@ -1980,7 +1993,7 @@ describe("service route", () => {
                   "testLocalUser32TestPlant5ConfigValue",
               },
             },
-            userName: "test_local_user_32_user_name",
+            userName: "test_local_user_32@user.name",
             permissions: {
               role: UserRole.LocalUser,
               permissions: {
@@ -2155,6 +2168,7 @@ describe("service route", () => {
       },
     };
 
+    tickId = 1618474020000; //2021-04-15T07:07:00.000Z
     //1618471800000 -> 2021-04-15T07:30:00.000Z
     //1618471860000 -> 2021-04-15T07:31:00.000Z
     //1618471920000 -> 2021-04-15T07:32:00.000Z
@@ -6256,6 +6270,9 @@ describe("service route", () => {
     //Clearing app manager
     (MindSphereAppsManager as any)._instance = null;
 
+    //Clearing all services
+    (CustomServiceManager as any)._instance = null;
+
     //Reseting throwing by webpush and nodemailer
     (webpush as any).__setThrowOnNotification(null);
     (nodemailer as any).__setThrowOnEmail(null);
@@ -6267,6 +6284,9 @@ describe("service route", () => {
   });
 
   const beforeExec = async () => {
+    //Setting current date
+    MockDate.set(tickId);
+
     await mockMindSphereTokenManager();
     await mockMsFileService(fileServiceContent);
     await mockMsTimeSeriesService(timeseriesServiceContent);
@@ -6279,11 +6299,19 @@ describe("service route", () => {
   };
 
   describe("GET /me/:plantId", () => {
+    //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
     let plantId: string;
 
+    //Ouputs
+    let expectedValidCall: boolean;
+    let expectedResponseCode: number;
+    let expectedErrorText: string | null;
+    let expectedResponsePayload: any;
+
     beforeEach(() => {
+      //Inputs
       plantId = "testPlant5";
       requestHeaders = {};
       userPayload = {
@@ -6291,13 +6319,58 @@ describe("service route", () => {
         email: "testGlobalAdminEmail",
         scope: ["testGlobalAdminScope"],
         ten: "testTenant2",
-        user_name: "test_global_admin_22_user_name",
+        user_name: "test_global_admin_22@user.name",
         subtenant: "subtenant2",
       };
       requestHeaders["authorization"] = `Bearer ${jwt.sign(
         userPayload,
         "testPrivateKey"
       )}`;
+
+      //Outputs
+      expectedValidCall = true;
+      expectedResponseCode = 200;
+      expectedErrorText = null;
+      expectedResponsePayload = [
+        {
+          config:
+            fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+              "testLoadmonitoringServiceId1.service.config.json"
+            ],
+          data: {
+            alertActive: false,
+            alertPoints: [],
+            historicalPoints: [],
+            initTickId: 1618474020,
+            initialized: true,
+            lastRefreshTickId: null,
+            predictedEnergy: 0,
+            predictedPoints: [],
+            predictedPower: 0,
+            warningActive: false,
+            warningPoints: [],
+          },
+        },
+        {
+          config:
+            fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+              "testLoadmonitoringServiceId2.service.config.json"
+            ],
+          data: {
+            alertActive: false,
+            alertPoints: [],
+            historicalPoints: [],
+            initTickId: 1618474020,
+            initialized: true,
+            lastRefreshTickId: null,
+            predictedEnergy: 0,
+            predictedPoints: [],
+            predictedPower: 0,
+            warningActive: false,
+            warningPoints: [],
+          },
+        },
+      ];
     });
 
     let exec = async () => {
@@ -6309,14 +6382,755 @@ describe("service route", () => {
         .send();
     };
 
-    it("should return 200 and payload of all services for given tenant and plant", async () => {
+    let testServiceGet = async () => {
       let result = await exec();
 
       //#region ===== CHECKING RESPONSE =====
 
-      expect(result.status).toEqual(200);
+      expect(result.status).toEqual(expectedResponseCode);
+
+      if (expectedValidCall) {
+        let expectedPayload = expectedResponsePayload;
+
+        expect(result.body).toEqual(expectedPayload);
+      } else {
+        expect(result.text).toEqual(expectedErrorText);
+      }
 
       //#endregion ===== CHECKING RESPONSE =====
+    };
+
+    it("should return 200 and payload of all services for given tenant and plant", async () => {
+      await testServiceGet();
+    });
+
+    it("should return 200 and payload of one service - if only one service exists for given plantId", async () => {
+      //Inputs
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId2.service.config.json"
+      ].plantId = "testPlant6";
+
+      //Outputs
+      expectedResponsePayload = [expectedResponsePayload[0]];
+
+      await testServiceGet();
+    });
+
+    it("should return 200 and payload with empty array - if there are no services for given plantId", async () => {
+      plantId = "testPlant6";
+
+      //Outputs
+      expectedResponsePayload = [];
+
+      await testServiceGet();
+    });
+
+    it("should return 200 and payload with empty array - if there are no services for given app - tenant app calls API, subtenant has services", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      plantId = "testPlant2";
+
+      //Outputs
+      expectedResponsePayload = [];
+
+      await testServiceGet();
+    });
+
+    it("should return 200 and payload with empty array - if there are no services for given app - subtenant app calls API, tenant has services", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Inputs
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId1.service.config.json"
+      ].appId = "ten-testTenant2";
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId2.service.config.json"
+      ].appId = "ten-testTenant2";
+
+      //Outputs
+      expectedResponsePayload = [];
+
+      await testServiceGet();
+    });
+
+    it("should return 200 and payload with empty array - if there are no services for given app -  subtenant app calls API, other subtenant has services", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Inputs
+      (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId1.service.config.json"
+      ].appId = "ten-testTenant1-sub-subtenant1"),
+        (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+          "testLoadmonitoringServiceId2.service.config.json"
+        ].appId = "ten-testTenant1-sub-subtenant1");
+
+      //Outputs
+      expectedResponsePayload = [];
+
+      await testServiceGet();
+    });
+
+    //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+    it("should return 404 - if there is no plant of given id", async () => {
+      plantId = "fakePlant";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if there is no plant's data for given plantId but it exists in user's permissions", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `${plantId}.plant.config.json`
+      ];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if user is a local user without local access to given plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if user is a local admin without local access to given plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global user without local access to given plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global admin without local access to given plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId];
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a local user with user access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a local admin with user access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global user with user access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global admin with user access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.User;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a local admin with admin access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global admin with admin access to the plant", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if user is a local user with invalid user role", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalUser22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testLocalUserClientId",
+        email: "testLocalUserEmail",
+        scope: ["testLocalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_local_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if user is a local admin with invalid user role", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testLocalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testLocalAdminClientId",
+        email: "testLocalAdminEmail",
+        scope: ["testLocalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_local_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 404;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global user with invalid user role", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalUser22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testGlobalUserClientId",
+        email: "testGlobalUserEmail",
+        scope: ["testGlobalUserScope"],
+        ten: "testTenant2",
+        user_name: "test_global_user_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testServiceGet();
+    });
+
+    it("should return 200 - if user is a global admin with invalid user role", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.plants[plantId] = 99;
+
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant2",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user's jwt payload does not have tenant assigned", async () => {
+      delete (userPayload as any).ten;
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Invalid application id generated from user payload!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if there is no application of given id", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "fakeTen",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "fakeSub",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Application of given id not found for the user!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user has no access to given app", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant1",
+        user_name: "test_global_admin_22@user.name",
+        subtenant: "subtenant1",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. User of given name not found!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if there is no application data for given app", async () => {
+      delete fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["main.app.config.json"];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. Main application settings not found for the user!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user has invalid role", async () => {
+      let appId = getAppIdFromUserPaylad(userPayload);
+
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][`${appId}-asset-id`][
+        `testGlobalAdmin22.user.config.json`
+      ].permissions.role = 99;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User must be a global user or admin or local user or admin!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user has invalid scope", async () => {
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["fakeScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_22@user.name",
+      };
+
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Forbidden access. No scope found to access the app!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+      //Adding user to file service for the app
+      fileServiceContent["hostTenant"][
+        "ten-testTenant2-sub-subtenant2-asset-id"
+      ]["testFakeUser23.user.config.json"] = {
+        data: {
+          testPlant4: {
+            testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+          },
+        },
+        config: {
+          testPlant4: {
+            testFakeUser23TestPlant4Config:
+              "testFakeUser23TestPlant4ConfigValue",
+          },
+          testPlant5: {
+            testFakeUser23TestPlant5Config:
+              "testFakeUser23TestPlant5ConfigValue",
+          },
+        },
+        userName: "test_fake_user_23@user.name",
+        permissions: {
+          role: UserRole.GlobalAdmin,
+          plants: {
+            testPlant5: PlantPermissions.User,
+            testPlant6: PlantPermissions.User,
+          },
+        },
+      };
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText = "Access denied. User of given name not found!";
+
+      await testServiceGet();
+    });
+
+    it("should return 403 and not get the plant - if user has valid scope, exists in user service but does not exist in file service", async () => {
+      userServiceContent["testTenant2"]["testFakeUser23"] = {
+        active: true,
+        name: {
+          familyName: "testFakeUser23FamilyName",
+          givenName: "testFakeUser23GivenName",
+        },
+        userName: "test_fake_user_23@user.name",
+        emails: [
+          {
+            value: "testFakeUser23Email",
+          },
+        ],
+        groups: [],
+        externalId: "testFakeUser23ExternalId",
+        id: "testFakeUser23",
+        subtenants: [
+          {
+            id: "subtenant2",
+          },
+        ],
+      };
+
+      userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+        type: "USER",
+        value: "testFakeUser23",
+      });
+
+      //Creating new user's jwt payload
+      userPayload = {
+        client_id: "testFakeUserClientId",
+        email: "testFakeUserEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_fake_user_23@user.name",
+        subtenant: "subtenant2",
+      };
+
+      //Assinging jwt to header
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 403;
+      expectedErrorText =
+        "Access denied. User does not exist for given app id!";
+
+      await testServiceGet();
+    });
+
+    it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+      requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+
+      await testServiceGet();
+    });
+
+    it("should return 401 - if authorization token is invalid - invalid token", async () => {
+      requestHeaders["authorization"] =
+        "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+
+      await testServiceGet();
+    });
+
+    it("should return 401 - if authorization token is invalid - no token provided", async () => {
+      delete requestHeaders["authorization"];
+
+      //Outputs
+      expectedValidCall = false;
+      expectedResponseCode = 401;
+      expectedErrorText =
+        "Access denied. No token provided to fetch the user or token is invalid!";
+
+      await testServiceGet();
     });
 
     //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========

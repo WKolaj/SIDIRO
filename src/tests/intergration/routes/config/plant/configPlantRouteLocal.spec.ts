@@ -3463,7 +3463,7 @@ describe("config plant route", () => {
       //Outputs
       expectedValidCall = false;
       expectedResponseCode = 404;
-      expectedErrorText = "Plant data not found!";
+      expectedErrorText = "Plant does not exist!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       //One file of plant does not exist
@@ -5077,7 +5077,7 @@ describe("config plant route", () => {
       //Outputs
       expectedValidCall = false;
       expectedResponseCode = 404;
-      expectedErrorText = "Plant data not found!";
+      expectedErrorText = "Plant does not exist!";
       expectedGetAllUsersCallNumber = 1;
       expectedGetAssetsCallNumber = 1;
       //One file of plant does not exist

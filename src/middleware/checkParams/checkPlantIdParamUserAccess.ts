@@ -12,7 +12,7 @@ export default async function(
     appId: string;
   }>;
 
-  //#region ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN/USER OR BY LOCAL PERMISSIONS ==========
+  //CHECKING IF USER HAS ACCESS TO PLANT
 
   let hasGlobalPermissions =
     MindSphereApp.hasGlobalAdminRole(appDataRequest.userData!) ||
@@ -31,7 +31,12 @@ export default async function(
   if (!hasGlobalPermissions && !hasLocalPermissions)
     return res.status(404).send("Plant does not exist!");
 
-  //#endregion ========== CHECKING IF USER HAS ACCESS TO PLANT - BY GLOBAL ADMIN OR BY LOCAL PERMISSIONS ==========
+  //Checking id plant exists
+  let plantData = await appDataRequest.appInstance!.getPlantData(
+    req.params.plantId
+  );
+
+  if (plantData == null) return res.status(404).send("Plant does not exist!");
 
   next();
 }

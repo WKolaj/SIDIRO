@@ -116,16 +116,6 @@ router.put(
       PlantPayload
     >;
 
-    //#region ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
-
-    let plantData = await appDataReq.appInstance!.getPlantData(
-      req.params.plantId
-    );
-
-    if (plantData == null) return res.status(404).send("Plant does not exist!");
-
-    //#endregion ========== GETTING PLANT DATA AND CHECKING IF IT EXISTS ==========
-
     //#region ========== CHECKING IF THERE IS AN ATTEMPT TO CHANGE PLANT ID ==========
 
     if (req.params.plantId !== appDataReq.body.plantId)
