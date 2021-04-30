@@ -6,6 +6,7 @@ import {
   MockedFileServiceContent,
   mockMsFileService,
   setFileContent,
+  setFileServiceContent,
 } from "../../../utilities/mockMsFileService";
 import logger from "../../../../logger/logger";
 import { MindSphereDataStorage } from "../../../../classes/DataStorage/MindSphereDataStorage";
@@ -6298,11 +6299,883 @@ describe("service route", () => {
     server = await appStart(__dirname);
   };
 
-  describe("GET /me/:plantId", () => {
+  // describe("GET /me/:plantId", () => {
+  //   //Inputs
+  //   let requestHeaders: any;
+  //   let userPayload: MindSphereUserJWTData;
+  //   let plantId: string;
+
+  //   //Ouputs
+  //   let expectedValidCall: boolean;
+  //   let expectedResponseCode: number;
+  //   let expectedErrorText: string | null;
+  //   let expectedResponsePayload: any;
+
+  //   beforeEach(() => {
+  //     //Inputs
+  //     plantId = "testPlant5";
+  //     requestHeaders = {};
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = true;
+  //     expectedResponseCode = 200;
+  //     expectedErrorText = null;
+  //     expectedResponsePayload = [
+  //       {
+  //         config:
+  //           fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //             "testLoadmonitoringServiceId1.service.config.json"
+  //           ],
+  //         data: {
+  //           alertActive: false,
+  //           alertPoints: [],
+  //           historicalPoints: [],
+  //           initTickId: 1618474020,
+  //           initialized: true,
+  //           lastRefreshTickId: null,
+  //           predictedEnergy: 0,
+  //           predictedPoints: [],
+  //           predictedPower: 0,
+  //           warningActive: false,
+  //           warningPoints: [],
+  //         },
+  //       },
+  //       {
+  //         config:
+  //           fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //             "testLoadmonitoringServiceId2.service.config.json"
+  //           ],
+  //         data: {
+  //           alertActive: false,
+  //           alertPoints: [],
+  //           historicalPoints: [],
+  //           initTickId: 1618474020,
+  //           initialized: true,
+  //           lastRefreshTickId: null,
+  //           predictedEnergy: 0,
+  //           predictedPoints: [],
+  //           predictedPower: 0,
+  //           warningActive: false,
+  //           warningPoints: [],
+  //         },
+  //       },
+  //     ];
+  //   });
+
+  //   let exec = async () => {
+  //     await beforeExec();
+
+  //     return request(server)
+  //       .get(`/customApi/service/me/${plantId}`)
+  //       .set(requestHeaders)
+  //       .send();
+  //   };
+
+  //   let testServicesGet = async () => {
+  //     let result = await exec();
+
+  //     //#region ===== CHECKING RESPONSE =====
+
+  //     expect(result.status).toEqual(expectedResponseCode);
+
+  //     if (expectedValidCall) {
+  //       let expectedPayload = expectedResponsePayload;
+
+  //       expect(result.body).toEqual(expectedPayload);
+  //     } else {
+  //       expect(result.text).toEqual(expectedErrorText);
+  //     }
+
+  //     //#endregion ===== CHECKING RESPONSE =====
+  //   };
+
+  //   it("should return 200 and payload of all services for given tenant and plant", async () => {
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 and payload of one service - if only one service exists for given plantId", async () => {
+  //     //Inputs
+  //     fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //       "testLoadmonitoringServiceId2.service.config.json"
+  //     ].plantId = "testPlant6";
+
+  //     //Outputs
+  //     expectedResponsePayload = [expectedResponsePayload[0]];
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 and payload with empty array - if there are no services for given plantId", async () => {
+  //     plantId = "testPlant6";
+
+  //     //Outputs
+  //     expectedResponsePayload = [];
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 and payload with empty array - if there are no services for given app - tenant app calls API, subtenant has services", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_21@user.name",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     plantId = "testPlant2";
+
+  //     //Outputs
+  //     expectedResponsePayload = [];
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 and payload with empty array - if there are no services for given app - subtenant app calls API, tenant has services", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Inputs
+  //     fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //       "testLoadmonitoringServiceId1.service.config.json"
+  //     ].appId = "ten-testTenant2";
+  //     fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //       "testLoadmonitoringServiceId2.service.config.json"
+  //     ].appId = "ten-testTenant2";
+
+  //     //Outputs
+  //     expectedResponsePayload = [];
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 and payload with empty array - if there are no services for given app -  subtenant app calls API, other subtenant has services", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Inputs
+  //     (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //       "testLoadmonitoringServiceId1.service.config.json"
+  //     ].appId = "ten-testTenant1-sub-subtenant1"),
+  //       (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+  //         "testLoadmonitoringServiceId2.service.config.json"
+  //       ].appId = "ten-testTenant1-sub-subtenant1");
+
+  //     //Outputs
+  //     expectedResponsePayload = [];
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 but not fetch other services - if services have not been fetched before", async () => {
+  //     let oldServices =
+  //       fileServiceContent["hostTenant"]["testServiceContainerAssetId"];
+  //     fileServiceContent["hostTenant"]["testServiceContainerAssetId"] = [];
+
+  //     await beforeExec();
+
+  //     fileServiceContent["hostTenant"][
+  //       "testServiceContainerAssetId"
+  //     ] = oldServices;
+  //     setFileServiceContent(fileServiceContent);
+
+  //     let result = await request(server)
+  //       .get(`/customApi/service/me/${plantId}`)
+  //       .set(requestHeaders)
+  //       .send();
+
+  //     //#region ===== CHECKING RESPONSE =====
+
+  //     expect(result.status).toEqual(200);
+
+  //     expect(result.body).toEqual([]);
+
+  //     //#endregion ===== CHECKING RESPONSE =====
+
+  //     //#region ===== CHECKING API CALLS =====
+
+  //     //48 x user and app data + 2 x subscription
+  //     expect(getFileContent).toHaveBeenCalledTimes(50);
+
+  //     //#endregion ===== CHECKING API CALLS =====
+  //   });
+
+  //   //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
+
+  //   it("should return 404 - if there is no plant of given id", async () => {
+  //     plantId = "fakePlant";
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 404 - if there is no plant's data for given plantId but it exists in user's permissions", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `${plantId}.plant.config.json`
+  //     ];
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 404 - if user is a local user without local access to given plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalUser22.user.config.json`
+  //     ].permissions.plants[plantId];
+
+  //     userPayload = {
+  //       client_id: "testLocalUserClientId",
+  //       email: "testLocalUserEmail",
+  //       scope: ["testLocalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 404 - if user is a local admin without local access to given plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId];
+
+  //     userPayload = {
+  //       client_id: "testLocalAdminClientId",
+  //       email: "testLocalAdminEmail",
+  //       scope: ["testLocalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global user without local access to given plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalUser22.user.config.json`
+  //     ].permissions.plants[plantId];
+
+  //     userPayload = {
+  //       client_id: "testGlobalUserClientId",
+  //       email: "testGlobalUserEmail",
+  //       scope: ["testGlobalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global admin without local access to given plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     delete fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId];
+
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a local user with user access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testLocalUserClientId",
+  //       email: "testLocalUserEmail",
+  //       scope: ["testLocalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalUser22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.User;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a local admin with user access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testLocalAdminClientId",
+  //       email: "testLocalAdminEmail",
+  //       scope: ["testLocalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.User;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global user with user access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testGlobalUserClientId",
+  //       email: "testGlobalUserEmail",
+  //       scope: ["testGlobalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalUser22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.User;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global admin with user access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.User;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a local admin with admin access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testLocalAdminClientId",
+  //       email: "testLocalAdminEmail",
+  //       scope: ["testLocalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global admin with admin access to the plant", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = PlantPermissions.Admin;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 404 - if user is a local user with invalid user role", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalUser22.user.config.json`
+  //     ].permissions.plants[plantId] = 99;
+
+  //     userPayload = {
+  //       client_id: "testLocalUserClientId",
+  //       email: "testLocalUserEmail",
+  //       scope: ["testLocalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 404 - if user is a local admin with invalid user role", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testLocalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = 99;
+
+  //     userPayload = {
+  //       client_id: "testLocalAdminClientId",
+  //       email: "testLocalAdminEmail",
+  //       scope: ["testLocalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_local_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 404;
+  //     expectedErrorText = "Plant does not exist!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global user with invalid user role", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalUser22.user.config.json`
+  //     ].permissions.plants[plantId] = 99;
+
+  //     userPayload = {
+  //       client_id: "testGlobalUserClientId",
+  //       email: "testGlobalUserEmail",
+  //       scope: ["testGlobalUserScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_user_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 200 - if user is a global admin with invalid user role", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalAdmin22.user.config.json`
+  //     ].permissions.plants[plantId] = 99;
+
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user's jwt payload does not have tenant assigned", async () => {
+  //     delete (userPayload as any).ten;
+
+  //     //Assinging jwt to header
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText =
+  //       "Access denied. Invalid application id generated from user payload!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if there is no application of given id", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "fakeTen",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "fakeSub",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText =
+  //       "Access denied. Application of given id not found for the user!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user has no access to given app", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant1",
+  //       user_name: "test_global_admin_22@user.name",
+  //       subtenant: "subtenant1",
+  //     };
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText = "Access denied. User of given name not found!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if there is no application data for given app", async () => {
+  //     delete fileServiceContent["hostTenant"][
+  //       "ten-testTenant2-sub-subtenant2-asset-id"
+  //     ]["main.app.config.json"];
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText =
+  //       "Access denied. Main application settings not found for the user!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user has invalid role", async () => {
+  //     let appId = getAppIdFromUserPaylad(userPayload);
+
+  //     //Adding user to file service for the app
+  //     fileServiceContent["hostTenant"][`${appId}-asset-id`][
+  //       `testGlobalAdmin22.user.config.json`
+  //     ].permissions.role = 99;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText =
+  //       "Access denied. User must be a global user or admin or local user or admin!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user has invalid scope", async () => {
+  //     userPayload = {
+  //       client_id: "testGlobalAdminClientId",
+  //       email: "testGlobalAdminEmail",
+  //       scope: ["fakeScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_global_admin_22@user.name",
+  //     };
+
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText = "Forbidden access. No scope found to access the app!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+  //     //Adding user to file service for the app
+  //     fileServiceContent["hostTenant"][
+  //       "ten-testTenant2-sub-subtenant2-asset-id"
+  //     ]["testFakeUser23.user.config.json"] = {
+  //       data: {
+  //         testPlant4: {
+  //           testFakeUser23TestPlant4Data: "testFakeUser23TestPlant4DataValue",
+  //         },
+  //         testPlant5: {
+  //           testFakeUser23TestPlant5Data: "testFakeUser23TestPlant5DataValue",
+  //         },
+  //       },
+  //       config: {
+  //         testPlant4: {
+  //           testFakeUser23TestPlant4Config:
+  //             "testFakeUser23TestPlant4ConfigValue",
+  //         },
+  //         testPlant5: {
+  //           testFakeUser23TestPlant5Config:
+  //             "testFakeUser23TestPlant5ConfigValue",
+  //         },
+  //       },
+  //       userName: "test_fake_user_23@user.name",
+  //       permissions: {
+  //         role: UserRole.GlobalAdmin,
+  //         plants: {
+  //           testPlant5: PlantPermissions.User,
+  //           testPlant6: PlantPermissions.User,
+  //         },
+  //       },
+  //     };
+
+  //     //Creating new user's jwt payload
+  //     userPayload = {
+  //       client_id: "testFakeUserClientId",
+  //       email: "testFakeUserEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_fake_user_23@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+
+  //     //Assinging jwt to header
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText = "Access denied. User of given name not found!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 403 and not get services - if user has valid scope, exists in user service but does not exist in file service", async () => {
+  //     userServiceContent["testTenant2"]["testFakeUser23"] = {
+  //       active: true,
+  //       name: {
+  //         familyName: "testFakeUser23FamilyName",
+  //         givenName: "testFakeUser23GivenName",
+  //       },
+  //       userName: "test_fake_user_23@user.name",
+  //       emails: [
+  //         {
+  //           value: "testFakeUser23Email",
+  //         },
+  //       ],
+  //       groups: [],
+  //       externalId: "testFakeUser23ExternalId",
+  //       id: "testFakeUser23",
+  //       subtenants: [
+  //         {
+  //           id: "subtenant2",
+  //         },
+  //       ],
+  //     };
+
+  //     userGroupServiceContent.testTenant2.globalAdminGroup.members.push({
+  //       type: "USER",
+  //       value: "testFakeUser23",
+  //     });
+
+  //     userGroupServiceContent.testTenant2.subtenantUserGroup.members.push({
+  //       type: "USER",
+  //       value: "testFakeUser23",
+  //     });
+
+  //     //Creating new user's jwt payload
+  //     userPayload = {
+  //       client_id: "testFakeUserClientId",
+  //       email: "testFakeUserEmail",
+  //       scope: ["testGlobalAdminScope"],
+  //       ten: "testTenant2",
+  //       user_name: "test_fake_user_23@user.name",
+  //       subtenant: "subtenant2",
+  //     };
+
+  //     //Assinging jwt to header
+  //     requestHeaders["authorization"] = `Bearer ${jwt.sign(
+  //       userPayload,
+  //       "testPrivateKey"
+  //     )}`;
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 403;
+  //     expectedErrorText =
+  //       "Access denied. User does not exist for given app id!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 401 - if authorization token is invalid - no bearer prefix", async () => {
+  //     requestHeaders["authorization"] = jwt.sign(userPayload, "testPrivateKey");
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 401;
+  //     expectedErrorText =
+  //       "Access denied. No token provided to fetch the user or token is invalid!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 401 - if authorization token is invalid - invalid token", async () => {
+  //     requestHeaders["authorization"] =
+  //       "Bearer thisIsTheFakeValueOfTheJWTToken";
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 401;
+  //     expectedErrorText =
+  //       "Access denied. No token provided to fetch the user or token is invalid!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   it("should return 401 - if authorization token is invalid - no token provided", async () => {
+  //     delete requestHeaders["authorization"];
+
+  //     //Outputs
+  //     expectedValidCall = false;
+  //     expectedResponseCode = 401;
+  //     expectedErrorText =
+  //       "Access denied. No token provided to fetch the user or token is invalid!";
+
+  //     await testServicesGet();
+  //   });
+
+  //   //#endregion ========== AUTHORIZATION AND AUTHENTICATION ==========
+  // });
+
+  describe("GET /me/:plantId/:serviceId", () => {
     //Inputs
     let requestHeaders: any;
     let userPayload: MindSphereUserJWTData;
     let plantId: string;
+    let serviceId: string;
 
     //Ouputs
     let expectedValidCall: boolean;
@@ -6326,58 +7199,38 @@ describe("service route", () => {
         userPayload,
         "testPrivateKey"
       )}`;
+      serviceId = "testLoadmonitoringServiceId2";
 
       //Outputs
       expectedValidCall = true;
       expectedResponseCode = 200;
       expectedErrorText = null;
-      expectedResponsePayload = [
-        {
-          config:
-            fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
-              "testLoadmonitoringServiceId1.service.config.json"
-            ],
-          data: {
-            alertActive: false,
-            alertPoints: [],
-            historicalPoints: [],
-            initTickId: 1618474020,
-            initialized: true,
-            lastRefreshTickId: null,
-            predictedEnergy: 0,
-            predictedPoints: [],
-            predictedPower: 0,
-            warningActive: false,
-            warningPoints: [],
-          },
+      expectedResponsePayload = {
+        config:
+          fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+            "testLoadmonitoringServiceId2.service.config.json"
+          ],
+        data: {
+          alertActive: false,
+          alertPoints: [],
+          historicalPoints: [],
+          initTickId: 1618474020,
+          initialized: true,
+          lastRefreshTickId: null,
+          predictedEnergy: 0,
+          predictedPoints: [],
+          predictedPower: 0,
+          warningActive: false,
+          warningPoints: [],
         },
-        {
-          config:
-            fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
-              "testLoadmonitoringServiceId2.service.config.json"
-            ],
-          data: {
-            alertActive: false,
-            alertPoints: [],
-            historicalPoints: [],
-            initTickId: 1618474020,
-            initialized: true,
-            lastRefreshTickId: null,
-            predictedEnergy: 0,
-            predictedPoints: [],
-            predictedPower: 0,
-            warningActive: false,
-            warningPoints: [],
-          },
-        },
-      ];
+      };
     });
 
     let exec = async () => {
       await beforeExec();
 
       return request(server)
-        .get(`/customApi/service/me/${plantId}`)
+        .get(`/customApi/service/me/${plantId}/${serviceId}`)
         .set(requestHeaders)
         .send();
     };
@@ -6400,32 +7253,60 @@ describe("service route", () => {
       //#endregion ===== CHECKING RESPONSE =====
     };
 
-    it("should return 200 and payload of all services for given tenant and plant", async () => {
+    it("should return 200 and payload of given service", async () => {
       await testServiceGet();
     });
 
-    it("should return 200 and payload of one service - if only one service exists for given plantId", async () => {
+    it("should return 404 - if there is no service of given id", async () => {
       //Inputs
-      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+      delete fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
         "testLoadmonitoringServiceId2.service.config.json"
-      ].plantId = "testPlant6";
+      ];
 
       //Outputs
-      expectedResponsePayload = [expectedResponsePayload[0]];
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Service not found!";
 
       await testServiceGet();
     });
 
-    it("should return 200 and payload with empty array - if there are no services for given plantId", async () => {
-      plantId = "testPlant6";
+    it("should return 404 - if there is no plant of given id", async () => {
+      //Inputs
+      plantId = "fakePlant";
 
       //Outputs
-      expectedResponsePayload = [];
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Plant does not exist!";
 
       await testServiceGet();
     });
 
-    it("should return 200 and payload with empty array - if there are no services for given app - tenant app calls API, subtenant has services", async () => {
+    it("should return 404 - if tenant tries to access subtenant's service with plantId of subtenant", async () => {
+      //Inputs
+      userPayload = {
+        client_id: "testGlobalAdminClientId",
+        email: "testGlobalAdminEmail",
+        scope: ["testGlobalAdminScope"],
+        ten: "testTenant2",
+        user_name: "test_global_admin_21@user.name",
+      };
+      requestHeaders["authorization"] = `Bearer ${jwt.sign(
+        userPayload,
+        "testPrivateKey"
+      )}`;
+
+      //Outputs
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Plant does not exist!";
+
+      await testServiceGet();
+    });
+
+    it("should return 404 - if tenant tries to access subtenant's service with plantId of tenant", async () => {
+      //Inputs
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -6440,25 +7321,14 @@ describe("service route", () => {
       plantId = "testPlant2";
 
       //Outputs
-      expectedResponsePayload = [];
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Service not found!";
 
       await testServiceGet();
     });
 
-    it("should return 200 and payload with empty array - if there are no services for given app - subtenant app calls API, tenant has services", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
+    it("should return 404 - if subtenant tries to access tenant's service with plantId of subtenant", async () => {
       //Inputs
       fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
         "testLoadmonitoringServiceId1.service.config.json"
@@ -6468,37 +7338,57 @@ describe("service route", () => {
       ].appId = "ten-testTenant2";
 
       //Outputs
-      expectedResponsePayload = [];
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Service not found!";
 
       await testServiceGet();
     });
 
-    it("should return 200 and payload with empty array - if there are no services for given app -  subtenant app calls API, other subtenant has services", async () => {
-      userPayload = {
-        client_id: "testGlobalAdminClientId",
-        email: "testGlobalAdminEmail",
-        scope: ["testGlobalAdminScope"],
-        ten: "testTenant2",
-        user_name: "test_global_admin_22@user.name",
-        subtenant: "subtenant2",
-      };
-      requestHeaders["authorization"] = `Bearer ${jwt.sign(
-        userPayload,
-        "testPrivateKey"
-      )}`;
-
+    it("should return 404 - if subtenant tries to access tenant's service with plantId of tenant", async () => {
       //Inputs
-      (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
         "testLoadmonitoringServiceId1.service.config.json"
-      ].appId = "ten-testTenant1-sub-subtenant1"),
-        (fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
-          "testLoadmonitoringServiceId2.service.config.json"
-        ].appId = "ten-testTenant1-sub-subtenant1");
+      ].appId = "ten-testTenant2";
+      fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId2.service.config.json"
+      ].appId = "ten-testTenant2";
+      plantId = "testPlant2";
 
       //Outputs
-      expectedResponsePayload = [];
+      expectedResponseCode = 404;
+      expectedValidCall = false;
+      expectedErrorText = "Plant does not exist!";
 
       await testServiceGet();
+    });
+
+    it("should return 404  and not fetch the service - if service exists only in MindSphere", async () => {
+      let oldServices = cloneObject(
+        fileServiceContent["hostTenant"]["testServiceContainerAssetId"]
+      );
+
+      delete fileServiceContent["hostTenant"]["testServiceContainerAssetId"][
+        "testLoadmonitoringServiceId2.service.config.json"
+      ];
+
+      await beforeExec();
+
+      fileServiceContent["hostTenant"][
+        "testServiceContainerAssetId"
+      ] = oldServices;
+
+      let result = await request(server)
+        .get(`/customApi/service/me/${plantId}/${serviceId}`)
+        .set(requestHeaders)
+        .send();
+
+      expect(result.status).toEqual(404);
+
+      expect(result.text).toEqual("Service not found!");
+
+      //48 - app and user data, 2 x - subscriptions, 1 x service
+      expect(getFileContent).toHaveBeenCalledTimes(51);
     });
 
     //#region ========== AUTHORIZATION AND AUTHENTICATION ==========
@@ -6865,7 +7755,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user's jwt payload does not have tenant assigned", async () => {
+    it("should return 403 and not get services - if user's jwt payload does not have tenant assigned", async () => {
       delete (userPayload as any).ten;
 
       //Assinging jwt to header
@@ -6883,7 +7773,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if there is no application of given id", async () => {
+    it("should return 403 and not get services - if there is no application of given id", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -6906,7 +7796,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user has no access to given app", async () => {
+    it("should return 403 and not get services - if user has no access to given app", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -6928,7 +7818,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if there is no application data for given app", async () => {
+    it("should return 403 and not get services - if there is no application data for given app", async () => {
       delete fileServiceContent["hostTenant"][
         "ten-testTenant2-sub-subtenant2-asset-id"
       ]["main.app.config.json"];
@@ -6942,7 +7832,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user has invalid role", async () => {
+    it("should return 403 and not get services - if user has invalid role", async () => {
       let appId = getAppIdFromUserPaylad(userPayload);
 
       //Adding user to file service for the app
@@ -6959,7 +7849,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user has invalid scope", async () => {
+    it("should return 403 and not get services - if user has invalid scope", async () => {
       userPayload = {
         client_id: "testGlobalAdminClientId",
         email: "testGlobalAdminEmail",
@@ -6981,7 +7871,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user has valid scope, doest not exist in user service but exists in file service", async () => {
+    it("should return 403 and not get services - if user has valid scope, doest not exist in user service but exists in file service", async () => {
       //Adding user to file service for the app
       fileServiceContent["hostTenant"][
         "ten-testTenant2-sub-subtenant2-asset-id"
@@ -7038,7 +7928,7 @@ describe("service route", () => {
       await testServiceGet();
     });
 
-    it("should return 403 and not get the plant - if user has valid scope, exists in user service but does not exist in file service", async () => {
+    it("should return 403 and not get services - if user has valid scope, exists in user service but does not exist in file service", async () => {
       userServiceContent["testTenant2"]["testFakeUser23"] = {
         active: true,
         name: {
