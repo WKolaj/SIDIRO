@@ -1996,7 +1996,8 @@ describe("MindSphereApp", () => {
 
     let exec = async () => {
       await beforeExec();
-      config.userPermissions.superAdminUserIds = superAdminUserIdEnvVar;
+      (config.userPermissions
+        .superAdminUserIds as any) = superAdminUserIdEnvVar;
       return MindSphereApp.getSuperAdminUserIds();
     };
 
@@ -2043,8 +2044,9 @@ describe("MindSphereApp", () => {
 
     let exec = async () => {
       await beforeExec();
-      config.userPermissions.superAdminUserIds = superAdminUserIdEnvVar;
-      config.appCredentials.hostTenant = hostTenantEnvVar;
+      (config.userPermissions
+        .superAdminUserIds as any) = superAdminUserIdEnvVar;
+      (config.appCredentials.hostTenant as any) = hostTenantEnvVar;
       return MindSphereApp.isSuperAdmin(userData);
     };
 
@@ -2197,7 +2199,7 @@ describe("MindSphereApp", () => {
 
     let exec = async () => {
       await beforeExec();
-      config.userPermissions.globalAdminScope = globalAdminScopeEnvVar;
+      (config.userPermissions.globalAdminScope as any) = globalAdminScopeEnvVar;
       return MindSphereApp.hasGlobalAdminScope(userData);
     };
 
@@ -2249,7 +2251,7 @@ describe("MindSphereApp", () => {
 
     let exec = async () => {
       await beforeExec();
-      config.userPermissions.globalAdminScope = globalAdminScopeEnvVar;
+      (config.userPermissions.globalAdminScope as any) = globalAdminScopeEnvVar;
       return MindSphereApp.hasGlobalUserScope(userData);
     };
 
@@ -2302,7 +2304,7 @@ describe("MindSphereApp", () => {
     let exec = async () => {
       await beforeExec();
 
-      config.userPermissions.globalAdminScope = globalAdminScopeEnvVar;
+      (config.userPermissions.globalAdminScope as any) = globalAdminScopeEnvVar;
       return MindSphereApp.hasLocalAdminScope(userData);
     };
 
@@ -2355,7 +2357,7 @@ describe("MindSphereApp", () => {
     let exec = async () => {
       await beforeExec();
 
-      config.userPermissions.globalAdminScope = globalAdminScopeEnvVar;
+      (config.userPermissions.globalAdminScope as any) = globalAdminScopeEnvVar;
       return MindSphereApp.hasLocalUserScope(userData);
     };
 

@@ -27,10 +27,10 @@ export default class MailSender {
   public static getInstance(): MailSender {
     if (MailSender._instance == null)
       MailSender._instance = new MailSender(
-        config.emailSending.host,
-        config.emailSending.port,
-        config.emailSending.user,
-        config.emailSending.pass
+        config.emailSending.host!,
+        config.emailSending.port!,
+        config.emailSending.user!,
+        config.emailSending.pass!
       );
     return MailSender._instance;
   }

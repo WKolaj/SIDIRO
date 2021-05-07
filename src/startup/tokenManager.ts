@@ -8,7 +8,7 @@ export default async function(): Promise<boolean> {
   //Checking if there is na access to mindsphere api
   try {
     await MindSphereTokenManager.getInstance(
-      config.appSettings.appContainerTenant
+      config.appSettings.appContainerTenant!
     ).fetchNewToken();
 
     logger.info("app token initialized!");

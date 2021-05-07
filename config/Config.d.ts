@@ -23,47 +23,47 @@ declare module "node-config-ts" {
   }
   interface NotificationSending {
     email: string
-    privateKey: string
-    publicKey: string
+    privateKey: undefined
+    publicKey: undefined
     warningIcon: string
     alertIcon: string
     infoIcon: string
-    tenant: string
-    assetId: string
+    tenant: undefined
+    assetId: undefined
   }
   interface EmailSending {
     host: string
     port: number
-    user: string
-    pass: string
+    user: undefined
+    pass: undefined
   }
   interface UserPermissions {
-    globalAdminScope: string
-    globalUserScope: string
-    localAdminScope: string
-    localUserScope: string
-    globalAdminGroup: string
-    globalUserGroup: string
-    localAdminGroup: string
-    localUserGroup: string
-    msStandardUserGroup: string
-    msSubtenantUserGroup: string
-    superAdminUserIds: string
+    globalAdminScope: undefined
+    globalUserScope: undefined
+    localAdminScope: undefined
+    localUserScope: undefined
+    globalAdminGroup: undefined
+    globalUserGroup: undefined
+    localAdminGroup: undefined
+    localUserGroup: undefined
+    msStandardUserGroup: undefined
+    msSubtenantUserGroup: undefined
+    superAdminUserIds: undefined
   }
   interface AppSettings {
-    appContainerTenant: string
-    appContainerAssetId: string
-    appContainerAssetType: string
-    appAssetType: string
-    serviceContainerAssetId: string
+    appContainerTenant: undefined
+    appContainerAssetId: undefined
+    appContainerAssetType: undefined
+    appAssetType: undefined
+    serviceContainerAssetId: undefined
   }
   interface AppCredentials {
-    clientId: string
-    clientSecret: string
-    appName: string
-    appVersion: string
-    appId: string
-    hostTenant: string
+    clientId: undefined
+    clientSecret: undefined
+    appName: undefined
+    appVersion: undefined
+    appId: undefined
+    hostTenant: undefined
   }
   export const config: Config
   export type Config = IConfig

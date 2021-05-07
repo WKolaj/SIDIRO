@@ -15,22 +15,22 @@ if (process.env.NODE_ENV === "production") {
     format: format.combine(format.timestamp(), format.json()),
     transports: [
       new transports.File({
-        filename: config.logging.error.path,
+        filename: config.logging.error.path!,
         level: "error",
-        maxsize: config.logging.error.maxsize,
-        maxFiles: config.logging.error.maxFiles,
+        maxsize: config.logging.error.maxsize!,
+        maxFiles: config.logging.error.maxFiles!,
         handleExceptions: true,
       }),
       new transports.File({
-        filename: config.logging.warning.path,
+        filename: config.logging.warning.path!,
         level: "warn",
-        maxsize: config.logging.warning.maxsize,
-        maxFiles: config.logging.warning.maxFiles,
+        maxsize: config.logging.warning.maxsize!,
+        maxFiles: config.logging.warning.maxFiles!,
       }),
       new transports.File({
-        filename: config.logging.info.path,
-        maxsize: config.logging.info.maxsize,
-        maxFiles: config.logging.info.maxFiles,
+        filename: config.logging.info.path!,
+        maxsize: config.logging.info.maxsize!,
+        maxFiles: config.logging.info.maxFiles!,
       }),
     ],
   });

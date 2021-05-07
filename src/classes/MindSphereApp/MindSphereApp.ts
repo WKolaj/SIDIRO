@@ -189,10 +189,10 @@ export class MindSphereApp {
   public static getSuperAdminUserIds() {
     if (
       config.userPermissions.superAdminUserIds == null ||
-      config.userPermissions.superAdminUserIds.length === 0
+      (config.userPermissions.superAdminUserIds as any).length === 0
     )
       return [];
-    return config.userPermissions.superAdminUserIds.split(" ");
+    return (config.userPermissions.superAdminUserIds as any).split(" ");
   }
 
   /**
@@ -235,28 +235,28 @@ export class MindSphereApp {
   public static hasGlobalAdminScope(user: MindSphereUserJWTData) {
     return (
       user.scope != null &&
-      user.scope.includes(config.userPermissions.globalAdminScope)
+      user.scope.includes(config.userPermissions.globalAdminScope!)
     );
   }
 
   public static hasGlobalUserScope(user: MindSphereUserJWTData) {
     return (
       user.scope != null &&
-      user.scope.includes(config.userPermissions.globalUserScope)
+      user.scope.includes(config.userPermissions.globalUserScope!)
     );
   }
 
   public static hasLocalAdminScope(user: MindSphereUserJWTData) {
     return (
       user.scope != null &&
-      user.scope.includes(config.userPermissions.localAdminScope)
+      user.scope.includes(config.userPermissions.localAdminScope!)
     );
   }
 
   public static hasLocalUserScope(user: MindSphereUserJWTData) {
     return (
       user.scope != null &&
-      user.scope.includes(config.userPermissions.localUserScope)
+      user.scope.includes(config.userPermissions.localUserScope!)
     );
   }
 
@@ -364,27 +364,27 @@ export class MindSphereApp {
     };
 
     let standardUserGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.msStandardUserGroup
+      config.userPermissions.msStandardUserGroup!
     );
 
     let subtenantUserGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.msSubtenantUserGroup
+      config.userPermissions.msSubtenantUserGroup!
     );
 
     let globalAdminGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.globalAdminGroup
+      config.userPermissions.globalAdminGroup!
     );
 
     let globalUserGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.globalUserGroup
+      config.userPermissions.globalUserGroup!
     );
 
     let localAdminGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.localAdminGroup
+      config.userPermissions.localAdminGroup!
     );
 
     let localUserGroup = findUserGroupBasedOnDisplayName(
-      config.userPermissions.localUserGroup
+      config.userPermissions.localUserGroup!
     );
 
     //In case some group is absent - at this point the mehtod will already have thrown

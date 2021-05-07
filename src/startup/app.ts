@@ -29,7 +29,7 @@ export default async function(workingDirName: string | null) {
     await customServicesStartFunc();
   }
 
-  const port = process.env.PORT || config.port;
+  const port = process.env.PORT || config.port!;
 
   //Static front-end files are stored under public dir
   app.use(express.static(path.join(workingDirName, "public")));

@@ -895,7 +895,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Loadmonitoring alert!",
               body: `Incoming power exceeding: ${powerText} kW`,
-              icon: config.notificationSending.alertIcon,
+              icon: config.notificationSending.alertIcon!,
             };
             break;
           }
@@ -904,7 +904,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Loadmonitoring warning!",
               body: `Predicted power above warning limit: ${powerText} kW`,
-              icon: config.notificationSending.warningIcon,
+              icon: config.notificationSending.warningIcon!,
             };
 
             break;
@@ -914,7 +914,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Loadmonitoring info!",
               body: `Predicted power below limits again: ${powerText} kW`,
-              icon: config.notificationSending.infoIcon,
+              icon: config.notificationSending.infoIcon!,
             };
             break;
           }
@@ -933,7 +933,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Strażnik mocy - alarm!",
               body: `Nadchodzące przekroczenie mocy: ${powerText} kW`,
-              icon: config.notificationSending.alertIcon,
+              icon: config.notificationSending.alertIcon!,
             };
             break;
           }
@@ -942,7 +942,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Strażnik mocy - ostrzeżenie!",
               body: `Przewidywana moc ponad progiem ostrzeżenia: ${powerText} kW`,
-              icon: config.notificationSending.warningIcon,
+              icon: config.notificationSending.warningIcon!,
             };
 
             break;
@@ -952,7 +952,7 @@ class LoadmonitoringService extends CustomService<
             content = {
               title: "Strażnik mocy - info!",
               body: `Powrót mocy ponizej progów alarmowych: ${powerText} kW`,
-              icon: config.notificationSending.infoIcon,
+              icon: config.notificationSending.infoIcon!,
             };
             break;
           }

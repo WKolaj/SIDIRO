@@ -31,8 +31,8 @@ export default class NotificationManager {
   public static getInstance(): NotificationManager {
     if (NotificationManager._instance == null)
       NotificationManager._instance = new NotificationManager(
-        config.notificationSending.tenant,
-        config.notificationSending.assetId
+        config.notificationSending.tenant!,
+        config.notificationSending.assetId!
       );
     return NotificationManager._instance;
   }
@@ -40,9 +40,9 @@ export default class NotificationManager {
   public async init() {
     await this._subscribersStorage.init();
     webpush.setVapidDetails(
-      `mailto:<${config.notificationSending.email}>`,
-      config.notificationSending.publicKey,
-      config.notificationSending.privateKey
+      `mailto:<${config.notificationSending.email!}>`,
+      config.notificationSending.publicKey!,
+      config.notificationSending.privateKey!
     );
     this._initialized = true;
   }
